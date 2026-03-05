@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sapore di Mare - Raffadali</title>
+    
+    <!-- === LOGO E ICONE === -->
+    <link rel="icon" type="image/jpeg" href="logo.jpeg?v=14">
+    <link rel="shortcut icon" type="image/jpeg" href="logo.jpeg?v=14">
+    <link rel="apple-touch-icon" href="logo.jpeg?v=14">
+    
+    <!-- === META TAGS === -->
+    <meta property="og:title" content="🐟 Le Ricette di Sapore di Mare">
+    <meta property="og:description" content="Scopri le ricette, i consigli dello Chef e le nostre guide esclusive.">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1534948216015-843143f7aa13?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#ffffff">
+    
+    <!-- Librerie -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-blue': '#2D88B8',
+                        'brand-dark': '#1A3C4D',
+                        'brand-gold': '#d4af37',
+                        'brand-gold-light': '#f3e5ab',
+                        'whatsapp': '#25D366',
+                        'amazon': '#FF9900',
+                        'digital': '#8b5cf6',
+                        'stripe': '#635BFF'
+                    },
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'serif'],
+                        sans: ['"Open Sans"', 'sans-serif'],
+                        mono: ['"Courier Prime"', 'monospace'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-down': 'slideDown 0.3s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'heart-beat': 'heartBeat 0.3s ease-in-out',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideDown: { '0%': { transform: 'translateY(-20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } },
+                        heartBeat: { '0%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.3)' }, '100%': { transform: 'scale(1)' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Open Sans', sans-serif; background-color: #fdfdfd; color: #333; -webkit-tap-highlight-color: transparent; }
+        h1, h2, h3, h4 { font-family: 'Playfair Display', serif; }
+        .header-sticky { position: sticky; top: 0; z-index: 50; background: white; border-bottom: 1px solid #eaeaea; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .recipe-tag { background-color: #2D88B8; color: white; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 4px 8px; position: absolute; top: 10px; left: 10px; font-weight: bold; z-index: 10; }
+        .wheel-trigger { animation: bounce 2s infinite; z-index: 40; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .bot-msg { background-color: #ffffff; color: #1A3C4D; border: 1px solid #e5e7eb; align-self: flex-start; border-top-left-radius: 2px; }
+        .user-msg { background-color: #dcf8c6; color: #111; align-self: flex-end; border-top-right-radius: 2px; }
+        .page-view { display: none; animation: fadeIn 0.5s ease-out; }
+        .page-view.active { display: block; }
+        .mobile-menu-item { display: block; padding: 15px 20px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #1A3C4D; transition: background 0.2s; }
+        .mobile-menu-item:hover { background-color: #f9f9f9; color: #2D88B8; }
+        .mobile-menu-item.active { color: #2D88B8; border-left: 4px solid #2D88B8; background: #f0f9ff; }
+        
+        /* STILE RUOTA OTTIMIZZATO */
+        .wheel-container { 
+            position: relative; 
+            width: 100%; 
+            display: flex; 
+            justify-content: center; 
+            padding-top: 40px; 
+            padding-bottom: 20px; 
+            overflow: visible; 
+        }
+        
+        /* Il Canvas ora è statico e viene ruotato via CSS Hardware Acceleration */
+        #wheelCanvas {
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 10px #1A3C4D;
+            will-change: transform; /* Ottimizzazione GPU */
+        }
+
+        .wheel-indicator { 
+            position: absolute; 
+            top: 20px; /* Posizionato in alto sopra la ruota */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 45px solid #e11d48;
+            z-index: 54; 
+            filter: drop-shadow(0 4px 3px rgba(0,0,0,0.4));
+            transform-origin: top center; 
+            will-change: transform; /* Ottimizzazione GPU */
+        }
+        
+        /* CUORE PREFERITI */
+        .fav-btn:active i {
+            animation: heartBeat 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="bg-brand-dark text-white text-xs py-2 text-center tracking-widest uppercase font-semibold">
+        Pescheria Sapore di Mare - Raffadali
+    </div>
+    
+    <!-- HEADER -->
+    <header class="header-sticky">
+        <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between relative">
+            <div class="flex-shrink-0 w-16 flex justify-start">
+                <button onclick="toggleMenu()" class="text-brand-dark text-2xl focus:outline-none p-2 hover:bg-gray-100 rounded-full transition"><i class="fas fa-bars"></i></button>
+            </div>
+            <div class="flex-grow flex flex-col items-center cursor-pointer text-center mx-2" onclick="navigateTo('home')">
+                <span class="text-brand-blue text-[8px] md:text-[10px] font-bold tracking-[0.3em] uppercase mb-[-2px]">Le Ricette di</span>
+                <h1 class="text-lg md:text-2xl font-serif font-bold text-brand-dark leading-none whitespace-nowrap">Sapore di Mare</h1>
+                <div class="w-12 h-0.5 bg-brand-gold mt-1"></div>
+            </div>
+            <div class="flex-shrink-0 w-16 flex justify-end">
+                <button onclick="navigateTo('favorites')" class="text-brand-dark text-xl p-2 relative">
+                    <i class="far fa-heart"></i>
+                    <span id="fav-badge" class="hidden absolute top-1 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MENU -->
+        <div id="dropdown-menu" class="hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-gray-100 z-[60] animate-slide-down">
+            <nav class="flex flex-col">
+                <a href="#" onclick="navigateTo('home'); return false;" class="mobile-menu-item active" data-page="home"><i class="fas fa-home w-6 text-center mr-2 opacity-70"></i> Home</a>
+                <a href="#" onclick="navigateTo('favorites'); return false;" class="mobile-menu-item" data-page="favorites"><i class="fas fa-heart w-6 text-center mr-2 opacity-70 text-red-500"></i> I Tuoi Preferiti</a>
+                <a href="#" onclick="navigateTo('recipes'); return false;" class="mobile-menu-item" data-page="recipes"><i class="fas fa-utensils w-6 text-center mr-2 opacity-70"></i> Tutte le Ricette</a>
+                <a href="#" onclick="navigateTo('tips'); return false;" class="mobile-menu-item" data-page="tips"><i class="fas fa-lightbulb w-6 text-center mr-2 opacity-70"></i> Consigli dello Chef</a>
+                <a href="#" onclick="navigateTo('guides'); return false;" class="mobile-menu-item" data-page="guides"><i class="fas fa-book-open w-6 text-center mr-2 opacity-70 text-digital"></i> Mini Guide PDF</a>
+                <a href="#" onclick="navigateTo('shop'); return false;" class="mobile-menu-item" data-page="shop"><i class="fas fa-shopping-basket w-6 text-center mr-2 opacity-70 text-brand-gold"></i> I Nostri Strumenti</a>
+                <a href="#" onclick="navigateTo('about'); return false;" class="mobile-menu-item" data-page="about"><i class="fas fa-store w-6 text-center mr-2 opacity-70"></i> Chi Siamo</a>
+            </nav>
+            <div class="p-4 bg-gray-50 text-center text-xs text-gray-400 uppercase tracking-widest font-bold border-t">Chiuso Domenica Pomeriggio</div>
+        </div>
+    </header>
+
+    <!-- === PAGINA 1: HOME === -->
+    <div id="view-home" class="page-view active">
+        <section class="relative h-[50vh] min-h-[400px] w-full overflow-hidden bg-brand-dark">
+            <!-- AGGIORNAMENTO COPERTINA -->
+            <img src="gamberorosso.jpg" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1565557623262-b51c2513a641?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80'" class="w-full h-full object-cover brightness-75">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div class="absolute bottom-0 left-0 w-full p-8 md:p-16 text-center md:text-left text-white">
+                <span class="bg-brand-gold text-white text-xs font-bold px-3 py-1 uppercase mb-4 inline-block tracking-widest">Ricetta Gourmet</span>
+                <h2 class="text-3xl md:text-5xl font-serif font-bold mb-2 leading-tight">Linguine Gambero Rosso <span class="italic font-light block text-2xl mt-1 text-gray-200">Burrata e Pistacchio di Bronte</span></h2>
+                <div class="mt-6 flex flex-col md:flex-row gap-4 justify-center md:justify-start">
+                    <!-- LINK DIRETTO ALLA RICETTA ID 15 -->
+                    <button onclick="openRecipeModal(15)" class="border-2 border-white text-white px-8 py-3 font-bold hover:bg-white hover:text-brand-dark transition uppercase text-xs tracking-widest rounded-sm">Leggi la Ricetta</button>
+                </div>
+            </div>
+        </section>
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="flex justify-between items-end mb-6">
+                <div><h3 class="text-2xl font-serif font-bold text-gray-800">Le Più Richieste</h3></div>
+                <button onclick="navigateTo('recipes')" class="text-brand-blue text-sm font-bold uppercase tracking-wide underline">Vedi tutte</button>
+            </div>
+            <div class="flex overflow-x-auto gap-4 pb-4 scrollbar-hide" id="home-carousel"></div>
+        </section>
+        <section class="bg-brand-dark text-white py-12 px-4 text-center">
+            <i class="fas fa-anchor text-4xl text-brand-blue mb-4"></i>
+            <h3 class="text-2xl font-serif font-bold mb-2">Arrivi Giornalieri</h3>
+            <p class="text-gray-300 max-w-lg mx-auto mb-6">Il nostro pesce arriva fresco ogni mattina dai porti di Porto Empedocle e Sciacca.</p>
+            <button onclick="navigateTo('about')" class="text-brand-gold border-b border-brand-gold pb-1 text-sm uppercase tracking-widest hover:text-white hover:border-white transition">Scopri la nostra storia</button>
+        </section>
+    </div>
+
+    <!-- === PAGINA 2: TUTTE LE RICETTE === -->
+    <div id="view-recipes" class="page-view">
+        <div class="bg-[#f9f9f9] min-h-screen py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-4xl font-serif font-bold text-brand-dark">Il Nostro Ricettario</h2>
+                    <p class="text-gray-500 mt-2">Idee semplici e gustose per valorizzare il pescato.</p>
+                    <div class="w-16 h-1 bg-brand-gold mx-auto mt-4"></div>
+                </div>
+                <div id="full-recipe-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- === NUOVA PAGINA: PREFERITI === -->
+    <div id="view-favorites" class="page-view">
+        <div class="bg-white min-h-screen py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <span class="bg-red-50 text-red-500 px-3 py-1 text-xs font-bold uppercase tracking-widest rounded-full"><i class="fas fa-heart"></i> La tua lista</span>
+                    <h2 class="text-4xl font-serif font-bold text-brand-dark mt-4">Ricette Salvate</h2>
+                    <div class="w-16 h-1 bg-brand-gold mx-auto mt-4"></div>
+                </div>
+                <div id="favorites-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[300px]"></div>
+                <div id="favorites-empty" class="hidden text-center py-10">
+                    <i class="far fa-heart text-6xl text-gray-200 mb-4"></i>
+                    <p class="text-gray-500 text-lg">Non hai ancora salvato nessuna ricetta.</p>
+                    <button onclick="navigateTo('recipes')" class="mt-4 text-brand-blue font-bold underline">Sfoglia il ricettario</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === PAGINA 3: CONSIGLI === -->
+    <div id="view-tips" class="page-view">
+        <div class="max-w-4xl mx-auto px-4 py-12">
+            <div class="text-center mb-12"><h2 class="text-4xl font-serif font-bold text-brand-dark">I Consigli dello Chef</h2><div class="w-16 h-1 bg-brand-blue mx-auto mt-4"></div></div>
+            <div class="space-y-12">
+                <div class="flex flex-col md:flex-row gap-8 items-center"><div class="w-full md:w-1/3 bg-blue-50 p-6 rounded-full aspect-square flex items-center justify-center border-4 border-white shadow-lg"><i class="fas fa-fish text-6xl text-brand-blue"></i></div><div class="w-full md:w-2/3"><h3 class="text-2xl font-bold font-serif mb-3 text-brand-dark">Come riconoscere il pesce fresco?</h3><p class="text-gray-600 leading-relaxed">L'occhio deve essere vivo e convesso. Le branchie rosso vivo.</p></div></div>
+                <hr class="border-gray-100">
+                <div class="flex flex-col md:flex-row-reverse gap-8 items-center"><div class="w-full md:w-1/3 bg-yellow-50 p-6 rounded-full aspect-square flex items-center justify-center border-4 border-white shadow-lg"><i class="fas fa-snowflake text-6xl text-brand-gold"></i></div><div class="w-full md:w-2/3 text-left md:text-right"><h3 class="text-2xl font-bold font-serif mb-3 text-brand-dark">Come conservarlo?</h3><p class="text-gray-600 leading-relaxed">Puliscilo subito, lavalo, asciugalo e conservalo nella parte più fredda del frigo (0-2°C).</p></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === PAGINA 4: MINI GUIDE === -->
+    <div id="view-guides" class="page-view">
+        <div class="bg-violet-50 min-h-screen py-10">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <span class="bg-digital text-white px-3 py-1 text-xs font-bold uppercase tracking-widest rounded-full">Prodotto Digitale</span>
+                    <h2 class="text-3xl md:text-5xl font-serif font-bold text-brand-dark mt-4">Le Mini Guide</h2>
+                    <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Scarica i segreti del mestiere. Pagamento sicuro con Carta o PayPal.</p>
+                    <div class="w-24 h-1 bg-brand-gold mx-auto mt-6"></div>
+                </div>
+
+                <div id="guides-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                
+                <div class="mt-8 text-center text-xs text-gray-400">
+                    <p><i class="fas fa-lock text-green-500"></i> Pagamenti elaborati in sicurezza.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === PAGINA 5: SHOP === -->
+    <div id="view-shop" class="page-view">
+        <div class="bg-gray-50 min-h-screen py-10">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-12">
+                    <span class="bg-brand-blue text-white px-3 py-1 text-xs font-bold uppercase tracking-widest rounded-full">Affiliazioni</span>
+                    <h2 class="text-3xl md:text-5xl font-serif font-bold text-brand-dark mt-4">Gli Strumenti</h2>
+                    <p class="text-gray-600 mt-4 max-w-2xl mx-auto">La nostra selezione Amazon per cucinare il pesce.</p>
+                    <div class="w-24 h-1 bg-brand-gold mx-auto mt-6"></div>
+                </div>
+                <div id="shop-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === PAGINA 6: CHI SIAMO === -->
+    <div id="view-about" class="page-view">
+        <div class="relative h-[40vh] bg-gray-900 overflow-hidden">
+             <div class="absolute inset-0 bg-brand-dark opacity-90"></div>
+             <div class="absolute inset-0 flex flex-col items-center justify-center text-white px-4 text-center">
+                 <h2 class="text-4xl md:text-6xl font-serif font-bold mb-4">Sapore di Mare</h2>
+                 <p class="text-xl font-light italic text-brand-gold">Passione e Qualità dal 2008</p>
+             </div>
+        </div>
+        <div class="max-w-3xl mx-auto px-6 py-16 text-center">
+            <p class="text-xl text-gray-700 leading-loose mb-8 font-serif">"La nostra missione è portare sulla tavola delle famiglie di Raffadali solo il pescato migliore."</p>
+            <div class="mt-12 p-8 bg-gray-50 rounded-xl border border-gray-200">
+                <h3 class="font-bold text-xl mb-4 text-brand-dark uppercase tracking-widest">Vieni a trovarci</h3>
+                <p class="mb-2"><i class="fas fa-map-marker-alt text-brand-blue mr-2"></i> Via Porta Agrigento 160, Raffadali (AG)</p>
+                <p class="mb-6"><i class="fas fa-phone text-brand-blue mr-2"></i> 0922 475361</p>
+                <div class="w-full h-48 bg-gray-200 rounded-lg overflow-hidden relative"><iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3224.234!2d13.53!3d37.40!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzfCsDI0JzAwLjAiTiAxM8KwMzEnNDguMCJF!5e0!3m2!1sit!2sit!4v1600000000000!5m2!1sit!2sit" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#f4f4f4] border-t border-gray-200 pt-12 pb-24 text-gray-600 text-sm">
+        <div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+            <div><h4 class="font-serif font-bold text-lg text-brand-dark mb-4">Sapore di Mare</h4><p>Pescheria a Raffadali.</p></div>
+            <div>
+                <h4 class="font-bold text-gray-900 uppercase tracking-wider mb-4">Link Rapidi</h4>
+                <ul class="space-y-2">
+                    <li><a href="#" onclick="navigateTo('home'); return false;" class="hover:text-brand-blue">Home</a></li>
+                    <li><a href="#" onclick="navigateTo('recipes'); return false;" class="hover:text-brand-blue">Ricette</a></li>
+                    <li><a href="#" onclick="navigateTo('guides'); return false;" class="hover:text-brand-blue">Mini Guide</a></li>
+                    <li><a href="#" onclick="navigateTo('shop'); return false;" class="hover:text-brand-blue">Strumenti</a></li>
+                </ul>
+            </div>
+            <div>
+                 <h4 class="font-bold text-gray-900 uppercase tracking-wider mb-4">Contatti</h4>
+                 <p>0922 475361</p>
+                 <button onclick="openWhatsAppGeneral()" class="mt-4 text-green-600 font-bold hover:underline"><i class="fab fa-whatsapp"></i> Scrivici su WhatsApp</button>
+            </div>
+        </div>
+        <div class="text-center text-xs text-gray-400 pt-8 mt-8 border-t border-gray-300">&copy; 2024 Pescheria Sapore di Mare.</div>
+    </footer>
+
+    <!-- RUOTA & CHAT -->
+    <div class="fixed bottom-32 right-4 wheel-trigger cursor-pointer group z-[40]" onclick="openWheelModal()">
+        <div class="relative">
+            <div class="bg-white p-3 rounded-full shadow-xl border border-gray-100 group-hover:scale-110 transition text-brand-dark"><i class="fas fa-gift text-3xl text-brand-blue"></i></div>
+            <div class="absolute -top-2 -left-2 bg-brand-gold text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm border border-white uppercase tracking-wide z-50">Gioca</div>
+        </div>
+    </div>
+
+    <div id="chat-modal" class="fixed bottom-24 left-4 md:left-auto md:top-24 md:right-10 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden flex flex-col z-[101] hidden transition-all duration-200 font-sans animate-fade-in">
+        <div class="bg-brand-dark p-3 text-white flex justify-between items-center">
+            <div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"><i class="fas fa-magic text-sm"></i></div><div><div class="font-bold text-sm">Chef Mare AI</div><div class="text-[10px] opacity-80">Powered by OpenAI</div></div></div>
+            <i class="fas fa-times cursor-pointer opacity-70 hover:opacity-100" onclick="toggleChat()"></i>
+        </div>
+        <div id="chat-body" class="flex-1 p-4 bg-[#f2f2f2] overflow-y-auto flex flex-col gap-2 h-80"><div class="chat-bubble bot-msg">Ciao! 👋 Sono Chef Mare. Vuoi un consiglio su come cucinare il pesce di oggi?</div></div>
+        <div id="gpt-loading" class="hidden px-4 py-2 text-xs text-gray-500 italic">Chef Mare sta pensando... <i class="fas fa-spinner fa-spin"></i></div>
+        <div class="p-2 bg-white border-t"><div class="flex gap-2"><input type="text" id="chat-input" class="flex-1 text-sm border rounded-full px-3 py-1 focus:outline-none focus:border-brand-blue" placeholder="Scrivi..." onkeypress="if(event.key==='Enter')sendMessage()"><button onclick="sendMessage()" class="text-brand-blue"><i class="fas fa-paper-plane"></i></button></div></div>
+    </div>
+    
+    <!-- === COOKIE BANNER GDPR (Nuovo) === -->
+    <div id="cookie-banner" class="hidden fixed bottom-0 left-0 w-full bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-[200] border-t border-gray-100 p-6 md:p-8 animate-slide-up">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="text-sm text-gray-600 md:max-w-2xl">
+                <h4 class="font-serif font-bold text-brand-dark text-lg mb-2">🍪 Rispetto della tua Privacy</h4>
+                <p>
+                    Utilizziamo i cookie per analizzare le visite e migliorare la tua esperienza su "Sapore di Mare". 
+                    Cliccando su "Accetta", acconsenti al tracciamento anonimo tramite Google Analytics.
+                </p>
+            </div>
+            <div class="flex gap-4 w-full md:w-auto">
+                <button onclick="acceptCookies()" class="flex-1 md:flex-none bg-brand-blue text-white font-bold py-3 px-8 rounded hover:bg-sky-700 transition uppercase tracking-widest text-xs shadow-lg">
+                    Accetta
+                </button>
+                <button onclick="declineCookies()" class="flex-1 md:flex-none bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded hover:bg-gray-300 transition uppercase tracking-widest text-xs">
+                    Rifiuta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="recipe-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-white" role="dialog" aria-modal="true">
+        <div class="max-w-4xl mx-auto bg-white min-h-screen shadow-none md:shadow-2xl relative">
+            <button onclick="closeRecipeModal()" class="fixed top-4 right-4 z-50 bg-white rounded-full w-10 h-10 shadow-md flex items-center justify-center text-gray-600 hover:text-black"><i class="fas fa-times text-xl"></i></button>
+            <div class="h-[40vh] relative">
+                <img id="modal-img" src="" class="w-full h-full object-cover">
+                <button id="modal-fav-btn" class="absolute top-4 left-4 z-50 bg-white/30 backdrop-blur-md hover:bg-white text-white hover:text-red-500 rounded-full w-12 h-12 flex items-center justify-center shadow-lg transition-all duration-300 group">
+                    <i class="far fa-heart text-2xl group-hover:scale-110 transition-transform"></i>
+                </button>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent">
+                    <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 text-white">
+                        <span class="bg-brand-gold text-xs font-bold px-2 py-1 uppercase tracking-widest mb-2 inline-block">Secondo di Pesce</span>
+                        <h2 id="modal-title" class="text-3xl md:text-5xl font-serif font-bold mb-2"></h2>
+                        <div class="flex items-center gap-4 text-sm font-semibold">
+                            <span><i class="far fa-clock mr-1"></i> <span id="modal-time"></span></span>
+                            <span><i class="fas fa-signal mr-1"></i> <span id="modal-difficulty"></span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 md:p-10 grid md:grid-cols-3 gap-10">
+                <div class="md:col-span-1 space-y-8">
+                    <div class="bg-[#f9f9f9] p-6 border-t-4 border-brand-blue">
+                        <h3 class="font-bold text-xl mb-4">Il Prodotto</h3>
+                        <p id="modal-desc" class="text-gray-600 text-sm leading-relaxed mb-4 italic"></p>
+                        <div id="modal-cleaning" class="text-xs font-bold text-brand-dark uppercase tracking-wider"></div>
+                        <div class="mt-6">
+                            <a id="whatsapp-btn" href="#" target="_blank" class="block w-full bg-green-500 text-white text-center py-3 font-bold rounded hover:bg-green-600"><i class="fab fa-whatsapp mr-2"></i> Prenota Ora</a>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-xl mb-4 border-b-2 border-brand-gold inline-block">Ingredienti</h3>
+                        <ul id="modal-ingredients" class="space-y-2 text-sm"></ul>
+                    </div>
+                </div>
+                <div class="md:col-span-2">
+                    <div class="mb-4 text-brand-blue font-serif italic"><i class="fas fa-wine-glass-alt"></i> Vino: <span id="modal-wine" class="font-bold"></span></div>
+                    <h3 class="font-bold text-xl mb-4">Preparazione</h3>
+                    <div id="modal-steps" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="wheel-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center px-4"><div class="fixed inset-0 bg-black/80 backdrop-blur-sm" onclick="closeWheelModal()"></div><div class="bg-white rounded shadow-2xl w-full max-w-md relative z-10 border border-gray-200 overflow-hidden flex flex-col max-h-[90vh]"><div class="bg-brand-dark p-4 text-center relative shrink-0"><h2 class="text-xl font-serif font-bold text-white">La Ruota della Fortuna</h2><button onclick="closeWheelModal()" class="absolute top-4 right-4 text-white opacity-70 hover:opacity-100"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-grow flex flex-col items-center justify-center bg-white"><div id="wheel-form" class="w-full text-center"><p class="text-gray-600 mb-6 font-serif italic">Iscriviti per tentare la fortuna!</p><div class="space-y-4 mb-6"><input type="text" id="user-name" placeholder="Nome" class="w-full border-b border-gray-300 py-2 outline-none focus:border-brand-blue font-serif text-lg text-center transition-colors"><input type="tel" id="user-phone" placeholder="Telefono" class="w-full border-b border-gray-300 py-2 outline-none focus:border-brand-blue font-serif text-lg text-center transition-colors"></div><button onclick="unlockWheel()" class="w-full bg-brand-gold text-white font-bold py-4 rounded shadow-lg uppercase tracking-widest hover:bg-yellow-600 transition active:scale-95">Sblocca Ruota</button></div><div id="wheel-game" class="hidden flex-col items-center w-full">
+        <!-- LANCETTA NUOVA -->
+        <div class="wheel-container mb-6">
+            <div id="wheel-flapper" class="wheel-indicator"></div>
+            <!-- Canvas statico -->
+            <canvas id="wheelCanvas" width="500" height="500" class="w-full h-full"></canvas>
+        </div>
+        <button id="spin-btn" onclick="spinWheel()" class="bg-brand-dark text-white text-xl font-serif font-bold py-4 px-12 rounded shadow-lg hover:bg-brand-blue transition active:scale-95">GIRA ORA</button></div><div id="wheel-result" class="hidden text-center w-full"><h3 class="text-3xl font-serif font-bold text-brand-dark mb-2">Complimenti!</h3><div class="security-ticket p-6 bg-[#fcfcfc] mb-6 text-left"><p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Premio Vinto</p><div class="text-brand-blue font-bold text-3xl mb-4 font-serif" id="prize-text"></div><div class="border-t border-dashed border-gray-300 my-3"></div><div class="flex justify-between items-end"><div><p class="text-[10px] text-gray-400 uppercase tracking-widest">Codice Sicurezza</p><p class="font-mono font-bold text-lg text-gray-800" id="security-code"></p></div><div class="text-right"><p class="text-[10px] text-gray-400 uppercase">Data Vincita</p><p class="font-bold text-xs text-gray-600" id="issue-date"></p></div></div></div><div class="bg-yellow-50 border border-yellow-200 p-3 rounded mb-4 flex items-center justify-center text-yellow-800 text-xs font-bold"><i class="fas fa-camera mr-2 text-lg"></i> Fai subito uno screenshot!</div><button onclick="closeWheelModal()" class="text-gray-500 underline hover:text-black text-sm">Chiudi finestra</button></div><div id="wheel-played" class="hidden text-center"><h3 class="text-xl font-serif font-bold text-gray-400">Hai già giocato di recente.</h3><p class="text-sm text-gray-400 mt-2">La ruota gira ogni 12 ore!</p><button onclick="closeWheelModal()" class="mt-6 text-brand-blue underline text-sm">Chiudi</button></div></div></div></div>
+
+    <script>
+        const whatsappNumber = "390922475361"; 
+        const OPENAI_API_KEY = ""; 
+
+        // --- GESTIONE PREFERITI ---
+        const FAVORITES_KEY = 'sm_favorites_v1';
+
+        function getFavorites() {
+            const stored = localStorage.getItem(FAVORITES_KEY);
+            return stored ? JSON.parse(stored) : [];
+        }
+
+        function isFav(id) {
+            return getFavorites().includes(id);
+        }
+
+        function toggleFavorite(id, event, fromModal = false) {
+            if (event) event.stopPropagation();
+            let favs = getFavorites();
+            if (favs.includes(id)) {
+                favs = favs.filter(fId => fId !== id);
+            } else {
+                favs.push(id);
+                if (typeof confetti !== 'undefined') {
+                    const el = fromModal ? document.getElementById('modal-fav-btn') : event.currentTarget;
+                    const rect = el.getBoundingClientRect();
+                    confetti({
+                        particleCount: 20,
+                        spread: 40,
+                        origin: {
+                            x: (rect.left + rect.width / 2) / window.innerWidth,
+                            y: (rect.top + rect.height / 2) / window.innerHeight
+                        },
+                        colors: ['#e11d48', '#ffffff']
+                    });
+                }
+            }
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+            renderGallery(); 
+            if(document.getElementById('view-favorites').classList.contains('active')) renderFavorites();
+            if (fromModal || document.getElementById('recipe-modal').classList.contains('hidden') === false) updateModalFavBtn(id);
+            updateFavBadge();
+        }
+        
+        function updateFavBadge() {
+            const favs = getFavorites();
+            const badge = document.getElementById('fav-badge');
+            if(favs.length > 0) badge.classList.remove('hidden'); else badge.classList.add('hidden');
+        }
+        
+        function updateModalFavBtn(id) {
+            const btn = document.getElementById('modal-fav-btn');
+            const icon = btn.querySelector('i');
+            if(isFav(id)) {
+                icon.className = "fas fa-heart text-2xl text-red-500";
+                btn.classList.add('bg-white', 'text-red-500');
+                btn.classList.remove('bg-white/30', 'text-white');
+            } else {
+                icon.className = "far fa-heart text-2xl";
+                btn.classList.remove('bg-white', 'text-red-500');
+                btn.classList.add('bg-white/30', 'text-white');
+            }
+        }
+
+        // --- CATALOGO RICETTE COMPLETO ---
+        const fishCatalog = [
+            {
+                id: 9,
+                name: "Spigola",
+                description: "Pregiata e delicata.",
+                cleaning: "Eviscerata.",
+                image: "copertina.jpg",
+                recipes: [{
+                    title: "Spigola al Cartoccio",
+                    wine: "Chardonnay",
+                    time: "35 min",
+                    difficulty: "Facile",
+                    ingredients: ["1 spigola (600-700g)", "1 spicchio d'aglio", "Prezzemolo fresco", "10 pomodorini", "Olio EVO", "Sale e Pepe", "Limone"],
+                    steps: ["Preriscalda forno a 180°C.", "Lava, asciuga e sala la spigola.", "Farcisci con aglio, prezzemolo, pomodorini.", "Metti su carta forno, olio e pepe.", "Chiudi cartoccio, cuoci 25-30 min.", "Apri ultimi 5 min per gratinare."]
+                }]
+            },
+            {
+                id: 1,
+                name: "Orata Reale",
+                description: "Regina dei mari.",
+                cleaning: "Squamata.",
+                image: "orata.jpg",
+                recipes: [{
+                    title: "Orata all'Acqua Pazza",
+                    wine: "Bianco d'Alcamo",
+                    time: "30 min",
+                    difficulty: "Media",
+                    ingredients: ["1 orata (700g)", "200g pomodorini", "1 spicchio d'aglio", "Prezzemolo", "Olio EVO", "1/2 bicchiere acqua"],
+                    steps: ["Rosola aglio in padella.", "Aggiungi pomodorini, cuoci 5 min.", "Unisci orata, sale e acqua.", "Copri, cuoci 10 min per lato.", "Servi con prezzemolo e sughetto."]
+                }]
+            },
+            {
+                id: 4,
+                name: "Sarde",
+                description: "Pesce azzurro.",
+                cleaning: "Aperte a libro.",
+                image: "sarde.jpg",
+                recipes: [{
+                    title: "Sarde a Beccafico",
+                    wine: "Inzolia",
+                    time: "35 min",
+                    difficulty: "Media",
+                    ingredients: ["500g sarde", "100g pangrattato", "30g uvetta e pinoli", "Scorza agrumi", "Prezzemolo", "Olio/Sale/Pepe"],
+                    steps: ["Ammolla l'uvetta.", "Mix pangrattato, uvetta, pinoli, aromi.", "Farcisci e arrotola le sarde.", "Disponi in teglia con olio.", "Forno 180°C per 20 min."]
+                }]
+            },
+            {
+                id: 7,
+                name: "Calamari",
+                description: "Teneri e versatili.",
+                cleaning: "Puliti.",
+                image: "calamari.jpg",
+                recipes: [{
+                    title: "Calamari Ripieni",
+                    wine: "Grillo",
+                    time: "40 min",
+                    difficulty: "Media",
+                    ingredients: ["4 calamari grandi", "100g pangrattato", "1 uovo", "Aglio/Prezzemolo", "Olio EVO", "Sale/Pepe"],
+                    steps: ["Pulisci, trita tentacoli.", "Mix pane, uovo, tentacoli, aromi.", "Riempi senza pressare troppo.", "Chiudi con stecchino.", "Padella 20 min o Forno 25 min."]
+                }]
+            },
+            {
+                id: 5,
+                name: "Triglie",
+                description: "Saporite e rosse.",
+                cleaning: "Eviscerate.",
+                image: "triglie.jpg",
+                recipes: [{
+                    title: "Triglie alla Livornese",
+                    wine: "Rosato",
+                    time: "25 min",
+                    difficulty: "Facile",
+                    ingredients: ["800g triglie", "400g passata pomodoro", "1 spicchio d'aglio", "Prezzemolo", "Olio EVO", "Sale/Pepe"],
+                    steps: ["Soffriggi aglio in olio.", "Cuoci passata 10 min.", "Unisci triglie salate.", "Cuoci 5-7 min per lato.", "Completa con prezzemolo."]
+                }]
+            },
+            {
+                id: 8,
+                name: "Polpo",
+                description: "Verace e gustoso.",
+                cleaning: "Battuto.",
+                image: "polpo.jpg",
+                recipes: [{
+                    title: "Insalata di Polpo",
+                    wine: "Carricante",
+                    time: "60 min",
+                    difficulty: "Facile",
+                    ingredients: ["1 kg polpo", "3 patate medie", "Prezzemolo", "Olio EVO", "Sale", "Limone"],
+                    steps: ["Bollire acqua fredda 45-50 min.", "Raffredda nella sua acqua.", "Lessa patate a cubetti.", "Taglia polpo.", "Condisci con olio e limone."]
+                }]
+            },
+            {
+                id: 10,
+                name: "Pesce Spada",
+                description: "Carne soda e gustosa.",
+                cleaning: "A tranci.",
+                image: "pescespada.jpg",
+                recipes: [{
+                    title: "Pesce Spada al Forno",
+                    wine: "Etna Bianco",
+                    time: "25 min",
+                    difficulty: "Facile",
+                    ingredients: ["2 tranci spada (200g)", "200g pomodorini", "30g olive nere", "1 cucchiaio capperi", "Olio EVO", "Sale/Origano"],
+                    steps: ["Preriscalda forno a 180°C. Taglia pomodorini a metà.", "Metti tranci in teglia con carta forno.", "Aggiungi pomodorini, olive, capperi.", "Condisci con olio, sale, origano.", "Inforna 18-20 min girando a metà."]
+                }]
+            },
+            {
+                id: 11,
+                name: "Seppie",
+                description: "Molluschi per umidi.",
+                cleaning: "Pulite.",
+                image: "seppie.jpg",
+                recipes: [{
+                    title: "Seppie con Piselli",
+                    wine: "Syrah Rosato",
+                    time: "50 min",
+                    difficulty: "Media",
+                    ingredients: ["500g seppie", "150g piselli", "200g passata", "1/2 cipolla", "Olio EVO", "Sale/Pepe"],
+                    steps: ["Taglia seppie. Soffriggi cipolla.", "Rosola seppie 5 min.", "Unisci passata, copri e cuoci 30 min.", "Unisci piselli, cuoci altri 15 min.", "Servi caldo."]
+                }]
+            },
+            {
+                id: 12,
+                name: "Misto Zuppa",
+                description: "Ideale per brodi.",
+                cleaning: "Misto.",
+                image: "zuppa.jpg",
+                recipes: [{
+                    title: "Zuppa di Pesce",
+                    wine: "Grecanico",
+                    time: "45 min",
+                    difficulty: "Media",
+                    ingredients: ["600g pesce misto", "300g cozze e vongole", "250g passata", "2 spicchi aglio", "Olio EVO", "Prezzemolo"],
+                    steps: ["Apri cozze/vongole a parte.", "Soffriggi aglio, cuoci pesce grande 5 min.", "Unisci resto pesce e passata.", "Cuoci 25-30 min.", "Unisci frutti mare ultimi 5 min.", "Servi con crostini."]
+                }]
+            },
+            {
+                id: 13,
+                name: "Salmone",
+                description: "Ricco di Omega-3.",
+                cleaning: "Filetto.",
+                image: "salmone.jpg",
+                recipes: [{
+                    title: "Salmone al Cartoccio",
+                    wine: "Chardonnay",
+                    time: "25 min",
+                    difficulty: "Facile",
+                    ingredients: ["2 filetti salmone", "1 zucchina", "1 limone", "Olio EVO", "Sale"],
+                    steps: ["Forno 180°C. Taglia zucchina sottile.", "Metti salmone su carta forno.", "Aggiungi zucchine, limone, olio, sale.", "Chiudi cartoccio.", "Cuoci 20 min."]
+                }]
+            },
+            {
+                id: 14,
+                name: "Gamberetti",
+                description: "Dolci e teneri.",
+                cleaning: "Sgusciati.",
+                image: "gamberi.jpg",
+                recipes: [{
+                    title: "Gamberetti Saltati",
+                    wine: "Prosecco",
+                    time: "10 min",
+                    difficulty: "Facilissima",
+                    ingredients: ["300g gamberetti", "1 spicchio d'aglio", "Prezzemolo", "Olio EVO", "Sale"],
+                    steps: ["Scalda olio e aglio schiacciato.", "Rimuovi aglio dorato.", "Salta gamberetti a fiamma viva 3-4 min.", "Sala e aggiungi prezzemolo.", "Servi subito."]
+                }]
+            },
+            {
+                id: 15,
+                name: "Gambero Rosso",
+                description: "Eccellenza del Mediterraneo.",
+                cleaning: "Testa/Carapace.",
+                image: "gamberorosso.jpg",
+                recipes: [{
+                    title: "Linguine Gambero, Burrata, Pistacchio",
+                    wine: "Franciacorta",
+                    time: "20 min",
+                    difficulty: "Media",
+                    ingredients: ["180g linguine", "8 gamberi rossi", "150g burrata", "25g pistacchi", "Limone", "Olio EVO"],
+                    steps: ["Cuoci linguine.", "Pulisci gamberi: metà tartare, metà interi.", "Condisci tartare (olio, limone).", "Scotta gamberi interi 15 sec.", "Manteca pasta.", "Unisci tartare fuori fuoco.", "Servi con burrata e pistacchi."]
+                }]
+            }
+        ];
+
+        const toolsCatalog = [
+            { name: "Coltello Sfilettatore", desc: "Lama flessibile.", price: "€ 24,99", icon: "fas fa-utensils", link: "#" },
+            { name: "Squamatore Pro", desc: "Rimuovi le squame.", price: "€ 12,50", icon: "fas fa-fish", link: "#" },
+            { name: "Pinza per Lische", desc: "Togli le spine.", price: "€ 8,90", icon: "fas fa-hand-holding-medical", link: "#" },
+            { name: "Forbici da Pesce", desc: "Robuste e affilate.", price: "€ 15,00", icon: "fas fa-cut", link: "#" },
+            { name: "Pietra Affilacoltelli", desc: "Per un taglio netto.", price: "€ 35,00", icon: "fas fa-gem", link: "#" },
+            { name: "Tagliere Antibatterico", desc: "Speciale per il pesce.", price: "€ 19,90", icon: "fas fa-square", link: "#" }
+        ];
+
+        // AGGIORNAMENTO: Configurazione per DROPBOX
+        // ISTRUZIONI:
+        // 1. Carica il PDF su Dropbox
+        // 2. Fai "Condividi" -> "Copia link"
+        // 3. Incolla il link qui sotto al posto di "INCOLLA_QUI_IL_LINK_DROPBOX"
+        // 4. IMPORTANTE: Se il link finisce con "dl=0", cambialo in "dl=1" (questo forza il download immediato!)
+        
+        const guidesCatalog = [
+            { id: 1, title: "Sfilettare come un Pro", desc: "Guida completa pulizia.", price: "GRATIS", icon: "fas fa-file-pdf", link: "https://www.dropbox.com/s/esempio1/guida_sfilettare.pdf?dl=1" },
+            { id: 2, title: "Il Crudo Sicuro", desc: "Sicurezza alimentare.", price: "GRATIS", icon: "fas fa-shield-virus", link: "https://www.dropbox.com/scl/fi/r0f3jflr9si3eyy5v0ryi/guida_crudo.pdf?rlkey=pmd8geotb6uf07iyngzfxbv1r&dl=1" },
+            { id: 3, title: "Sughi di Mare Veloci", desc: "10 Ricette veloci.", price: "GRATIS", icon: "fas fa-stopwatch", link: "https://www.dropbox.com/s/esempio3/guida_sughi.pdf?dl=1" },
+            { id: 4, title: "Crostacei & Molluschi", desc: "Pulizia molluschi.", price: "GRATIS", icon: "fas fa-utensil-spoon", link: "https://www.dropbox.com/s/esempio4/guida_molluschi.pdf?dl=1" }
+        ];
+
+        // --- NAVIGAZIONE ---
+        function toggleMenu() { document.getElementById('dropdown-menu').classList.toggle('hidden'); }
+        function navigateTo(pageId) {
+            document.getElementById('dropdown-menu').classList.add('hidden');
+            document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+            document.getElementById('view-' + pageId).classList.add('active');
+            document.querySelectorAll('.mobile-menu-item').forEach(i => {
+                if(i.getAttribute('data-page') === pageId) i.classList.add('active'); else i.classList.remove('active');
+            });
+            window.scrollTo(0,0);
+            if(pageId === 'favorites') renderFavorites();
+        }
+
+        // --- RENDERIZZAZIONE ---
+        function getHeartButton(id) {
+            const active = isFav(id);
+            return `<button onclick="toggleFavorite(${id}, event)" class="fav-btn absolute top-2 right-2 w-9 h-9 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg z-20 transition transform active:scale-90">
+                        <i class="${active ? 'fas text-red-500' : 'far text-gray-400'} fa-heart text-xl transition-colors duration-300"></i>
+                    </button>`;
+        }
+        
+        function getHeartButtonSmall(id) {
+            const active = isFav(id);
+            return `<button onclick="toggleFavorite(${id}, event)" class="fav-btn absolute top-2 right-2 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-md z-20 transition transform active:scale-90">
+                        <i class="${active ? 'fas text-red-500' : 'far text-gray-400'} fa-heart text-lg transition-colors duration-300"></i>
+                    </button>`;
+        }
+
+        function renderGallery() { 
+            const c = document.getElementById('home-carousel');
+            c.innerHTML = fishCatalog.slice(0, 5).map(f => `
+                <div class="flex-shrink-0 w-64 bg-white border border-gray-100 shadow-sm rounded-lg overflow-hidden cursor-pointer snap-start relative" onclick="openRecipeModal(${f.id})">
+                    <div class="h-40 relative">
+                        <img src="${f.image}" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Foto+Mancante'" class="w-full h-full object-cover">
+                        <div class="recipe-tag">Top Ricetta</div>
+                        ${getHeartButtonSmall(f.id)}
+                    </div>
+                    <div class="p-3"><h4 class="font-serif font-bold text-lg truncate text-gray-800">${f.recipes[0].title}</h4><p class="text-xs text-gray-500 mt-1"><i class="far fa-clock"></i> ${f.recipes[0].time}</p></div>
+                </div>`).join(''); 
+            
+            const g = document.getElementById('full-recipe-grid');
+            g.innerHTML = fishCatalog.map(f => `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden cursor-pointer group flex flex-col h-full hover:shadow-md transition" onclick="openRecipeModal(${f.id})">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="${f.image}" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Foto+Mancante'" class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
+                        <div class="absolute top-2 left-2 bg-white/90 px-3 py-1 text-xs font-bold rounded-full shadow text-brand-dark">${f.name}</div>
+                        ${getHeartButton(f.id)}
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow"><h3 class="text-xl font-serif font-bold text-gray-800 mb-2 group-hover:text-brand-blue transition">${f.recipes[0].title}</h3><div class="text-xs text-gray-500 font-bold uppercase tracking-wide mb-4 flex items-center gap-4"><span><i class="far fa-clock text-brand-gold mr-1"></i> ${f.recipes[0].time}</span><span><i class="fas fa-signal text-brand-gold mr-1"></i> ${f.recipes[0].difficulty}</span></div><p class="text-gray-600 text-sm line-clamp-2 mb-4 flex-grow">${f.description} Scopri la ricetta.</p><button class="w-full py-2 border border-brand-blue text-brand-blue rounded hover:bg-brand-blue hover:text-white transition text-sm font-bold uppercase">Leggi Ricetta</button></div>
+                </div>`).join(''); 
+        }
+
+        function renderFavorites() {
+            const favIds = getFavorites();
+            const container = document.getElementById('favorites-grid');
+            const emptyState = document.getElementById('favorites-empty');
+            if (favIds.length === 0) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+            const favRecipes = fishCatalog.filter(f => favIds.includes(f.id));
+            container.innerHTML = favRecipes.map(f => `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden cursor-pointer group flex flex-col h-full hover:shadow-md transition" onclick="openRecipeModal(${f.id})">
+                    <div class="relative h-64 overflow-hidden">
+                        <img src="${f.image}" onerror="this.onerror=null; this.src='https://via.placeholder.com/300?text=Foto+Mancante'" class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
+                        <div class="absolute top-2 left-2 bg-white/90 px-3 py-1 text-xs font-bold rounded-full shadow text-brand-dark">${f.name}</div>
+                        ${getHeartButton(f.id)}
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow"><h3 class="text-xl font-serif font-bold text-gray-800 mb-2 group-hover:text-brand-blue transition">${f.recipes[0].title}</h3><div class="text-xs text-gray-500 font-bold uppercase tracking-wide mb-4 flex items-center gap-4"><span><i class="far fa-clock text-brand-gold mr-1"></i> ${f.recipes[0].time}</span><span><i class="fas fa-signal text-brand-gold mr-1"></i> ${f.recipes[0].difficulty}</span></div><p class="text-gray-600 text-sm line-clamp-2 mb-4 flex-grow">${f.description} Scopri la ricetta.</p><button class="w-full py-2 border border-brand-blue text-brand-blue rounded hover:bg-brand-blue hover:text-white transition text-sm font-bold uppercase">Leggi Ricetta</button></div>
+                </div>`).join('');
+        }
+
+        function renderShop() {
+            const s = document.getElementById('shop-grid');
+            s.innerHTML = toolsCatalog.map(t => `<div class="bg-white rounded-xl shadow-lg border border-gray-100 p-6 flex flex-col items-center text-center transition hover:shadow-xl hover:-translate-y-1"><div class="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mb-4 text-amazon text-3xl shadow-inner"><i class="${t.icon}"></i></div><h3 class="text-xl font-bold text-gray-800 font-serif mb-2">${t.name}</h3><p class="text-gray-500 text-sm mb-4 flex-grow">${t.desc}</p><div class="font-bold text-2xl text-gray-900 mb-4">${t.price}</div><a href="${t.link}" target="_blank" class="w-full bg-amazon hover:bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg shadow-md transition flex items-center justify-center gap-2"><i class="fab fa-amazon"></i> Acquista su Amazon</a></div>`).join('');
+        }
+
+        // AGGIORNAMENTO: Ottimizzato per Dropbox (dl=1)
+        function renderGuides() {
+            const g = document.getElementById('guides-grid');
+            g.innerHTML = guidesCatalog.map(item => `
+                <div class="bg-white rounded-xl shadow-lg border border-violet-100 overflow-hidden flex flex-col transition hover:shadow-xl hover:-translate-y-1">
+                    <div class="h-40 bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center relative">
+                        <i class="${item.icon} text-6xl text-white/90 drop-shadow-lg"></i>
+                        <div class="absolute bottom-3 right-3 bg-white text-violet-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow">PDF</div>
+                    </div>
+                    <div class="p-6 flex flex-col flex-grow">
+                        <h3 class="text-xl font-serif font-bold text-gray-800 mb-2">${item.title}</h3>
+                        <p class="text-gray-600 text-sm mb-6 flex-grow leading-relaxed">${item.desc}</p>
+                        <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                            <span class="text-2xl font-bold text-gray-900">${item.price}</span>
+                            <!-- LINK DROPBOX: Non serve target="_blank" se usi dl=1, il browser capisce che è un download -->
+                            <a href="${item.link}" class="bg-brand-blue hover:bg-sky-700 text-white px-6 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 text-sm no-underline cursor-pointer">
+                                <i class="fas fa-cloud-download-alt"></i> Scarica
+                            </a>
+                        </div>
+                    </div>
+                </div>`).join('');
+        }
+        
+        // --- FUNZIONI DI UTILITÀ ---
+        
+        // Ho rimosso le funzioni complesse "forceDownload" e "showToast" 
+        // perché non servono più con il metodo standard.
+
+        // --- UTILS ---
+        function openWhatsApp(fishName) { window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent('Salve, vorrei sapere la disponibilità di: ' + fishName)}`, '_blank'); }
+        function openWhatsAppGeneral() { window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}`, '_blank'); }
+        function buyGuideWhatsApp(title) { window.open(`https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent('Ciao! Vorrei acquistare la Mini Guida: ' + title)}`, '_blank'); }
+        function toggleChat() { document.getElementById('chat-modal').classList.toggle('hidden'); }
+        
+        // --- NUOVA RUOTA DELLA FORTUNA 2.0 (MOTORE IBRIDO) ---
+        const prizes = [
+            {text:"5% Sconto", colorStart:"#ffffff", colorEnd:"#e5e5e5", textCol:"#333", weight:40},
+            {text:"Pulizia Gratis", colorStart:"#e0f2fe", colorEnd:"#bae6fd", textCol:"#0369a1", weight:30},
+            {text:"10% Sconto", colorStart:"#2D88B8", colorEnd:"#1e5b7e", textCol:"white", weight:10},
+            {text:"1 Limone", colorStart:"#fef08a", colorEnd:"#fde047", textCol:"#854d0e", weight:20},
+            {text:"Ricetta Segreta", colorStart:"#bbf7d0", colorEnd:"#86efac", textCol:"#14532d", weight:30},
+            {text:"Sconto 3€", colorStart:"#fbbf24", colorEnd:"#d97706", textCol:"white", weight:15}
+        ];
+        
+        let wheelCanvas = document.getElementById('wheelCanvas'), 
+            ctx = wheelCanvas.getContext('2d'), 
+            userNameForCode = "";
+
+        // Disegna la ruota UNA SOLA VOLTA all'avvio (Static Drawing)
+        function drawStaticWheel() { 
+            const num = prizes.length;
+            const arc = (2 * Math.PI) / num;
+            const cx = 250, cy = 250, r = 240; 
+            
+            ctx.clearRect(0,0,500,500);
+            
+            // Bordo Esterno
+            ctx.beginPath(); ctx.arc(cx, cy, 250, 0, 2*Math.PI); ctx.fillStyle = "#1A3C4D"; ctx.fill();
+            // Anello Oro
+            ctx.beginPath(); ctx.arc(cx, cy, 245, 0, 2*Math.PI); ctx.strokeStyle = "#d4af37"; ctx.lineWidth = 8; ctx.stroke();
+
+            // Spicchi
+            prizes.forEach((p, i) => { 
+                const a = i * arc; 
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, a, a + arc); 
+                let grd = ctx.createRadialGradient(cx, cy, 50, cx, cy, r);
+                grd.addColorStop(0, p.colorStart); grd.addColorStop(1, p.colorEnd);
+                ctx.fillStyle = grd; ctx.fill(); 
+                ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.lineWidth = 2; ctx.stroke(); 
+                // Testo
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(a + arc / 2); ctx.textAlign = "right"; ctx.fillStyle = p.textCol; 
+                ctx.font = "bold 18px 'Playfair Display'"; ctx.shadowColor = "rgba(0,0,0,0.2)"; ctx.shadowBlur = 4;
+                ctx.fillText(p.text, r - 30, 6); 
+                ctx.restore(); 
+            }); 
+            
+            // Luci
+            for(let j=0; j<24; j++) {
+                const angle = (j / 24) * 2 * Math.PI;
+                ctx.beginPath(); ctx.arc(cx + Math.cos(angle)*245, cy + Math.sin(angle)*245, 4, 0, 2*Math.PI);
+                ctx.fillStyle = j % 2 === 0 ? "#fef3c7" : "#d4af37"; ctx.fill();
+            }
+
+            // Mozzo
+            ctx.beginPath(); ctx.arc(cx, cy, 35, 0, 2*Math.PI);
+            let centerGrd = ctx.createRadialGradient(cx, cy-10, 5, cx, cy, 35);
+            centerGrd.addColorStop(0, "#ffffff"); centerGrd.addColorStop(1, "#999999");
+            ctx.fillStyle = centerGrd; ctx.fill();
+            
+            ctx.beginPath(); ctx.arc(cx, cy, 25, 0, 2*Math.PI); ctx.fillStyle = "#2D88B8"; ctx.fill();
+            ctx.fillStyle = "white"; ctx.font = "20px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("★", cx, cy);
+        }
+
+        // ANIMATION ENGINE (Physics Loop)
+        let angularVelocity = 0; // velocità corrente
+        let currentAngle = 0;    // angolo totale
+        let isSpinning = false;
+        let friction = 0.992;    // attrito più leggero per spin più lungo e fluido
+        
+        function loop() {
+            if (!isSpinning) return;
+
+            // 1. Fisica della Ruota
+            angularVelocity *= friction; // Applica attrito
+            currentAngle += angularVelocity; // Muovi ruota
+
+            // 2. Aggiorna CSS della Ruota (GPU)
+            wheelCanvas.style.transform = `rotate(${currentAngle}deg)`;
+
+            // 3. Fisica della Lancetta (Sinusoidale Sincronizzata)
+            
+            const speedFactor = Math.min(angularVelocity * 2, 25); // Limita l'ampiezza massima per evitare scatti
+            
+            // Il -1 serve per invertire il senso (la lancetta viene "alzata" dal piolo)
+            const flapperWobble = Math.sin((currentAngle * Math.PI / 180) * prizes.length) * speedFactor * -1;
+            
+            // Applica CSS alla lancetta
+            document.getElementById('wheel-flapper').style.transform = `translateX(-50%) rotate(${flapperWobble}deg)`;
+
+            // 4. Controllo Fine
+            if (angularVelocity < 0.05) {
+                isSpinning = false;
+                // Calcola vincitore finale
+                const finalAngle = currentAngle % 360;
+                // La lancetta è a 270 gradi (in alto).
+                // L'angolo vincente è quello che si trova a 270 gradi DOPO la rotazione.
+                const winningAngle = (270 - finalAngle + 360) % 360;
+                const sliceAngle = 360 / prizes.length;
+                const winningIndex = Math.floor(winningAngle / sliceAngle);
+                
+                showResult(prizes[winningIndex]);
+                localStorage.setItem('sm_last_played', Date.now().toString());
+            } else {
+                requestAnimationFrame(loop);
+            }
+        }
+
+        function spinWheel() { 
+            if(isSpinning) return; 
+            isSpinning = true; 
+            
+            // UI Update
+            document.getElementById('spin-btn').disabled = true; 
+            document.getElementById('spin-btn').classList.add('opacity-50'); 
+            
+            // Reset Lancetta
+            document.getElementById('wheel-flapper').style.transform = `translateX(-50%) rotate(0deg)`;
+            
+            // Avvio con velocità più contenuta per evitare "strobing" (aliasing) e garantire fluidità
+            angularVelocity = 15 + Math.random() * 10; // Velocità ottimizzata per 60fps
+            currentAngle = currentAngle % 360; // Mantieni l'angolo visivo ma resetta il contatore grande
+            
+            loop();
+        }
+        
+        function openWheelModal() { 
+            const m = document.getElementById('wheel-modal'); 
+            
+            // --- BLOCCO RIMOSSO PER TESTING ---
+            // const lastPlayed = localStorage.getItem('sm_last_played');
+            // const now = Date.now();
+            // const cooldown = 12 * 60 * 60 * 1000; 
+
+            // if(lastPlayed && (now - parseInt(lastPlayed) < cooldown)) {
+            //    showView('wheel-played'); 
+            // } else { 
+                showView('wheel-form'); 
+                document.getElementById('user-name').value = ''; 
+                document.getElementById('user-phone').value = ''; 
+                document.getElementById('user-name').classList.remove('input-error'); 
+            // } 
+            
+            m.classList.remove('hidden'); 
+            // Disegna staticamente una volta sola
+            setTimeout(drawStaticWheel, 100); 
+        }
+        
+        function showView(id) { ['wheel-form', 'wheel-game', 'wheel-result', 'wheel-played'].forEach(i => document.getElementById(i).classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); if(id === 'wheel-game') setTimeout(drawStaticWheel, 100); }
+        function unlockWheel() { const n = document.getElementById('user-name').value; if(!n) { document.getElementById('user-name').classList.add('input-error'); return; } userNameForCode = n; showView('wheel-game'); }
+        function showResult(p) { showView('wheel-result'); document.getElementById('prize-text').textContent = p.text; const now = new Date(); document.getElementById('security-code').textContent = `${userNameForCode.substring(0,3).toUpperCase()}-${Math.floor(Math.random()*10000)}`; document.getElementById('issue-date').textContent = now.toLocaleDateString('it-IT') + " " + now.toLocaleTimeString('it-IT', {hour: '2-digit', minute:'2-digit'}); if (typeof confetti !== 'undefined') confetti({particleCount:100, spread:70, origin:{y:0.6}}); }
+        function closeWheelModal() { document.getElementById('wheel-modal').classList.add('hidden'); }
+        
+        function openRecipeModal(id) { 
+            const f = fishCatalog.find(p => p.id === id); if(!f) return; 
+            const r = f.recipes[0]; 
+            document.getElementById('modal-title').textContent = r.title; 
+            const modalImg = document.getElementById('modal-img'); modalImg.src = f.image; 
+            modalImg.onerror = function() { this.src = 'https://via.placeholder.com/800?text=Foto+Mancante'; }; 
+            document.getElementById('modal-time').textContent = r.time; 
+            document.getElementById('modal-difficulty').textContent = r.difficulty; 
+            document.getElementById('modal-desc').textContent = f.description; 
+            document.getElementById('modal-cleaning').textContent = "PREPARAZIONE PESCE: " + f.cleaning; 
+            document.getElementById('modal-wine').textContent = r.wine; 
+            document.getElementById('modal-ingredients').innerHTML = r.ingredients.map(i => `<li class="flex items-center gap-3 py-2 border-b border-gray-100"><span class="w-4 h-4 rounded-full border-2 border-gray-300"></span> ${i}</li>`).join(''); 
+            document.getElementById('modal-steps').innerHTML = r.steps.map((s, i) => `<div class="flex gap-4"><div class="flex-shrink-0 w-10 h-10 bg-brand-blue text-white font-serif font-bold text-xl flex items-center justify-center rounded-full">${i+1}</div><p class="text-gray-700 leading-relaxed pt-2">${s}</p></div>`).join(''); 
+            
+            const btn = document.getElementById('whatsapp-btn'); 
+            const newBtn = btn.cloneNode(true); 
+            btn.parentNode.replaceChild(newBtn, btn); 
+            newBtn.onclick = function(e) { e.preventDefault(); openWhatsApp(f.name); }; 
+            
+            const favBtn = document.getElementById('modal-fav-btn');
+            const newFavBtn = favBtn.cloneNode(true);
+            favBtn.parentNode.replaceChild(newFavBtn, favBtn);
+            newFavBtn.onclick = function(e) { toggleFavorite(id, e, true); };
+            updateModalFavBtn(id);
+
+            document.getElementById('recipe-modal').classList.remove('hidden'); 
+        }
+        function closeRecipeModal() { document.getElementById('recipe-modal').classList.add('hidden'); }
+
+        renderGallery(); renderShop(); renderGuides(); updateFavBadge();
+
+        // --- LOGICA COOKIE & ANALYTICS (GDPR) ---
+        // Funzione che fa partire Google Analytics (inietta lo script solo ora)
+        function loadGoogleAnalytics() {
+            // Evita di caricarlo due volte
+            if (document.getElementById('ga-script')) return;
+
+            // 1. Crea il tag script esterno
+            var script = document.createElement('script');
+            script.id = 'ga-script';
+            script.src = "https://www.googletagmanager.com/gtag/js?id=G-D99HP50MJC";
+            script.async = true;
+            document.head.appendChild(script);
+
+            // 2. Inizializza il datalayer
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-D99HP50MJC');
+            
+            console.log("Analytics attivato: Consenso dato.");
+        }
+
+        // Funzione per controllare se mostrare il banner
+        function checkCookieConsent() {
+            const consent = localStorage.getItem('sm_cookie_consent');
+            
+            if (consent === 'accepted') {
+                // Se aveva già accettato in passato, avvia subito Analytics
+                loadGoogleAnalytics();
+            } else if (consent === 'declined') {
+                // Se aveva rifiutato, non fare nulla (Analytics resta spento)
+            } else {
+                // Se non c'è scelta, mostra il banner dopo 1 secondo
+                setTimeout(() => {
+                    document.getElementById('cookie-banner').classList.remove('hidden');
+                }, 1000);
+            }
+        }
+
+        // Azione bottone ACCETTA
+        function acceptCookies() {
+            localStorage.setItem('sm_cookie_consent', 'accepted');
+            document.getElementById('cookie-banner').classList.add('hidden');
+            loadGoogleAnalytics(); // Avvia tracciamento
+        }
+
+        // Azione bottone RIFIUTA
+        function declineCookies() {
+            localStorage.setItem('sm_cookie_consent', 'declined');
+            document.getElementById('cookie-banner').classList.add('hidden');
+            // Non avviamo loadGoogleAnalytics()
+        }
+
+        // Avvia il controllo al caricamento della pagina
+        window.addEventListener('load', checkCookieConsent);
+
+    </script>
+</body>
+</html>
+
+
