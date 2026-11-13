@@ -1,7 +1,20 @@
-import React, { useLayoutEffect, useMemo, useRef } from "react";
-import { AbsoluteFill, Audio, Easing, Img, interpolate, spring, staticFile, useCurrentFrame } from "remotion";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  AbsoluteFill,
+  Audio,
+  Easing,
+  Img,
+  cancelRender,
+  continueRender,
+  delayRender,
+  interpolate,
+  spring,
+  staticFile,
+  useCurrentFrame,
+} from "remotion";
 import { Arrow, DashedArrow, Scribble, Write } from "../Flow/FlowReel";
-import { IH, IW, NOTES, Px, blendStage, useStageData } from "./PortoFoto";
+import { IH, IW, NOTES, Px, blendStage, loadAll, loadPx } from "./PortoFoto";
+import { SPRITES, Sprite } from "./sprites";
 
 /*
  * Versione "a discesa", come il video di riferimento: ogni fase è un plastico
@@ -58,9 +71,90 @@ const maskStyle: React.CSSProperties = {
   maskComposite: "intersect",
 };
 
+/* ------------------------------- dati -------------------------------------- */
+
+type Data = { s: Px[]; g: Px[]; sp: Record<number, HTMLImageElement[]> };
+let dataCache: Promise<Data> | null = null;
+
+const loadImg = (url: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Impossibile caricare ${url}`));
+    img.src = url;
+  });
+
+const loadData = () => {
+  if (!dataCache) {
+    dataCache = (async () => {
+      const base = await loadAll();
+      const g = await Promise.all(new Array(7).fill(0).map((_, i) => loadPx(staticFile(`stages/g${i + 1}.png`))));
+      const sp: Record<number, HTMLImageElement[]> = {};
+      for (const k of Object.keys(SPRITES).map(Number)) {
+        sp[k] = await Promise.all(SPRITES[k].map((s) => loadImg(staticFile(`stages/${s.file}`))));
+      }
+      return { s: base.s, g: [new Uint8ClampedArray(0), ...g], sp };
+    })();
+  }
+  return dataCache;
+};
+
+const useData = () => {
+  const [data, setData] = useState<Data | null>(null);
+  const [handle] = useState(() => delayRender("Caricamento foto e oggetti delle fasi"));
+  useEffect(() => {
+    loadData()
+      .then((d) => {
+        setData(d);
+        continueRender(handle);
+      })
+      .catch((e) => cancelRender(e));
+  }, [handle]);
+  return data;
+};
+
+const outCubic = (u: number) => 1 - Math.pow(1 - u, 3);
+const outBack = (u: number) => {
+  const c1 = 1.9;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(u - 1, 3) + c1 * Math.pow(u - 1, 2);
+};
+
+/** Disegna gli oggetti che si muovono (come le banconote che escono dal portafoglio). */
+const drawSprites = (ctx: CanvasRenderingContext2D, list: Sprite[], imgs: HTMLImageElement[], p: number, g: number) => {
+  list.forEach((s, i) => {
+    const u = Math.min(1, Math.max(0, (p - s.delay) / s.dur));
+    if (u <= 0) return;
+    let ox = 0;
+    let oy = 0;
+    let rot = 0;
+    let sc = 1;
+    let alpha = 1;
+    if (s.anim === "glide") {
+      const e = outCubic(u);
+      ox = s.dx * (1 - e);
+      oy = s.dy * (1 - e);
+      rot = s.rot * (1 - e);
+      alpha = Math.min(1, u * 3);
+    } else {
+      const e = outBack(u);
+      oy = s.dy * (1 - e);
+      sc = 1 + 0.28 * (1 - outCubic(u));
+      alpha = Math.min(1, u * 4);
+    }
+    ctx.save();
+    ctx.globalAlpha = alpha * (1 - g);
+    ctx.translate(s.x + s.w / 2 + ox, s.y + s.h / 2 + oy);
+    ctx.rotate((rot * Math.PI) / 180);
+    ctx.scale(sc, sc);
+    ctx.drawImage(imgs[i], -s.w / 2, -s.h / 2, s.w, s.h);
+    ctx.restore();
+  });
+};
+
 /* ------------------------------- blocchi ---------------------------------- */
 
-const StageBlock: React.FC<{ k: number; f: number; data: { s: Px[]; t: Px[] } }> = ({ k, f, data }) => {
+const StageBlock: React.FC<{ k: number; f: number; data: Data }> = ({ k, f, data }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const out = useMemo(() => new ImageData(IW, IH), []);
   const last = useRef("");
@@ -73,10 +167,13 @@ const StageBlock: React.FC<{ k: number; f: number; data: { s: Px[]; t: Px[] } }>
     const key = `${p.toFixed(4)}|${g.toFixed(4)}`;
     if (key === last.current) return;
     last.current = key;
+    const ctx = c.getContext("2d")!;
     if (k === 0 || (p <= 0 && g <= 0)) out.data.set(data.s[Math.max(0, k - 1)]);
     else if (g >= 1) out.data.set(data.s[k]);
-    else blendStage(out.data, data.s[k - 1], data.s[k], data.t[k], p, g);
-    c.getContext("2d")!.putImageData(out, 0, 0);
+    else blendStage(out.data, data.s[k - 1], data.s[k], data.g[k], p, g);
+    ctx.putImageData(out, 0, 0);
+    // gli oggetti mobili arrivano sopra la foto della fase precedente
+    if (k > 0 && p > 0 && g < 1 && SPRITES[k]) drawSprites(ctx, SPRITES[k], data.sp[k], p, g);
   }, [p, g, k, data, out]);
 
   const sc = pop(f, appearAt(k));
@@ -366,7 +463,7 @@ const cameraAt = (f: number) => {
 
 export const PortoDiscesa: React.FC = () => {
   const f = useCurrentFrame();
-  const data = useStageData();
+  const data = useData();
   const cam = cameraAt(f);
   const viewTop = cam.y - D_H / 2 / cam.z;
   const viewBot = cam.y + D_H / 2 / cam.z;

@@ -72,7 +72,7 @@ const phaseStart = (k: number) => INTRO + (k - 1) * PH; // k = 1..7
 export type Px = Uint8ClampedArray;
 let cache: Promise<{ s: Px[]; t: Px[] }> | null = null;
 
-const loadPx = (url: string) =>
+export const loadPx = (url: string) =>
   new Promise<Px>((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -87,7 +87,7 @@ const loadPx = (url: string) =>
     img.src = url;
   });
 
-const loadAll = () => {
+export const loadAll = () => {
   if (!cache) {
     const urls = [
       ...new Array(8).fill(0).map((_, i) => staticFile(`stages/s${i}.jpg`)),

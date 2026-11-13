@@ -90,6 +90,21 @@ for k in range(1, N + 1):
         fx("click-soft", fr, -30)
     pen(a + 206, 32, -24)  # freccia verso il basso
 
+# --- oggetti che si muovono: fruscio alla partenza, piccolo colpo all'arrivo ---
+import json  # noqa: E402
+
+SPR = json.load(open(os.path.join(os.path.dirname(OUT), "..", "stages", "sprites.json")))
+for k, lst in SPR.items():
+    a = INTRO + (int(k) - 1) * PH
+    for s in lst:
+        start = a + 40 + s["delay"] * 90
+        land = a + 40 + (s["delay"] + s["dur"]) * 90
+        if s["anim"] == "glide":
+            fx("whoosh-short", start, -25)
+            fx("click-soft", land - 2, -24)
+        else:
+            fx("click-soft", land - 4, -19)
+
 # --- orologio ---
 fx("whoosh-short", C - 2, -15)
 fx("pop", C + 3, -11)
