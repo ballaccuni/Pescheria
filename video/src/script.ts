@@ -43,11 +43,25 @@ export type Scene =
 export const SCENES: Scene[] = [
   {
     type: "map",
-    seconds: 5,
+    seconds: 7,
     bg: "cream",
-    pin: { label: "Raffadali", lon: 13.53, lat: 37.4 },
+    pin: { label: "Raffadali", lon: 13.533, lat: 37.404 },
+    // Partenza + punti intermedi della strada [lon, lat] (tracciato indicativo)
+    route: {
+      label: "Porto Empedocle",
+      lon: 13.527,
+      lat: 37.289,
+      via: [
+        [13.545, 37.297],
+        [13.562, 37.304],
+        [13.566, 37.324],
+        [13.556, 37.348],
+        [13.546, 37.372],
+        [13.537, 37.391],
+      ],
+    },
     tape: "Ogni mattina, prima dell'alba",
-    caption: "Ogni mattina, prima dell'alba, scegliamo il pesce *uno per uno.*",
+    caption: "Ogni mattina il pesce parte da *Porto Empedocle* e arriva *fresco a Raffadali.*",
   },
   {
     type: "headline",
