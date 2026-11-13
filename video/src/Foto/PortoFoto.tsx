@@ -24,8 +24,8 @@ export const P_W = 1080;
 export const P_H = 1920;
 export const P_FPS = 30;
 
-const IW = 768; // risoluzione delle foto
-const IH = 1376;
+export const IW = 768; // risoluzione delle foto
+export const IH = 1376;
 const S = P_W / IW; // scala a schermo
 const IMG_H = IH * S; // 1935
 
@@ -40,7 +40,7 @@ const SCROLL = 26;
 const SCRIPT = "'Dancing Script', cursive";
 
 // dati calcolati da prepare.py (centro e riquadro di ciò che cambia, in frazioni dell'immagine)
-const STEPS = [
+export const STEPS = [
   { cx: 0.477, cy: 0.595, y1: 0.749 },
   { cx: 0.45, cy: 0.557, y1: 0.706 },
   { cx: 0.262, cy: 0.581, y1: 0.743 },
@@ -51,7 +51,7 @@ const STEPS = [
 ];
 const CLOCK = { cx: 0.527 * P_W, cy: 0.513 * IMG_H, r: 0.278 * P_W };
 
-const NOTES = [
+export const NOTES = [
   { title: "Dragaggio", line: "fondale portato a", value: -14, fmt: (v: number) => `${Math.round(v)} m` },
   { title: "Diga foranea", line: "protegge il bacino", value: 1450, fmt: (v: number) => `${String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} m` },
   { title: "Tetrapodi", line: "mantellata esterna", value: 25, fmt: (v: number) => `${Math.round(v)} t cad.` },
@@ -69,7 +69,7 @@ const phaseStart = (k: number) => INTRO + (k - 1) * PH; // k = 1..7
 
 /* ------------------------------ caricamento ------------------------------- */
 
-type Px = Uint8ClampedArray;
+export type Px = Uint8ClampedArray;
 let cache: Promise<{ s: Px[]; t: Px[] }> | null = null;
 
 const loadPx = (url: string) =>
@@ -98,7 +98,7 @@ const loadAll = () => {
   return cache;
 };
 
-const useStageData = () => {
+export const useStageData = () => {
   const [data, setData] = useState<{ s: Px[]; t: Px[] } | null>(null);
   const [handle] = useState(() => delayRender("Caricamento foto delle fasi"));
   useEffect(() => {
@@ -122,6 +122,32 @@ const stageAt = (f: number) => {
   return { from: k - 1, to: k, p, g };
 };
 
+/**
+ * Fonde la fase A nella fase B: compare solo ciò che cambia (maschera T.r),
+ * nell'ordine di crescita T.g, fino al fronte `p`; `g` completa la dissolvenza.
+ */
+export const blendStage = (o: Px, A: Px, B: Px, T: Px, p: number, g: number) => {
+  const front = p * 1.25;
+  for (let i = 0; i < o.length; i += 4) {
+    const m = T[i] / 255;
+    let a = g;
+    let glow = 0;
+    if (m > 0) {
+      const ord = T[i + 1] / 255;
+      const r = Math.min(1, Math.max(0, (front - ord) / 0.22));
+      const rev = m * r * r * (3 - 2 * r);
+      if (rev > a) a = rev;
+      // leggera luce sul fronte di avanzamento del cantiere
+      glow = m * Math.max(0, 1 - Math.abs(front - ord - 0.11) / 0.11) * 16 * (1 - g);
+    }
+    const b = 1 - a;
+    o[i] = A[i] * b + B[i] * a + glow;
+    o[i + 1] = A[i + 1] * b + B[i + 1] * a + glow;
+    o[i + 2] = A[i + 2] * b + B[i + 2] * a + glow * 0.8;
+    o[i + 3] = 255;
+  }
+};
+
 /* --------------------------------- canvas --------------------------------- */
 
 const StageCanvas: React.FC = () => {
@@ -140,29 +166,7 @@ const StageCanvas: React.FC = () => {
     } else if (g >= 1) {
       out.data.set(data.s[to]);
     } else {
-      const A = data.s[from];
-      const B = data.s[to];
-      const T = data.t[to];
-      const o = out.data;
-      const front = p * 1.25;
-      for (let i = 0; i < o.length; i += 4) {
-        const m = T[i] / 255;
-        let a = g;
-        let glow = 0;
-        if (m > 0) {
-          const ord = T[i + 1] / 255;
-          const r = Math.min(1, Math.max(0, (front - ord) / 0.22));
-          const rev = m * r * r * (3 - 2 * r);
-          if (rev > a) a = rev;
-          // leggera luce sul fronte di avanzamento del cantiere
-          glow = m * Math.max(0, 1 - Math.abs(front - ord - 0.11) / 0.11) * 16 * (1 - g);
-        }
-        const b = 1 - a;
-        o[i] = A[i] * b + B[i] * a + glow;
-        o[i + 1] = A[i + 1] * b + B[i + 1] * a + glow;
-        o[i + 2] = A[i + 2] * b + B[i + 2] * a + glow * 0.8;
-        o[i + 3] = 255;
-      }
+      blendStage(out.data, data.s[from], data.s[to], data.t[to], p, g);
     }
     g2.putImageData(out, 0, 0);
   }, [f, data, out]);
