@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Img, staticFile, useCurrentFrame } from "remotion";
 import { loadFont } from "@remotion/fonts";
 import {
   CLOCK,
@@ -262,31 +262,30 @@ const Outro: React.FC<{ f: number }> = ({ f }) => {
 
 /* ------------------------------- overlay ---------------------------------- */
 
-const NOISE = `url("data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='360' height='360'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.25  0 0 0 0 0.27  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(#n)'/></svg>`,
-)}")`;
+
+
+// carta millimetrata ricavata dalla foto "carta vuota" di Google Flow (resa ripetibile)
+const PAPER_TILE = 400; // unità mondo coperte da una ripetizione (≈ 40 quadretti da 10)
 
 export const Paper: React.FC = () => {
   const f = useCurrentFrame();
   const c = cameraAt(f);
   const ox = R_W / 2 - c.x * c.k;
   const oz = R_H / 2 - c.z * c.k;
-  const cell = 10 * c.k;
-  const line = "rgba(28, 82, 86, 0.17)";
+  const size = PAPER_TILE * c.k;
+  const url = staticFile("tex/paper.jpg");
   return (
-    <AbsoluteFill
-      style={{
-        background: "radial-gradient(ellipse 95% 80% at 50% 45%, #addbd6 0%, #93c9c4 60%, #74b0ac 100%)",
-      }}
-    >
+    <AbsoluteFill style={{ backgroundColor: "#a9d9cf" }}>
+      {/* precarica l'immagine così il render la aspetta */}
+      <Img src={url} style={{ position: "absolute", width: 1, height: 1, opacity: 0 }} />
       <AbsoluteFill
         style={{
-          backgroundImage: `linear-gradient(to right, ${line} 1.6px, transparent 1.6px), linear-gradient(to bottom, ${line} 1.6px, transparent 1.6px)`,
-          backgroundSize: `${cell}px ${cell}px`,
+          backgroundImage: `url(${url})`,
+          backgroundSize: `${size}px ${size}px`,
           backgroundPosition: `${ox}px ${oz}px`,
+          backgroundRepeat: "repeat",
         }}
       />
-      <AbsoluteFill style={{ backgroundImage: NOISE, backgroundPosition: `${ox}px ${oz}px`, opacity: 0.35 }} />
     </AbsoluteFill>
   );
 };

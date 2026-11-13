@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { random } from "remotion";
+import { random, staticFile } from "remotion";
+import { useLoader } from "@react-three/fiber";
 import { CraneBarge, Dredger, SurveyBoat, Tug, useHullGeometry } from "../Port/scene/Boats";
 import { tetrapodGeometry, trapezoid } from "../Port/scene/Breakwater";
 import { P2, headingOf, pointAt, samplePath } from "../Port/scene/layout";
@@ -9,6 +10,29 @@ import { P2, headingOf, pointAt, samplePath } from "../Port/scene/layout";
  * Plastico del porto (120 × 120 unità), appoggiato sulla carta (y = 0).
  * `stage` va da 0 a 6: parte intera = fasi completate, parte decimale = avanzamento.
  */
+
+/* Materiali presi dalle foto generate con Google Flow (public/tex). */
+const TEX = ["tex/water.jpg", "tex/sand.jpg", "tex/asphalt.jpg", "tex/rocks.jpg"];
+const useTex = () => {
+  const [water, sand, asphalt, rocks] = useLoader(
+    THREE.TextureLoader,
+    TEX.map((p) => staticFile(p)),
+  );
+  useMemo(() => {
+    for (const t of [water, sand, asphalt, rocks]) {
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.wrapS = THREE.MirroredRepeatWrapping;
+      t.wrapT = THREE.MirroredRepeatWrapping;
+      t.anisotropy = 4;
+      t.needsUpdate = true;
+    }
+    water.repeat.set(1, 1);
+    sand.repeat.set(2, 2);
+    asphalt.repeat.set(2, 1);
+    rocks.repeat.set(0.18, 0.12);
+  }, [water, sand, asphalt, rocks]);
+  return { water, sand, asphalt, rocks };
+};
 
 const HALF = 60;
 const SEABED = 2;
@@ -40,6 +64,7 @@ const SCALE0 = new THREE.Vector3(0.0001, 0.0001, 0.0001);
 /* --------------------------- base del plastico --------------------------- */
 
 const Base: React.FC = () => {
+  const tex = useTex();
   const trees = useMemo(
     () =>
       new Array(26).fill(0).map((_, i) => {
@@ -57,15 +82,18 @@ const Base: React.FC = () => {
       {/* fondale */}
       <mesh position={[0, SEABED / 2, (SHORE_Z + HALF) / 2]} castShadow receiveShadow>
         <boxGeometry args={[TILE_W, SEABED, HALF - SHORE_Z]} />
-        <meshStandardMaterial color="#d2bc8c" roughness={1} />
+        <meshStandardMaterial map={tex.sand} color="#ffffff" roughness={1} />
       </mesh>
       {/* acqua (vetro colorato) */}
       <mesh position={[0, (SEABED + WATER) / 2, (SHORE_Z + HALF) / 2]} renderOrder={2} castShadow>
         <boxGeometry args={[TILE_W - 0.02, WATER - SEABED, HALF - SHORE_Z - 0.02]} />
         <meshStandardMaterial
-          color="#1e90c8"
+          map={tex.water}
+          color="#6fdcf5"
+          emissive="#0b9fc4"
+          emissiveIntensity={0.28}
           transparent
-          opacity={0.5}
+          opacity={0.6}
           roughness={0.15}
           metalness={0.1}
           depthWrite={false}
@@ -107,12 +135,13 @@ const SZ1 = 36;
 const COLS = 16;
 const ROWS = 3;
 
-const sand = new THREE.Color("#d2bc8c");
+const sand = new THREE.Color("#ffffff"); // il colore viene dalla texture
 const cShallow = new THREE.Color("#ff9f1c");
 const cMid = new THREE.Color("#2ec4b6");
 const cDeep = new THREE.Color("#3a6fd0");
 
 const Sediment: React.FC<{ s: number; t: number }> = ({ s, t }) => {
+  const tex = useTex();
   const ref = useRef<THREE.InstancedMesh>(null);
   const n = COLS * ROWS;
   const tw = (SX1 - SX0) / COLS;
@@ -163,7 +192,7 @@ const Sediment: React.FC<{ s: number; t: number }> = ({ s, t }) => {
     <group>
       <instancedMesh ref={ref} args={[undefined, undefined, n]} receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial roughness={1} />
+        <meshStandardMaterial map={tex.sand} roughness={1} />
       </instancedMesh>
       {s < 1 && survey > 0 && survey < 1 ? (
         <>
@@ -201,6 +230,7 @@ const STEP = 2.5;
 const CREST = 10.2;
 
 const BreakwaterMini: React.FC<{ s: number; t: number }> = ({ s, t }) => {
+  const tex = useTex();
   const coreRef = useRef<THREE.InstancedMesh>(null);
   const crownRef = useRef<THREE.InstancedMesh>(null);
   const armorRef = useRef<THREE.InstancedMesh>(null);
@@ -301,7 +331,7 @@ const BreakwaterMini: React.FC<{ s: number; t: number }> = ({ s, t }) => {
   return (
     <group>
       <instancedMesh ref={coreRef} args={[coreGeo, undefined, data.pts.length]} castShadow receiveShadow>
-        <meshStandardMaterial color="#8a8378" roughness={1} flatShading />
+        <meshStandardMaterial map={tex.rocks} color="#f2efe8" roughness={1} />
       </instancedMesh>
       <instancedMesh ref={crownRef} args={[crownGeo, undefined, data.pts.length]} castShadow receiveShadow>
         <meshStandardMaterial color="#d9d4c8" roughness={0.9} />
@@ -384,6 +414,7 @@ const YX0 = CX0;
 const YX1 = -CX0;
 
 const Yard: React.FC<{ s: number }> = ({ s }) => {
+  const tex = useTex();
   if (s < 3) return null;
   const fill = sub(s, 3, 0, 0.45);
   const cap = sub(s, 3, 0.2, 0.5);
@@ -394,7 +425,7 @@ const Yard: React.FC<{ s: number }> = ({ s }) => {
     <group>
       <mesh position={[0, (SEABED + fillTop) / 2, (SHORE_Z + YARD_Z1) / 2]} receiveShadow castShadow>
         <boxGeometry args={[YX1 - YX0 - 0.1, fillTop - SEABED, YARD_Z1 - SHORE_Z]} />
-        <meshStandardMaterial color="#bfa577" roughness={1} />
+        <meshStandardMaterial map={tex.sand} color="#f0e2c4" roughness={1} />
       </mesh>
       {[YX0 - 1.5, YX1 + 1.5].map((x) => (
         <mesh key={x} position={[x, (SEABED + fillTop) / 2, (SHORE_Z + YARD_Z1) / 2]} castShadow>
@@ -414,7 +445,7 @@ const Yard: React.FC<{ s: number }> = ({ s }) => {
           receiveShadow
         >
           <boxGeometry args={[(YX1 - YX0 + 8) * pave, 0.3, YARD_Z1 - YARD_Z0]} />
-          <meshStandardMaterial color="#62666b" roughness={0.9} />
+          <meshStandardMaterial map={tex.asphalt} color="#e8e8e8" roughness={0.9} />
         </mesh>
       ) : null}
       {/* binari gru e segnaletica */}
