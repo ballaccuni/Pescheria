@@ -22,8 +22,8 @@ const INK = "#1d3f45";
 const HAND = "'Caveat', cursive";
 const SCRIPT = "'Dancing Script', cursive";
 
-type Pt = [number, number];
-type Arrow = { from: Pt; c1: Pt; c2: Pt; to: Pt };
+export type Pt = [number, number];
+export type Arrow = { from: Pt; c1: Pt; c2: Pt; to: Pt };
 
 type Phase = {
   kind: "phase";
@@ -93,14 +93,14 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /* ------------------------------ primitive -------------------------------- */
 
-const Write: React.FC<{
+export const Write: React.FC<{
   x: number;
   y: number;
   p: number;
   size: number;
   font?: string;
   weight?: number;
-  align?: "center" | "left";
+  align?: "center" | "left" | "right";
   children: React.ReactNode;
 }> = ({ x, y, p, size, font = HAND, weight = 600, align = "left", children }) => {
   if (p <= 0) return null;
@@ -110,7 +110,7 @@ const Write: React.FC<{
         position: "absolute",
         left: x,
         top: y,
-        transform: `translate(${align === "center" ? "-50%" : "0"}, -50%)`,
+        transform: `translate(${align === "center" ? "-50%" : align === "right" ? "-100%" : "0"}, -50%)`,
         whiteSpace: "pre",
         textAlign: align,
         fontFamily: font,
@@ -128,7 +128,7 @@ const Write: React.FC<{
   );
 };
 
-const DashedArrow: React.FC<{ id: string; a: Arrow; p: number; w?: number }> = ({ id, a, p, w = 4.2 }) => {
+export const DashedArrow: React.FC<{ id: string; a: Arrow; p: number; w?: number }> = ({ id, a, p, w = 4.2 }) => {
   if (p <= 0) return null;
   const { from, c1, c2, to } = a;
   const d = `M ${from[0]} ${from[1]} C ${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${to[0]} ${to[1]}`;
@@ -160,7 +160,7 @@ const DashedArrow: React.FC<{ id: string; a: Arrow; p: number; w?: number }> = (
   );
 };
 
-const Scribble: React.FC<{ x: number; y: number; rx: number; ry: number; p: number; seed: number }> = ({ x, y, rx, ry, p, seed }) => {
+export const Scribble: React.FC<{ x: number; y: number; rx: number; ry: number; p: number; seed: number }> = ({ x, y, rx, ry, p, seed }) => {
   if (p <= 0) return null;
   const pts: string[] = [];
   const N = 160;
