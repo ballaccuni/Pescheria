@@ -265,7 +265,7 @@ const Outro: React.FC<{ f: number }> = ({ f }) => {
 
 
 // carta millimetrata ricavata dalla foto "carta vuota" di Google Flow (resa ripetibile)
-const PAPER_TILE = 400; // unità mondo coperte da una ripetizione (≈ 40 quadretti da 10)
+const PAPER_TILE = 260; // unità mondo coperte da una ripetizione (≈ 40 quadretti da 10)
 
 export const Paper: React.FC = () => {
   const f = useCurrentFrame();

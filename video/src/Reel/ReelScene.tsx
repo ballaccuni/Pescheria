@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef } from "react";
 import * as THREE from "three";
-import { useThree } from "@react-three/fiber";
-import { spring, useCurrentFrame } from "remotion";
+import { useLoader, useThree } from "@react-three/fiber";
+import { spring, staticFile, useCurrentFrame } from "remotion";
 import { Diorama } from "./Diorama";
 import {
   CLOCK,
@@ -68,17 +68,18 @@ const Sun: React.FC = () => {
 
 /** Quadrante color crema con numeri romani, come l'orologio della foto di Flow. */
 let clockFace: THREE.CanvasTexture | null = null;
-const getClockFace = () => {
+const getClockFace = (paper: HTMLImageElement) => {
   if (clockFace) return clockFace;
   const S = 1024;
   const c = document.createElement("canvas");
   c.width = S;
   c.height = S;
   const g = c.getContext("2d")!;
-  const grd = g.createRadialGradient(S / 2, S / 2, S * 0.05, S / 2, S / 2, S / 2);
-  grd.addColorStop(0, "#f6efd9");
-  grd.addColorStop(0.85, "#efe3c3");
-  grd.addColorStop(1, "#d9c79f");
+  // carta invecchiata dal quadrante generato con Google Flow
+  g.drawImage(paper, 0, 0, S, S);
+  const grd = g.createRadialGradient(S / 2, S / 2, S * 0.3, S / 2, S / 2, S / 2);
+  grd.addColorStop(0, "rgba(120,90,40,0)");
+  grd.addColorStop(1, "rgba(120,90,40,0.22)");
   g.fillStyle = grd;
   g.fillRect(0, 0, S, S);
   g.translate(S / 2, S / 2);
@@ -149,6 +150,7 @@ const Tiles: React.FC = () => {
 /** Orologio da parete appoggiato sulla carta (come nel riferimento). */
 const Clock: React.FC = () => {
   const frame = useCurrentFrame();
+  const dial = useLoader(THREE.TextureLoader, staticFile("tex/dialpaper.jpg"));
   const appear = OUTRO_START + 4;
   if (frame < appear) return null;
   const cam = cameraAt(frame);
@@ -167,7 +169,7 @@ const Clock: React.FC = () => {
       </mesh>
       <mesh position={[0, 5.42, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[R - 3, 96]} />
-        <meshStandardMaterial map={getClockFace()} roughness={0.85} />
+        <meshStandardMaterial map={getClockFace(dial.image as HTMLImageElement)} roughness={0.85} />
       </mesh>
       <mesh position={[0, 5.3, 0]}>
         <torusGeometry args={[R - 3, 0.5, 8, 64]} />
