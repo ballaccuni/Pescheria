@@ -4,6 +4,8 @@ import { Logo } from "./HelloWorld/Logo";
 import { Title } from "./HelloWorld/Title";
 import { PortVideo } from "./Port/PortVideo";
 import { DURATION, FPS } from "./Port/timeline";
+import { PortoReel } from "./Reel/PortoReel";
+import { R_DURATION, R_FPS, R_H, R_W } from "./Reel/reel";
 
 // Each <Composition> is an entry in the sidebar!
 
@@ -17,6 +19,14 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={1920}
         height={1080}
+      />
+      <Composition
+        id="PortoReel"
+        component={PortoReel}
+        durationInFrames={R_DURATION}
+        fps={R_FPS}
+        width={R_W}
+        height={R_H}
       />
       <Folder name="Elements">
         <Composition

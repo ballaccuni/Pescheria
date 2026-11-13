@@ -22,7 +22,7 @@ const CORE: [number, number] = [T.breakwater[0] + 10, T.breakwater[0] + 290];
 const ARMOR: [number, number] = [T.breakwater[0] + 150, T.breakwater[1] - 10];
 const CROWN: [number, number] = [T.breakwater[0] + 300, T.breakwater[1] + 30];
 
-const trapezoid = (bottomW: number, topW: number, y0: number, y1: number, len: number) => {
+export const trapezoid = (bottomW: number, topW: number, y0: number, y1: number, len: number) => {
   const s = new THREE.Shape();
   s.moveTo(-bottomW / 2, y0);
   s.lineTo(bottomW / 2, y0);
@@ -35,7 +35,7 @@ const trapezoid = (bottomW: number, topW: number, y0: number, y1: number, len: n
   return g;
 };
 
-const tetrapodGeometry = () => {
+export const tetrapodGeometry = () => {
   const legs: THREE.BufferGeometry[] = [];
   const dirs = [
     new THREE.Vector3(0, 1, 0),
