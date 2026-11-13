@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef } from "react";
-import { AbsoluteFill, Easing, Img, interpolate, spring, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, Easing, Img, interpolate, spring, staticFile, useCurrentFrame } from "remotion";
 import { Arrow, DashedArrow, Scribble, Write } from "../Flow/FlowReel";
 import { IH, IW, NOTES, Px, blendStage, useStageData } from "./PortoFoto";
 
@@ -380,6 +380,8 @@ export const PortoDiscesa: React.FC = () => {
   const tile = `url(${staticFile("stages/paper_tile.jpg")})`;
   return (
     <AbsoluteFill style={{ backgroundColor: "#b6dcd8", overflow: "hidden" }}>
+      {/* voce narrante (Kokoro, voce "Sara") ed effetti sonori sincronizzati */}
+      <Audio src={staticFile("audio/porto_mix.wav")} />
       <Img src={staticFile("stages/paper_tile.jpg")} style={{ position: "absolute", width: 1, height: 1, opacity: 0 }} />
       <div
         style={{
