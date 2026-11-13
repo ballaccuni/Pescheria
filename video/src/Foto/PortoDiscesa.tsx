@@ -26,7 +26,7 @@ const STEP = 880;
 const Y0 = 820;
 const blockX = (k: number) => (k % 2 === 0 ? 370 : 710);
 const blockY = (k: number) => Y0 + k * STEP;
-const noteX = (k: number) => (k % 2 === 0 ? 862 : 214);
+const noteX = (k: number) => (k % 2 === 0 ? 845 : 235);
 
 const INTRO = 170;
 const PH = 240;
@@ -90,7 +90,7 @@ const StageBlock: React.FC<{ k: number; f: number; data: { s: Px[]; t: Px[] } }>
         height: BH,
         overflow: "hidden",
         opacity: Math.min(1, sc * 1.4),
-        transform: `scale(${0.86 + 0.14 * sc})`,
+        transform: `scale(${0.8 + 0.2 * sc}) rotate(${(1 - sc) * -9}deg)`,
         ...maskStyle,
       }}
     >
@@ -134,7 +134,7 @@ const ClockBlock: React.FC<{ f: number }> = ({ f }) => {
         height: CLOCK_HALF * 2,
         overflow: "hidden",
         opacity: Math.min(1, sc * 1.4),
-        transform: `scale(${0.86 + 0.14 * sc})`,
+        transform: `scale(${0.8 + 0.2 * sc}) rotate(${(1 - sc) * -9}deg)`,
         ...maskStyle,
       }}
     >
@@ -174,105 +174,150 @@ const ClockBlock: React.FC<{ f: number }> = ({ f }) => {
 };
 
 /* -------------------------------- appunti --------------------------------- */
+/*
+ * Come nel riferimento: il plastico, ingrandito, finisce tagliato in un angolo;
+ * accanto si disegna un cerchio a mano con dentro titolo e numero che scorre.
+ */
 
-/** Freccia dall'appunto del blocco k al blocco successivo (che sta dalla stessa parte dell'appunto). */
+const ZB = 1.15; // inquadratura mentre il plastico si costruisce
+const ZN = 1.45; // inquadratura ravvicinata con gli appunti
+const sideOf = (k: number) => (k % 2 === 0 ? 1 : -1); // +1: appunto a destra del plastico
+const buildView = (k: number): [number, number, number] => [540, blockY(k) + 10, ZB];
+const noteView = (k: number): [number, number, number] => [
+  sideOf(k) > 0 ? 650 : 430,
+  blockY(k) - 300 + D_H / 2 / ZN,
+  ZN,
+];
+
+/** Freccia dal cerchio del blocco k verso il blocco successivo (che sta dalla parte dell'appunto). */
 const nextArrow = (k: number): Arrow => {
   const nx = noteX(k);
   const by = blockY(k);
-  const side = nx > 540 ? 1 : -1;
-  const tx = blockX(k + 1) + side * 40;
-  const ty = blockY(k + 1) - (k + 1 === CLOCK_K ? CLOCK_HALF - 70 : 330);
+  const side = sideOf(k);
+  const tx = blockX(k + 1) + side * 30;
+  const ty = blockY(k + 1) - (k + 1 === CLOCK_K ? CLOCK_HALF - 60 : 335);
   return {
-    from: [nx, by + 150],
-    c1: [nx + side * 150, by + 330],
-    c2: [tx + side * 170, ty - 260],
+    from: [nx + side * 30, by + 70],
+    c1: [nx + side * 120, by + 300],
+    c2: [tx + side * 150, ty - 280],
     to: [tx, ty],
   };
 };
 
-const PhaseNote: React.FC<{ k: number; f: number }> = ({ k, f }) => {
-  const a = phaseStart(k);
-  const t = f - a;
-  if (t < 136) return null;
-  const n = NOTES[k - 1];
+/** Cerchio con titolo e valore, freccia dal plastico, riga di spiegazione. */
+const CircleNote: React.FC<{
+  k: number;
+  t: number;
+  t0: number;
+  title: string;
+  value: string;
+  line: string;
+  step?: string;
+  arrowFrom: [number, number];
+}> = ({ k, t, t0, title, value, line, step, arrowFrom }) => {
   const nx = noteX(k);
-  const bx = blockX(k);
   const by = blockY(k);
-  const side = nx > 540 ? 1 : -1; // da che parte sta l'appunto rispetto al plastico
-  const title = n.title.length > 10 ? n.title.replace(" ", "\n") : n.title;
-  const lines = title.split("\n").length;
-  const vp = p01(t, 186, 222);
-  const toNote: Arrow = {
-    from: [bx + side * 280, by + 40],
-    c1: [bx + side * 340, by + 150],
-    c2: [nx - side * 210, by + 150],
-    to: [nx - side * 158, by + 96],
+  const side = sideOf(k);
+  const cy = by - 140;
+  const big = title.length > 11;
+  const toCircle: Arrow = {
+    from: arrowFrom,
+    c1: [arrowFrom[0] + side * 60, arrowFrom[1] - 30],
+    c2: [nx - side * 200, cy + 120],
+    to: [nx - side * 128, cy + 62],
   };
   return (
     <>
-      <DashedArrow id={`pn${k}`} a={toNote} p={p01(t, 140, 166)} />
-      <Write x={nx} y={by - 236 - (lines - 1) * 46} p={p01(t, 150, 158)} size={40} weight={500} align="center">
-        {`fase ${k} di 7`}
-      </Write>
-      <Write x={nx} y={by - 150 - (lines - 1) * 22} p={p01(t, 154, 184)} size={lines > 1 ? 66 : 74} font={SCRIPT} weight={700} align="center">
+      <Scribble x={nx} y={cy} rx={168} ry={92} p={p01(t, t0, t0 + 26)} seed={k * 1.9} />
+      <DashedArrow id={`cn${k}`} a={toCircle} p={p01(t, t0 + 10, t0 + 34)} w={3.4} />
+      <Write x={nx} y={cy - 34} p={p01(t, t0 + 18, t0 + 44)} size={big ? 46 : 54} font={SCRIPT} weight={700} align="center">
         {title}
       </Write>
-      <Write x={nx} y={by + 6} p={p01(t, 178, 194)} size={42} align="center">
-        {n.line}
+      <Write x={nx} y={cy + 34} p={p01(t, t0 + 34, t0 + 42)} size={54} weight={700} align="center">
+        {value}
       </Write>
-      <Write x={nx} y={by + 92} p={p01(t, 186, 194)} size={62} weight={700} align="center">
-        {n.fmt(lerp(0, n.value, vp))}
+      {step ? (
+        <Write x={nx} y={by + 0} p={p01(t, t0 + 46, t0 + 56)} size={30} weight={500} align="center">
+          {step}
+        </Write>
+      ) : null}
+      <Write x={nx} y={by + 40} p={p01(t, t0 + 52, t0 + 68)} size={36} align="center">
+        {line}
       </Write>
-      <Scribble x={nx} y={by + 95} rx={150} ry={56} p={p01(t, 200, 226)} seed={k * 1.9} />
-      <DashedArrow id={`nn${k}`} a={nextArrow(k)} p={p01(t, 208, 240)} />
     </>
   );
 };
 
-const IntroNote: React.FC<{ f: number }> = ({ f }) => {
-  const nx = noteX(0);
-  const by = blockY(0);
+// frasi sotto il cerchio (il numero ora sta dentro il cerchio)
+const LINES = [
+  "profondità del fondale",
+  "per proteggere il bacino",
+  "blocchi della mantellata",
+  "in cemento armato",
+  "di fronte d'accosto",
+  "portata di ogni gru",
+  "di capacità all'anno",
+];
+
+const PhaseNote: React.FC<{ k: number; f: number }> = ({ k, f }) => {
+  const a = phaseStart(k);
+  const t = f - a;
+  if (t < 140) return null;
+  const n = NOTES[k - 1];
+  const vp = p01(t, 176, 214);
   return (
     <>
-      <Write x={540} y={150} p={p01(f, 10, 40)} size={80} align="center">
-        Come si costruisce
-      </Write>
-      <Write x={540} y={300} p={p01(f, 34, 76)} size={170} font={SCRIPT} weight={700} align="center">
-        un Porto
-      </Write>
-      <Write x={nx} y={by - 70} p={p01(f, 80, 104)} size={50} align="center">
-        {"dal mare\nal primo\nattracco"}
-      </Write>
-      <Write x={nx} y={by + 90} p={p01(f, 104, 118)} size={62} weight={700} align="center">
-        7 fasi
-      </Write>
-      <Scribble x={nx} y={by + 93} rx={120} ry={50} p={p01(f, 112, 134)} seed={2} />
-      <DashedArrow id="in" a={nextArrow(0)} p={p01(f, 136, 170)} />
+      <CircleNote
+        k={k}
+        t={t}
+        t0={146}
+        title={n.title}
+        value={n.fmt(lerp(0, n.value, vp))}
+        line={LINES[k - 1]}
+        step={`fase ${k} di 7`}
+        arrowFrom={[blockX(k) + sideOf(k) * 282, blockY(k) - 40]}
+      />
+      <DashedArrow id={`nn${k}`} a={nextArrow(k)} p={p01(t, 206, 238)} />
     </>
   );
 };
+
+const IntroNote: React.FC<{ f: number }> = ({ f }) => (
+  <>
+    <Write x={540} y={150} p={p01(f, 8, 34)} size={80} align="center">
+      Come si costruisce
+    </Write>
+    <Write x={540} y={300} p={p01(f, 28, 64)} size={170} font={SCRIPT} weight={700} align="center">
+      un Porto
+    </Write>
+    {f >= 92 ? (
+      <CircleNote k={0} t={f} t0={96} title="7 fasi" value="36 mesi" line={"dal mare\nal primo attracco"} arrowFrom={[blockX(0) + 282, blockY(0) - 40]} />
+    ) : null}
+    <DashedArrow id="in" a={nextArrow(0)} p={p01(f, 140, 170)} />
+  </>
+);
 
 const ClockNote: React.FC<{ f: number }> = ({ f }) => {
   const t = f - C;
-  if (t < 30) return null;
+  if (t < 40) return null;
   const nx = noteX(CLOCK_K);
   const by = blockY(CLOCK_K);
   const months = Math.max(1, Math.round(36 * p01(t, 20, 210)));
   return (
     <>
-      <Write x={nx} y={by - 230} p={p01(t, 36, 76)} size={60} align="center">
+      <Write x={nx} y={by - 250} p={p01(t, 50, 84)} size={50} align="center">
         {"Non è solo\ncemento…"}
       </Write>
+      <Scribble x={nx} y={by - 40} rx={150} ry={64} p={p01(t, 86, 112)} seed={6} />
       <DashedArrow
         id="cn"
-        a={{ from: [blockX(CLOCK_K) + 250, by - 20], c1: [blockX(CLOCK_K) + 320, by + 10], c2: [nx - 200, by + 40], to: [nx - 150, by + 10] }}
-        p={p01(t, 80, 106)}
+        a={{ from: [blockX(CLOCK_K) + 250, by + 40], c1: [blockX(CLOCK_K) + 300, by + 20], c2: [nx - 190, by + 40], to: [nx - 128, by - 4] }}
+        p={p01(t, 96, 120)}
       />
-      <Write x={nx} y={by + 6} p={p01(t, 100, 110)} size={70} weight={700} align="center">
+      <Write x={nx} y={by - 38} p={p01(t, 104, 114)} size={60} weight={700} align="center">
         {`${months} mesi`}
       </Write>
-      <Scribble x={nx} y={by + 9} rx={150} ry={58} p={p01(t, 118, 146)} seed={6} />
-      <Write x={nx} y={by + 230} p={p01(t, 150, 210)} size={64} font={SCRIPT} weight={700} align="center">
+      <Write x={nx} y={by + 170} p={p01(t, 140, 205)} size={54} font={SCRIPT} weight={700} align="center">
         {"…è tutta una\nquestione\ndi tempo"}
       </Write>
     </>
@@ -281,38 +326,40 @@ const ClockNote: React.FC<{ f: number }> = ({ f }) => {
 
 /* --------------------------------- camera --------------------------------- */
 
-const REST = (k: number) => blockY(k) + 20;
 const STRIP_H = blockY(CLOCK_K) + CLOCK_HALF + 160;
 const FIT = D_H / (STRIP_H + 120);
 
-type Key = [number, number, number]; // frame, centro y, zoom
+type Key = [number, number, number, number]; // frame, centro x, centro y, zoom
 const KEYS: Key[] = (() => {
   const k: Key[] = [
-    [0, 700, 1.04],
-    [INTRO - 4, 700, 1],
+    [0, 540, 640, 0.98],
+    [70, 540, 640, 1.0],
+    [96, ...noteView(0)],
   ];
   for (let i = 1; i <= N; i++) {
     const a = phaseStart(i);
-    k.push([a, REST(i - 1) + (i === 1 ? -120 : 0), 1]);
-    k.push([a + 44, REST(i), 1]);
-    k.push([a + 130, REST(i), 1.025]);
-    k.push([a + 200, REST(i), 1]);
+    k.push([a, ...noteView(i - 1)]);
+    k.push([a + 24, ...buildView(i)]);
+    k.push([a + 124, buildView(i)[0], buildView(i)[1], ZB * 1.03]);
+    k.push([a + 146, ...noteView(i)]);
   }
-  k.push([C, REST(N), 1]);
-  k.push([C + 44, REST(CLOCK_K), 1]);
-  k.push([C + 225, REST(CLOCK_K), 1.03]);
-  k.push([C + 335, STRIP_H / 2, FIT]);
-  k.push([D_DURATION, STRIP_H / 2, FIT * 0.98]);
+  k.push([C, ...noteView(N)]);
+  k.push([C + 26, ...buildView(CLOCK_K)]);
+  k.push([C + 40, ...buildView(CLOCK_K)]);
+  k.push([C + 62, ...noteView(CLOCK_K)]);
+  k.push([C + 236, ...noteView(CLOCK_K)]);
+  k.push([C + 336, 540, STRIP_H / 2, FIT]);
+  k.push([D_DURATION, 540, STRIP_H / 2, FIT * 0.98]);
   return k;
 })();
 
 const cameraAt = (f: number) => {
   let i = 0;
   while (i < KEYS.length - 2 && f > KEYS[i + 1][0]) i++;
-  const [f0, y0, z0] = KEYS[i];
-  const [f1, y1, z1] = KEYS[i + 1];
+  const [f0, x0, y0, z0] = KEYS[i];
+  const [f1, x1, y1, z1] = KEYS[i + 1];
   const t = io(Math.min(1, Math.max(0, (f - f0) / Math.max(1, f1 - f0))));
-  return { y: lerp(y0, y1, t), z: Math.exp(lerp(Math.log(z0), Math.log(z1), t)) };
+  return { x: lerp(x0, x1, t), y: lerp(y0, y1, t), z: Math.exp(lerp(Math.log(z0), Math.log(z1), t)) };
 };
 
 /* -------------------------------- composizione ----------------------------- */
@@ -342,7 +389,7 @@ export const PortoDiscesa: React.FC = () => {
           width: D_W,
           height: STRIP_H,
           transformOrigin: "0 0",
-          transform: `translate(${D_W / 2 - (D_W / 2) * cam.z}px, ${D_H / 2 - cam.y * cam.z}px) scale(${cam.z})`,
+          transform: `translate(${D_W / 2 - cam.x * cam.z}px, ${D_H / 2 - cam.y * cam.z}px) scale(${cam.z})`,
         }}
       >
         {/* carta continua ricavata dalle foto */}
