@@ -6,10 +6,10 @@ import { Audio, Sequence, interpolate, staticFile } from "remotion";
 const MASTER = 1.5; // volume generale
 const CUES: { from: number; file: string; volume: number }[] = [
   { from: 7, file: "splash-fish", volume: 0.5 }, // il pesce salta fuori dall'acqua
+  { from: 45, file: "shimmer", volume: 0.35 }, // PESCHERIA
   { from: 58, file: "pop", volume: 0.6 }, // Sapore di Mare
   { from: 62, file: "bubbles", volume: 0.3 }, // bollicine
   { from: 78, file: "note-a5", volume: 0.4 }, // Raffadali
-  { from: 135, file: "whoosh-soft", volume: 0.4 }, // il logo sale
   { from: 168, file: "note-d5", volume: 0.4 }, // Da tre generazioni
   { from: 180, file: "note-fs5", volume: 0.4 }, // per voi solo il pesce migliore
   { from: 205, file: "swipe", volume: 0.3 }, // linea divisoria
@@ -17,7 +17,6 @@ const CUES: { from: number; file: string; volume: number }[] = [
   { from: 235, file: "note-d5", volume: 0.35 }, // Lunedì
   { from: 247, file: "note-fs5", volume: 0.35 }, // Martedì – Venerdì
   { from: 259, file: "note-a5", volume: 0.35 }, // Sabato
-  { from: 395, file: "whoosh-out", volume: 0.4 }, // orari escono
   { from: 410, file: "note-b5", volume: 0.35 }, // Visita il nostro sito
   { from: 418, file: "pop", volume: 0.5 }, // pulsante del sito
   { from: 436, file: "swipe", volume: 0.12 }, // il cursore si muove

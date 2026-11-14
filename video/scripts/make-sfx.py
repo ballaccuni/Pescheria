@@ -205,8 +205,6 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save("ocean", ocean(19.5), peak=0.5)
     save("splash-fish", splash(), peak=0.8)
-    save("whoosh-soft", whoosh(1.0, 400, 1800), peak=0.7)
-    save("whoosh-out", whoosh(0.8, 2000, 500, reverse=True), peak=0.7)
     save("swipe", whoosh(0.5, 1500, 4500), peak=0.6)
     save("bubbles", bubbles_cluster(), peak=0.8)
     save("shimmer", chime([A5, D6, E5 * 2], dur=1.8, spread=0.05), peak=0.7)
