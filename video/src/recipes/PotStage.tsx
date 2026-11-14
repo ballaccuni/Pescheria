@@ -11,6 +11,35 @@ import { STAGE, clamp, mulberry32, type Pt } from "./utils";
 const POT = { cx: STAGE.cx, cy: STAGE.cy, R: 290, inner: 262 };
 const STEEL = "#B8C7CF";
 
+// cubetti di patate ben distanziati: nessuno sopra l'altro
+const CUBES = (() => {
+  const rnd = mulberry32(19);
+  const out: { r: number; th: number; rot: number; phase: number; x: number; y: number }[] = [];
+  const maxR = POT.inner - 52;
+  for (let i = 0; i < 14; i++) {
+    let best = { r: 0, th: 0, x: 0, y: 0 };
+    let bestD = -1;
+    for (let a = 0; a < 400; a++) {
+      const r = Math.sqrt(rnd()) * maxR;
+      const th = rnd() * Math.PI * 2;
+      const x = Math.cos(th) * r;
+      const y = Math.sin(th) * r;
+      let d = Infinity;
+      for (const o of out) d = Math.min(d, Math.hypot(o.x - x, o.y - y));
+      if (d >= 72) {
+        best = { r, th, x, y };
+        break;
+      }
+      if (d > bestD) {
+        bestD = d;
+        best = { r, th, x, y };
+      }
+    }
+    out.push({ ...best, rot: rnd() * 40 - 20, phase: rnd() * Math.PI * 2 });
+  }
+  return out;
+})();
+
 const Pot: React.FC = () => (
   <g>
     {/* manici */}
@@ -78,18 +107,14 @@ export const PotStage: React.FC<{
 
   const cubes: React.ReactNode[] = [];
   if (potatoAt !== null) {
-    const pr = mulberry32(19);
-    for (let i = 0; i < 16; i++) {
-      const r = Math.sqrt(pr()) * (POT.inner - 50);
-      const th = pr() * Math.PI * 2;
-      const rot = pr() * 90;
-      const phase = pr() * Math.PI * 2;
+    for (let i = 0; i < CUBES.length; i++) {
+      const { r, th, rot, phase } = CUBES[i];
       const s = potatoAt + i * 2.5;
       if (frame < s) continue;
       const fall = spring({ frame: frame - s, fps, config: { damping: 11, mass: 0.6 } });
       // cubetti che ballano nell'acqua che bolle
-      const bobX = Math.sin(frame * 0.18 + phase) * 6 * boil;
-      const bobY = Math.cos(frame * 0.22 + phase) * 5 * boil;
+      const bobX = Math.sin(frame * 0.18 + phase) * 3 * boil;
+      const bobY = Math.cos(frame * 0.22 + phase) * 3 * boil;
       const x = Math.cos(th) * r + bobX;
       const y = Math.sin(th) * r + bobY - (1 - fall) * 460;
       const splash = frame - s - 8;
@@ -107,7 +132,7 @@ export const PotStage: React.FC<{
             />
           )}
           <g
-            transform={`translate(${x} ${y}) rotate(${rot + frame * 0.6 * boil}) scale(${1.25 + (1 - fall) * 0.4})`}
+            transform={`translate(${x} ${y}) rotate(${rot + Math.sin(frame * 0.05 + phase) * 12 * boil}) scale(${1.25 + (1 - fall) * 0.4})`}
             opacity={interpolate(frame - s, [0, 5], [0, 1], clamp)}
           >
             <PotatoCube cooked={interpolate(frame, [s + 20, s + 90], [0, 1], clamp)} />

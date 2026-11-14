@@ -16,7 +16,7 @@ import { fontFamily } from "../font";
 import { Chef, type ChefMood, type HandPose } from "./Chef";
 import { BLEND, MixerStage } from "./MixerStage";
 import { GROUPS, MUSSELS_KEPT, PanStage, musselOpenAt, panHandleEnd } from "./PanStage";
-import { PlateStage } from "./PlateStage";
+import { PlateStage, ZEST } from "./PlateStage";
 import { PotStage } from "./PotStage";
 import { TrayStage } from "./TrayStage";
 import {
@@ -495,6 +495,7 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         add(a.at + 10, "bubbles", 0.4);
       } else if (a.kind === "blend") {
         for (let i = 0; i < 22; i += 5) add(a.at + BLEND.dropFrom + i * 1.6 + 8, "plop", 0.3);
+        add(a.at + BLEND.waterFrom + 4, "pour", 0.6);
         add(a.at + BLEND.lidAt + 6, "plop", 0.45);
         add(a.at + BLEND.start, "blender", 0.22);
       } else if (a.kind === "drizzle") {
@@ -529,6 +530,7 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       add(s.start + 62, "plop", 0.3);
       add(s.start + 72, "plop", 0.3);
       add(s.start + 92, "sprinkle", 0.5);
+      if (recipe.dish === "cozze") add(s.start + ZEST.from + 12, "grate", 0.5);
       add(s.start + 106, "note-d5", 0.3);
       add(s.start + 110, "note-fs5", 0.3);
       add(s.start + 114, "note-a5", 0.3);

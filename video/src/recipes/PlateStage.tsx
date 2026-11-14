@@ -8,6 +8,7 @@ import {
   LinguineNest,
   Mussel,
   Pacchero,
+  ZestGrater,
   ParsleyFleck,
   ParsleySprig,
   Shrimp,
@@ -68,6 +69,8 @@ const MUSSEL_SPOTS = [0, 1, 2, 3].map((i) => {
   return { x: Math.cos(a) * 128, y: Math.sin(a) * 128, rot: (a * 180) / Math.PI + 90 };
 });
 const ZEST_SPOTS = scatter(34, 150, 12, 28);
+/** grattugia sul piatto: inizio (dall'arrivo del piatto) e durata */
+export const ZEST = { from: 110, dur: 66 };
 
 const Plate: React.FC = () => (
   <g>
@@ -169,6 +172,43 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
     );
   };
 
+  // grattugia con il limone che passa sopra il piatto, la scorza cade sulla pasta
+  const renderGrater = () => {
+    const l = local - ZEST.from;
+    const enter = spring({ frame: l, fps, config: { damping: 14 } });
+    const leave = interpolate(l, [ZEST.dur - 14, ZEST.dur], [0, 1], { ...clamp });
+    const rub = interpolate(l, [10, ZEST.dur - 18], [0, 1], clamp);
+    const lemonX = -70 + Math.sin(rub * Math.PI * 6) * 62;
+    const gx = 20;
+    const gy = -250 - (1 - enter) * 500 - leave * 600;
+    return (
+      <>
+        {ZEST_SPOTS.map((p, i) => {
+          const d0 = 12 + (i / ZEST_SPOTS.length) * (ZEST.dur - 34);
+          const t = l - d0;
+          if (t < 0) return null;
+          const fall = interpolate(t, [0, 12], [0, 1], { ...clamp });
+          const sx = gx - 120 + ((i * 37) % 150);
+          const x = sx + (p.x - sx) * fall;
+          const y = gy + 16 + (p.y - gy - 16) * fall * fall;
+          const len = 12 + ((i * 7) % 9);
+          const d = `M ${-len / 2} 0 Q 0 ${(i % 3) * 3 - 3} ${len / 2} 0`;
+          return (
+            <g key={`ze${i}`} transform={`translate(${x} ${y}) rotate(${p.rot + (1 - fall) * 160})`}>
+              <path d={d} stroke="#B98A0E" strokeWidth={8} strokeLinecap="round" fill="none" />
+              <path d={d} stroke={i % 3 ? "#FFD23F" : "#FFE680"} strokeWidth={4.5} strokeLinecap="round" fill="none" />
+            </g>
+          );
+        })}
+        {leave < 1 && (
+          <g transform={`translate(${gx} ${gy}) rotate(-8)`} opacity={1 - leave}>
+            <ZestGrater lemonX={lemonX} />
+          </g>
+        )}
+      </>
+    );
+  };
+
   // pasta con crema di patate e cozze
   const cozze = () => {
     const pool = interpolate(local, [30, 52], [0, 168], clamp);
@@ -213,17 +253,8 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
             <ParsleyFleck />
           </Drop>
         ))}
-        {/* scorza di limone grattugiata */}
-        {ZEST_SPOTS.map((p, i) => {
-          const len = 12 + ((i * 7) % 9);
-          const d = `M ${-len / 2} 0 Q 0 ${(i % 3) * 3 - 3} ${len / 2} 0`;
-          return (
-            <Drop key={`ze${i}`} local={local} start={108 + (i % 9) * 1.5} fps={fps} x={p.x} y={p.y} rot={p.rot} from={{ x: 0, y: -240 }}>
-              <path d={d} stroke="#B98A0E" strokeWidth={8} strokeLinecap="round" fill="none" />
-              <path d={d} stroke={i % 3 ? "#FFD23F" : "#FFE680"} strokeWidth={4.5} strokeLinecap="round" fill="none" />
-            </Drop>
-          );
-        })}
+        {/* scorza di limone grattugiata sul piatto */}
+        {local >= ZEST.from && renderGrater()}
       </>
     );
   };

@@ -43,10 +43,10 @@ export const pastaCozzePatate: Recipe = {
     },
     {
       title: "Nel mixer",
-      text: "Frulla le patate con le cozze sgusciate e un po' della loro acqua filtrata",
+      text: "Frulla patate e cozze sgusciate con un po' della loro acqua filtrata",
       stage: "mixer",
       add: ["blend"],
-      duration: 140,
+      duration: 172,
     },
     {
       title: "La pasta",
@@ -58,9 +58,9 @@ export const pastaCozzePatate: Recipe = {
     },
     {
       title: "Impiattamento",
-      text: "Servi con le cozze intere, prezzemolo e scorza di limone",
+      text: "Servi con le cozze intere e il prezzemolo, poi grattugia la scorza di limone",
       plate: true,
-      duration: 150,
+      duration: 190,
     },
   ],
   outro: "Le cozze fresche le trovi da noi",

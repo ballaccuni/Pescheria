@@ -12,7 +12,8 @@ const CREAM_LIGHT = "#F6E7C3";
 const JAR = "M -150 -262 L 150 -262 L 112 150 L -112 150 Z";
 const JAR_INNER = "M -140 -254 L 140 -254 L 104 142 L -104 142 Z";
 // tempi del frullatore (fotogrammi da quando inizia il passo)
-export const BLEND = { dropFrom: 6, lidAt: 46, start: 60, end: 120 };
+export const BLEND = { dropFrom: 6, waterFrom: 44, waterTo: 72, lidAt: 80, start: 94, end: 152 };
+const WATER = "#AFCBD6";
 
 export const MixerStage: React.FC<{
   tl: Timeline;
@@ -54,6 +55,20 @@ export const MixerStage: React.FC<{
       </g>,
     );
   }
+
+  // acqua delle cozze versata dalla brocca
+  const jugIn = spring({ frame: local - BLEND.waterFrom + 10, fps, config: { damping: 14 } });
+  const jugOut = interpolate(local, [BLEND.waterTo + 2, BLEND.waterTo + 16], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+  const tilt = interpolate(local, [BLEND.waterFrom - 4, BLEND.waterFrom + 6, BLEND.waterTo - 4, BLEND.waterTo + 4], [0, -62, -62, 0], clamp);
+  const pouring = local >= BLEND.waterFrom + 4 && local < BLEND.waterTo;
+  const waterLevel = 142 - interpolate(local, [BLEND.waterFrom + 6, BLEND.waterTo], [0, 92], clamp);
+  const jug = { x: 196 + (1 - jugIn) * 500 + jugOut * 500, y: -360 };
+  // becco della brocca (-62,-76) ruotato con la brocca
+  const ta = (tilt * Math.PI) / 180;
+  const spout = {
+    x: jug.x + -62 * Math.cos(ta) - -76 * Math.sin(ta),
+    y: jug.y + -62 * Math.sin(ta) + -76 * Math.cos(ta),
+  };
 
   const lid = local < BLEND.lidAt ? null : spring({ frame: local - BLEND.lidAt, fps, config: { damping: 13 } });
   const bladeAngle = running ? local * 47 : 0;
@@ -104,12 +119,31 @@ export const MixerStage: React.FC<{
           </g>
         )}
         {items}
+        {/* acqua delle cozze (sparisce nella crema quando si frulla) */}
+        {local >= BLEND.waterFrom + 6 && b < 1 && (
+          <path
+            d={`M -160 ${waterLevel} Q -80 ${waterLevel - 6 * Math.sin(local * 0.6)} 0 ${waterLevel} T 160 ${waterLevel} L 160 160 L -160 160 Z`}
+            fill={WATER}
+            opacity={0.7 * (1 - b)}
+          />
+        )}
+
         {/* lame */}
         <g transform="translate(0 128)">
           <ellipse rx={58} ry={9} fill="#9FB1BB" stroke={COLORS.slate} strokeWidth={3} transform={`scale(${Math.cos((bladeAngle * Math.PI) / 180)} 1)`} />
           <rect x={-8} y={-4} width={16} height={20} rx={4} fill={COLORS.slate} />
         </g>
       </g>
+      {/* getto d'acqua dalla brocca */}
+      {pouring && (
+        <path
+          d={`M ${spout.x} ${spout.y} Q ${spout.x - 8} ${(spout.y + waterLevel) / 2} ${spout.x - 14} ${waterLevel}`}
+          stroke={WATER}
+          strokeWidth={13}
+          strokeLinecap="round"
+          fill="none"
+        />
+      )}
       {/* riflessi e tacche del vetro */}
       <path d="M -118 -230 L -92 110" stroke="#FFFFFF" strokeWidth={12} opacity={0.4} strokeLinecap="round" />
       {[-180, -120, -60, 0, 60].map((y, i) => (
@@ -118,6 +152,22 @@ export const MixerStage: React.FC<{
       <path d={JAR} fill="none" stroke={COLORS.slate} strokeWidth={5} strokeLinejoin="round" />
       {/* manico del bicchiere */}
       <path d="M 140 -190 L 196 -176 Q 210 -172 206 -156 L 176 40 Q 172 56 156 54 L 124 50" fill="none" stroke={COLORS.slate} strokeWidth={20} strokeLinejoin="round" strokeLinecap="round" />
+
+      {/* brocca */}
+      {local >= BLEND.waterFrom - 10 && jugOut < 1 && (
+        <g transform={`translate(${jug.x} ${jug.y}) rotate(${tilt})`}>
+          <path d="M 40 -40 Q 78 -36 76 0 Q 74 30 40 34" fill="none" stroke={COLORS.slate} strokeWidth={12} strokeLinecap="round" />
+          <path
+            d="M -46 -64 L -62 -76 L 40 -64 L 34 54 Q 33 66 20 66 L -24 66 Q -37 66 -38 54 Z"
+            fill="rgba(214,236,246,0.75)"
+            stroke={COLORS.slate}
+            strokeWidth={5}
+            strokeLinejoin="round"
+          />
+          <path d="M -36 -6 L 36 -6 L 33 54 Q 32 62 20 62 L -23 62 Q -34 62 -35 54 Z" fill={WATER} opacity={0.85} />
+          <path d="M -28 -50 L -24 40" stroke="#FFFFFF" strokeWidth={7} opacity={0.5} strokeLinecap="round" />
+        </g>
+      )}
 
       {/* coperchio */}
       {lid !== null && (
