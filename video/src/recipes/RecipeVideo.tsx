@@ -97,7 +97,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const waveX = thumbsUp ? 0 : waveAmt * Math.sin((frame - tl.outro) * 0.35) * 26;
 
   // mano sinistra: sulla pancia; in padella lancia gli ingredienti; nel finale saluta
-  const restL = { x: -70, y: 236 };
+  const restL = { x: -62, y: 236 };
   const upL = { x: -150, y: -70 };
   const leftBase = lerpPt(restL, upL, Math.max(isPan ? gesture : 0, waveAmt));
   const leftHand = { x: leftBase.x + waveX, y: leftBase.y };
@@ -117,7 +117,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     rightPose = frame < plateAt + 5 ? "grip" : "open";
     rightAnchored = frame < plateAt + 8;
   } else {
-    const restR = { x: 70, y: 236 };
+    const restR = { x: 62, y: 236 };
     const throwUp = { x: 188, y: -176 };
     // mentre il forno lavora aspetta con le mani sulla pancia
     const waiting = oven
