@@ -16,6 +16,9 @@ const LINE = 4;
 
 type Pt = { x: number; y: number };
 
+const TORSO =
+  "M -112 34 C -162 44 -190 120 -188 206 C -186 270 -164 316 -126 334 Q 0 352 126 334 C 164 316 186 270 188 206 C 190 120 162 44 112 34 Z";
+
 const sub = (a: Pt, b: Pt) => ({ x: a.x - b.x, y: a.y - b.y });
 const len = (a: Pt) => Math.hypot(a.x, a.y) || 1;
 
@@ -145,52 +148,89 @@ export const Chef: React.FC<{
   thumbsUp?: boolean;
   /** inclinazione della testa in gradi */
   tilt?: number;
-}> = ({ rightHand, leftHand, blink, happy, wow, thumbsUp, tilt = 0 }) => {
+  /** respiro: sposta solo busto, testa e braccia (i piedi restano a terra) */
+  bob?: number;
+}> = ({ rightHand, leftHand, blink, happy, wow, thumbsUp, tilt = 0, bob = 0 }) => {
   const look = { x: 3, y: -2 };
   const browLift = wow * 7;
   return (
     <g>
       <defs>
         <clipPath id="chefTorso">
-          <path d="M -122 36 C -168 46 -188 96 -192 170 L -200 640 L 200 640 L 192 170 C 188 96 168 46 122 36 Z" />
+          <path d={TORSO} />
         </clipPath>
         <filter id="chefWhite">
           <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.9 0" />
         </filter>
+        <pattern id="chefCheck" width={16} height={16} patternUnits="userSpaceOnUse">
+          <rect width={16} height={16} fill={COLORS.slate} />
+          <rect width={8} height={8} fill="#4A6575" />
+          <rect x={8} y={8} width={8} height={8} fill="#4A6575" />
+        </pattern>
       </defs>
 
-      {/* giacca */}
-      <path
-        d="M -122 36 C -168 46 -188 96 -192 170 L -200 640 L 200 640 L 192 170 C 188 96 168 46 122 36 Z"
-        fill={WHITE}
-        stroke={OUTLINE}
-        strokeWidth={LINE + 1}
-      />
-      <g clipPath="url(#chefTorso)">
-        <rect x={110} y={0} width={120} height={700} fill={CLOTH_SHADE} />
-        {/* lembo del doppio petto */}
-        <path d="M -40 40 C 10 60 60 70 72 120 L 72 330" stroke={OUTLINE} strokeWidth={3.5} fill="none" />
-        {/* grembiule */}
-        <path d="M -200 330 L 200 330 L 200 640 L -200 640 Z" fill={COLORS.blue} />
-        <path d="M -200 330 L 200 330" stroke={OUTLINE} strokeWidth={LINE} />
-        <rect x={-200} y={322} width={400} height={16} fill={COLORS.deepBlue} />
-        <path d="M -150 380 L -150 640 M 150 380 L 150 640" stroke="rgba(255,255,255,0.18)" strokeWidth={4} />
-        <image
-          href={staticFile("logo/fish.png")}
-          x={-62}
-          y={410}
-          width={124}
-          height={52}
-          filter="url(#chefWhite)"
-        />
-      </g>
-      {/* bottoni */}
-      {[110, 175, 240, 300].map((y) => (
-        <g key={y}>
-          <circle cx={-14} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
-          <circle cx={100} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
+      {/* ombra a terra */}
+      <ellipse cx={0} cy={492} rx={165} ry={15} fill="rgba(47,72,88,0.16)" />
+
+      {/* gambe: pantaloni a quadretti da cuoco */}
+      <path d="M -96 300 L -30 300 L -32 470 L -92 470 Z" fill="url(#chefCheck)" stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
+      <path d="M 96 300 L 30 300 L 32 470 L 92 470 Z" fill="url(#chefCheck)" stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
+      {/* scarpe */}
+      {[-1, 1].map((sx) => (
+        <g key={`shoe${sx}`} transform={`scale(${sx} 1)`}>
+          <path
+            d="M 28 456 Q 24 490 48 490 L 120 490 Q 138 490 134 474 Q 128 454 96 454 Z"
+            fill="#22323C"
+            stroke={OUTLINE}
+            strokeWidth={LINE}
+            strokeLinejoin="round"
+          />
+          <ellipse cx={104} cy={465} rx={14} ry={5} fill="#FFFFFF" opacity={0.25} />
         </g>
       ))}
+
+      <g transform={`translate(0 ${bob})`}>
+        {/* giacca con la pancia tonda */}
+        <path d={TORSO} fill={WHITE} stroke={OUTLINE} strokeWidth={LINE + 1} />
+        <g clipPath="url(#chefTorso)">
+          <rect x={116} y={0} width={120} height={400} fill={CLOTH_SHADE} />
+          <path d="M -156 120 C -176 170 -176 240 -150 290" stroke={CLOTH_SHADE} strokeWidth={14} fill="none" strokeLinecap="round" />
+          {/* lembo del doppio petto */}
+          <path d="M -46 40 C 4 58 56 66 64 112 L 64 196" stroke={OUTLINE} strokeWidth={3.5} fill="none" />
+        </g>
+        {/* bottoni */}
+        {[84, 130, 174].map((y) => (
+          <g key={y}>
+            <circle cx={-22} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
+            <circle cx={88} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
+          </g>
+        ))}
+
+        {/* grembiule che segue la pancia, legato in vita */}
+        <path
+          d="M -172 214 C -182 270 -166 330 -140 366 Q -130 380 -112 380 L 112 380 Q 130 380 140 366 C 166 330 182 270 172 214 Q 0 248 -172 214 Z"
+          fill={COLORS.blue}
+          stroke={OUTLINE}
+          strokeWidth={LINE}
+          strokeLinejoin="round"
+        />
+        <path d="M 150 236 C 160 280 150 330 128 360" stroke="rgba(255,255,255,0.16)" strokeWidth={10} fill="none" strokeLinecap="round" />
+        <path d="M -126 366 Q 0 372 126 366" stroke="rgba(255,255,255,0.25)" strokeWidth={3} fill="none" />
+        <path
+          d="M -178 200 Q 0 236 178 200 L 176 222 Q 0 258 -176 222 Z"
+          fill={COLORS.deepBlue}
+          stroke={OUTLINE}
+          strokeWidth={LINE}
+          strokeLinejoin="round"
+        />
+        <image href={staticFile("logo/fish.png")} x={-58} y={268} width={116} height={49} filter="url(#chefWhite)" />
+        {/* fiocco */}
+        <g transform="translate(118 214)">
+          <path d="M -4 6 L -16 44 M 4 6 L 14 42" stroke={COLORS.deepBlue} strokeWidth={9} strokeLinecap="round" />
+          <ellipse cx={-17} cy={-4} rx={17} ry={10} transform="rotate(-20 -17 -4)" fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
+          <ellipse cx={17} cy={-4} rx={17} ry={10} transform="rotate(20 17 -4)" fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
+          <circle r={8} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
+        </g>
 
       {/* collo */}
       <rect x={-26} y={-34} width={52} height={50} rx={12} fill={SKIN_SHADE} stroke={OUTLINE} strokeWidth={LINE} />
@@ -278,8 +318,9 @@ export const Chef: React.FC<{
       </g>
 
       {/* braccia */}
-      <Arm shoulder={{ x: -132, y: 76 }} hand={leftHand} outward={-1} thumbsUp={thumbsUp} />
-      <Arm shoulder={{ x: 132, y: 76 }} hand={rightHand} outward={1} />
+        <Arm shoulder={{ x: -128, y: 72 }} hand={leftHand} outward={-1} thumbsUp={thumbsUp} />
+        <Arm shoulder={{ x: 128, y: 72 }} hand={{ x: rightHand.x, y: rightHand.y - bob }} outward={1} />
+      </g>
     </g>
   );
 };

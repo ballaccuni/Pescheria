@@ -108,10 +108,10 @@ const mulberry32 = (seed: number) => () => {
 };
 
 // Padella a destra, cuoco in basso a sinistra, testi a destra del cuoco
-const PAN = { cx: 600, cy: 840, R: 300, inner: 276, handleAngle: 130, handleLen: 170 };
-const CHEF = { x: 180, y: 1300, s: 1.05 };
+const PAN = { cx: 640, cy: 840, R: 300, inner: 276, handleAngle: 130, handleLen: 170 };
+const CHEF = { x: 235, y: 1300, s: 1.0 };
 const ITEM_SCALE = 1.15;
-const TEXT_COL = { left: 415, right: 30, top: 1225 };
+const TEXT_COL = { left: 450, right: 30, top: 1225 };
 
 const handleEnd = (() => {
   const a = (PAN.handleAngle * Math.PI) / 180;
@@ -478,8 +478,8 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   };
   const rightHand = toLocal(handGlobal.x, handGlobal.y);
   // mano libera: lancia gli ingredienti, poi saluta nel finale
-  const restHand = { x: -150, y: 235 };
-  const upHand = { x: -125, y: -30 };
+  const restHand = { x: -96, y: 236 }; // mano appoggiata sulla pancia
+  const upHand = { x: -140, y: -50 };
   let gesture = 0;
   for (const a of allAdds) {
     const tt = frame - a.at + 6;
@@ -662,16 +662,17 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
           </g>
 
           <g
-            transform={`translate(${CHEF.x - chefSlide} ${CHEF.y + bob}) scale(${CHEF.s})`}
+            transform={`translate(${CHEF.x - chefSlide} ${CHEF.y}) scale(${CHEF.s})`}
             opacity={Math.min(1, chefIn * 1.5)}
           >
             <Chef
-              rightHand={{ x: rightHand.x + chefSlide / CHEF.s, y: rightHand.y - bob / CHEF.s }}
+              rightHand={{ x: rightHand.x + chefSlide / CHEF.s, y: rightHand.y }}
               leftHand={leftHand}
               blink={blink}
               happy={happy}
               wow={wow}
               thumbsUp={thumbsUp}
+              bob={bob / CHEF.s}
               tilt={tossAmt * 5 + (happy ? Math.sin((frame - tl.outro) / 9) * 3 : 0)}
             />
           </g>
