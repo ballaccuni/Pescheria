@@ -19,7 +19,7 @@
   // event offsets (seconds from the start of their beat)
   const EV = {
     hook: { rise: [0, 0.8], t1: [0.3, 0.9], t2: [0.8, 1.3], fall: [2.6, 3.2] },
-    studio: { rise: [0.3, 1.2], head: 1.0, boat: [1.3, 3.5], tagBoat: 1.6, waves: [2.0, 2.6], depth: 2.7 },
+    studio: { rise: [0.55, 1.35], head: 1.1, boat: [1.4, 3.5], tagBoat: 1.6, waves: [2.0, 2.6], depth: 2.7 },
     diga: { head: 0.2, pier: [0.4, 0.9], blocks: [0.8, 2.6], wall: [2.4, 2.9], tagDiga: 2.0, lights: 2.9, calm: [2.6, 3.4], tagCalma: 3.2 },
     fondale: { head: 0.2, dredger: [0.5, 0.9], tagDraga: 1.0, bill: [0.8, 1.2], pipe: [1.0, 1.6], dig: [1.3, 3.2], hit: 3.2 },
     cassoni: { head: 0.2, first: 0.5, step: 0.7, slide: 0.4, sink: 0.3, tagCassone: 1.0, fill: [3.2, 3.8], back: [3.4, 3.9], tagSabbia: 3.5 },
@@ -529,7 +529,10 @@
     const rise = E.back(PR(t, 'hook', EV.hook.rise)), fall = E.in(P(t, at('hook', EV.hook.fall[0]), at('hook', EV.hook.fall[1])));
     CAM.fx = CAMS.hook.fx; CAM.fy = CAMS.hook.fy; CAM.fz = 0; CAM.zoom = CAMS.hook.zoom; CAM.oy = CAMS.hook.oy;
     CAM.dy = (1 - rise) * 320 + fall * 520;
-    ctx.save(); ctx.globalAlpha = H.clamp(rise * 1.5) * (1 - fall);
+    withAlpha(ctx, H.clamp(rise * 1.5) * (1 - fall), (ctx) => hookBody(ctx, t));
+    hookTitle(ctx, t, fall);
+  }
+  function hookBody(ctx, t) {
     const tx = 12, ty = 8;
     const c = Pj(tx / 2, ty / 2, -8), S = BASE * CAM.zoom;
     ctx.save(); ctx.filter = 'blur(14px)'; ctx.fillStyle = 'rgba(61,58,92,0.18)'; ctx.beginPath(); ctx.ellipse(c[0] + 20, c[1] + 18, 8 * S, 2.5 * S, 0, 0, 7); ctx.fill(); ctx.restore();
@@ -546,8 +549,8 @@
     person(9, 1, LANDZ, C.people[0], 0);
     drawShadows(ctx);
     ITEMS.sort((a, b) => a.key - b.key).forEach((i) => i.draw(ctx));
-    ctx.restore();
-    // question
+  }
+  function hookTitle(ctx, t, fall) {
     ctx.save(); ctx.globalAlpha = 1 - fall; ctx.textAlign = 'center'; ctx.fillStyle = C.ink;
     const a1 = PR(t, 'hook', EV.hook.t1), a2 = PR(t, 'hook', EV.hook.t2);
     ctx.globalAlpha = (1 - fall) * a1; ctx.font = '800 56px Inter'; ctx.fillText('Come si costruisce', 640, 120 - (1 - E.out(a1)) * 20);
@@ -611,6 +614,19 @@
     }
   }
 
+  // draw fn at full opacity into a layer, then composite it at alpha a
+  let AL = null;
+  function withAlpha(ctx, a, fn) {
+    if (a <= 0.001) { fn(nullCtx()); return; }
+    if (a >= 0.999) { fn(ctx); return; }
+    const lay = AL || (AL = H.layer(W, HH)), g = lay.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, HH); g.globalAlpha = 1; g.filter = 'none';
+    fn(g);
+    ctx.save(); ctx.globalAlpha *= a; ctx.drawImage(lay, 0, 0); ctx.restore();
+  }
+  let NC = null;
+  const nullCtx = () => { const c = (NC || (NC = H.layer(W, HH))).getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, HH); return c; };
+
   // ---------------- the explainer ----------------
   function explainer(ctx, W_, H_, t) {
     t = H.clamp(t, 0, DURATION);
@@ -622,9 +638,7 @@
       setCam(t);
       const r = PR(t, 'studio', EV.studio.rise);
       CAM.dy = (1 - E.back(r)) * 420;
-      ctx.save(); ctx.globalAlpha = H.clamp(r * 1.6);
-      const s = renderWorld(ctx, t);
-      ctx.restore();
+      let s; withAlpha(ctx, H.clamp(r * 1.6), (c) => { s = renderWorld(c, t); });
       tags(ctx, t, s);
       headers(ctx, t);
     }

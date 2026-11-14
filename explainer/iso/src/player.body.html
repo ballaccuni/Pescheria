@@ -1,0 +1,81 @@
+<div id="stage"><canvas id="cv" width="1280" height="720" aria-label="Animated isometric explainer: how a port is built"></canvas>
+  <button id="big" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+  <div id="drop" hidden>Drop the voiceover audio here</div></div>
+<div class="bar">
+  <button id="play" aria-label="Play">▶</button>
+  <input id="seek" type="range" min="0" max="26.5" step="0.01" value="0" aria-label="Scrub">
+  <span id="time">0.0 / 26.5</span>
+  <button id="snd" aria-pressed="true" title="Sound effects on/off">♪ <span class="lbl">Sound</span></button>
+  <button id="loop" aria-pressed="true" title="Loop">⟲ <span class="lbl">Loop</span></button>
+  <label class="vo" id="vobtn" title="Load a voiceover audio file (or drop it on the picture)"><button tabindex="-1" style="pointer-events:none">🎙 <span class="lbl">Load voiceover</span></button><input id="vofile" type="file" accept="audio/*" aria-label="Load voiceover"></label>
+  <span id="voname"></span>
+</div>
+<script>
+(async function () {
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d', { willReadFrequently: true });
+  const stage = document.getElementById('stage'), seekEl = document.getElementById('seek'), timeEl = document.getElementById('time');
+  const playBtn = document.getElementById('play'), big = document.getElementById('big'), sndBtn = document.getElementById('snd'), loopBtn = document.getElementById('loop');
+  const voFile = document.getElementById('vofile'), voBtn = document.getElementById('vobtn'), voName = document.getElementById('voname'), drop = document.getElementById('drop');
+  const D = window.DURATION;
+  let t = 0, playing = false, last = 0, soundOn = true, loop = true, stopSound = null, audio = null;
+  const len = () => (audio && isFinite(audio.duration) ? Math.max(D, audio.duration) : D);
+
+  function fit() { const s = Math.min(stage.clientWidth / 1280, stage.clientHeight / 720); cv.style.width = (1280 * s) + 'px'; cv.style.height = (720 * s) + 'px'; }
+  addEventListener('resize', fit); fit();
+
+  function draw(tt) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    window.explainer(ctx, 1280, 720, tt);
+  }
+  function show(tt) { t = tt; draw(Math.min(t, D)); seekEl.max = len(); seekEl.value = t; timeEl.textContent = t.toFixed(1) + ' / ' + len().toFixed(1); }
+  window.seek = (tt) => { t = Math.max(0, Math.min(D, tt)); draw(t); seekEl.value = t; timeEl.textContent = t.toFixed(1) + ' / ' + len().toFixed(1); };
+
+  const killSound = () => { if (stopSound) { stopSound(); stopSound = null; } };
+  const startSound = () => { killSound(); if (soundOn && playing) stopSound = SOUND.live(window.scoreSound, t, { voiceover: true }); };
+
+  function setPlaying(p) {
+    playing = p; playBtn.textContent = p ? '❚❚' : '▶'; playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play'); big.hidden = p;
+    if (p) {
+      if (t >= len() - 0.01) show(0);
+      if (audio) { audio.currentTime = t; audio.play().catch(() => {}); }
+      last = performance.now(); startSound(); requestAnimationFrame(tick);
+    } else { if (audio) audio.pause(); killSound(); }
+  }
+  function restart() { show(0); if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); } startSound(); }
+  function tick(now) {
+    if (!playing) return;
+    // with a voiceover loaded the audio element is the clock; otherwise our own
+    if (audio) t = audio.currentTime; else t += (now - last) / 1000;
+    last = now;
+    const end = len();
+    if (t >= end - 0.005 || (audio && audio.ended && t >= D)) {
+      if (loop) restart(); else { show(end); setPlaying(false); return; }
+    } else show(t);
+    requestAnimationFrame(tick);
+  }
+  playBtn.onclick = big.onclick = () => setPlaying(!playing);
+  seekEl.addEventListener('input', () => { killSound(); const v = +seekEl.value; if (audio) audio.currentTime = v; show(v); last = performance.now(); });
+  seekEl.addEventListener('change', () => { if (playing) startSound(); });
+  sndBtn.onclick = () => { soundOn = !soundOn; sndBtn.setAttribute('aria-pressed', soundOn); if (soundOn) startSound(); else killSound(); };
+  loopBtn.onclick = () => { loop = !loop; loopBtn.setAttribute('aria-pressed', loop); };
+  addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); setPlaying(!playing); } });
+
+  function loadVoice(file) {
+    if (!file || !/^audio\//.test(file.type || 'audio/')) return;
+    const was = playing; if (playing) setPlaying(false);
+    if (audio) { audio.pause(); URL.revokeObjectURL(audio.src); }
+    audio = new Audio(URL.createObjectURL(file)); audio.preload = 'auto';
+    audio.addEventListener('loadedmetadata', () => show(Math.min(t, len())));
+    voName.textContent = file.name; voBtn.classList.add('loaded');
+    show(0); if (was) setPlaying(true);
+  }
+  voFile.addEventListener('change', () => loadVoice(voFile.files[0]));
+  stage.addEventListener('dragover', (e) => { e.preventDefault(); drop.hidden = false; });
+  stage.addEventListener('dragleave', () => { drop.hidden = true; });
+  stage.addEventListener('drop', (e) => { e.preventDefault(); drop.hidden = true; loadVoice(e.dataTransfer.files[0]); });
+
+  try { await Promise.all(['800 56px Inter', '800 72px Inter', '600 28px Inter', '600 30px Inter', '800 64px Inter'].map((f) => document.fonts.load(f, 'AaZz09àè·→−'))); await document.fonts.ready; } catch (e) {}
+  window.seek(0);
+  window.__ready = true;
+})();
+</script>

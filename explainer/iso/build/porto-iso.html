@@ -1,0 +1,1275 @@
+<title>Porto Isometrico</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=block">
+<style>
+  /* Layout: a letterboxed 16:9 stage filling the window, with a slim control bar underneath. Single dark look on purpose. */
+  :root { --bg: #15171c; --bar: #1f2229; --fg: #e9ebef; --muted: #9aa1ad; --accent: #ff6b5e; color-scheme: dark; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif; display: flex; flex-direction: column; }
+  #stage { flex: 1; min-height: 0; display: grid; place-items: center; position: relative; overflow: hidden; }
+  #cv { display: block; background: #efeaf3; box-shadow: 0 6px 30px rgba(0,0,0,.4); }
+  #big { position: absolute; inset: 0; margin: auto; width: 96px; height: 96px; border-radius: 50%; border: 0; background: rgba(21,23,28,.78); color: #fff; cursor: pointer; display: grid; place-items: center; }
+  #big svg { width: 40px; height: 40px; margin-left: 6px; }
+  .bar { display: flex; align-items: center; gap: 12px; background: var(--bar);
+    padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .bar button { background: none; border: 1px solid #3a3f4a; color: var(--fg); border-radius: 6px; height: 34px; min-width: 40px; padding: 0 10px; cursor: pointer; font: inherit; display: inline-flex; align-items: center; gap: 6px; }
+  .bar button:focus-visible, #seek:focus-visible, #big:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bar button[aria-pressed="false"] { color: var(--muted); }
+  #seek { flex: 1; min-width: 60px; accent-color: var(--accent); }
+  #time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 92px; text-align: right; }
+  @media (max-width: 480px) { .lbl { display: none; } #time { min-width: 0; } }
+</style>
+<style>
+  .vo { position: relative; overflow: hidden; }
+  .vo input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .vo.loaded { border-color: var(--accent) !important; }
+  #drop { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(21,23,28,.72); color: #fff; font-size: 22px; font-weight: 600; pointer-events: none; }
+  #voname { color: var(--muted); max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 640px) { #voname { display: none; } }
+</style>
+<script>
+// Shared helpers + style registry for the style-frame explorations.
+// Every style is a pure function of time: draw(ctx, W, H, t). Same t => same pixels.
+(function () {
+  const STYLES = (window.STYLES = window.STYLES || []);
+  window.registerStyle = (s) => STYLES.push(s);
+
+  const H = (window.H = {});
+
+  // ---------- seeded randomness ----------
+  // H.rng(seed) -> r() in [0,1). Extras: r.range(a,b), r.int(a,b), r.pick(arr), r.gauss(), r.chance(p)
+  H.rng = function (seed = 1) {
+    let a = typeof seed === 'string' ? hashStr(seed) : (seed >>> 0) || 1;
+    const r = function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    r.range = (lo, hi) => lo + r() * (hi - lo);
+    r.int = (lo, hi) => Math.floor(lo + r() * (hi - lo + 1));
+    r.pick = (arr) => arr[Math.floor(r() * arr.length)];
+    r.chance = (p) => r() < p;
+    r.gauss = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    return r;
+  };
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  // ---------- gradient noise ----------
+  // H.makeNoise(seed) -> { n2(x,y), n3(x,y,z), fbm2(x,y,oct), fbm3(x,y,z,oct) }  (outputs roughly -1..1)
+  H.makeNoise = function (seed = 1) {
+    const r = H.rng(seed), p = new Uint8Array(512), perm = [...Array(256).keys()];
+    for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+    for (let i = 0; i < 512; i++) p[i] = perm[i & 255];
+    const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const g3 = (h, x, y, z) => { h &= 15; const u = h < 8 ? x : y, v = h < 4 ? y : h === 12 || h === 14 ? x : z; return ((h & 1) ? -u : u) + ((h & 2) ? -v : v); };
+    function n3(x, y, z) {
+      const X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255;
+      x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+      const u = fade(x), v = fade(y), w = fade(z);
+      const A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z, B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
+      return lerp(lerp(lerp(g3(p[AA], x, y, z), g3(p[BA], x - 1, y, z), u), lerp(g3(p[AB], x, y - 1, z), g3(p[BB], x - 1, y - 1, z), u), v),
+        lerp(lerp(g3(p[AA + 1], x, y, z - 1), g3(p[BA + 1], x - 1, y, z - 1), u), lerp(g3(p[AB + 1], x, y - 1, z - 1), g3(p[BB + 1], x - 1, y - 1, z - 1), u), v), w);
+    }
+    const n2 = (x, y) => n3(x, y, 0.5);
+    const fbm3 = (x, y, z, oct = 4) => { let s = 0, a = 0.5, f = 1, norm = 0; for (let i = 0; i < oct; i++) { s += a * n3(x * f, y * f, z * f); norm += a; a *= 0.5; f *= 2; } return s / norm; };
+    const fbm2 = (x, y, oct = 4) => fbm3(x, y, 0.5, oct);
+    return { n2, n3, fbm2, fbm3 };
+  };
+
+  // ---------- math ----------
+  H.lerp = (a, b, t) => a + (b - a) * t;
+  H.clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
+  H.map = (v, a, b, c, d) => c + ((v - a) / (b - a)) * (d - c);
+  H.smooth = (e0, e1, x) => { const t = H.clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+  H.ease = {
+    inOut: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+    out: (t) => 1 - Math.pow(1 - t, 3),
+    in: (t) => t * t * t,
+    back: (t) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+  };
+
+  // ---------- color ----------
+  H.hex = (h) => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map((c) => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  H.rgba = (hexOrArr, a = 1) => { const [r, g, b] = Array.isArray(hexOrArr) ? hexOrArr : H.hex(hexOrArr); return `rgba(${r | 0},${g | 0},${b | 0},${a})`; };
+  H.mix = (c1, c2, t) => { const a = Array.isArray(c1) ? c1 : H.hex(c1), b = Array.isArray(c2) ? c2 : H.hex(c2); return [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * t); };
+
+  // ---------- canvas utilities ----------
+  // Offscreen canvas of the same logical size (use for layers, masks, compositing).
+  H.layer = (W, H_, ) => { const c = document.createElement('canvas'); c.width = W; c.height = H_; return c; };
+  // Monochrome grain / film noise over the whole canvas. amount ~ 0.03-0.15
+  H.grain = function (ctx, W, Hh, amount = 0.08, seed = 7, mono = true) {
+    const img = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height), d = img.data, r = H.rng(seed), k = amount * 255;
+    for (let i = 0; i < d.length; i += 4) {
+      const n = (r() - 0.5) * k;
+      if (mono) { d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+      else { d[i] += (r() - 0.5) * k; d[i + 1] += (r() - 0.5) * k; d[i + 2] += (r() - 0.5) * k; }
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+  // Paper-ish texture tile: fills with base color + fibrous noise (cheap; drawn into ctx).
+  H.paper = function (ctx, W, Hh, base = '#f3ecdc', seed = 3, strength = 0.06) {
+    ctx.save(); ctx.fillStyle = base; ctx.fillRect(0, 0, W, Hh);
+    const nz = H.makeNoise(seed), cell = 4, [br, bg, bb] = H.hex(base);
+    for (let y = 0; y < Hh; y += cell) for (let x = 0; x < W; x += cell) {
+      const v = nz.fbm2(x * 0.01, y * 0.01, 3) * 0.6 + nz.n2(x * 0.15, y * 0.04) * 0.4;
+      const s = 1 + v * strength * 2;
+      ctx.fillStyle = `rgb(${br * s | 0},${bg * s | 0},${bb * s | 0})`; ctx.fillRect(x, y, cell, cell);
+    }
+    ctx.restore();
+  };
+  // Vignette
+  H.vignette = function (ctx, W, Hh, strength = 0.5, color = '0,0,0') {
+    const g = ctx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * 0.3, W / 2, Hh / 2, Math.hypot(W, Hh) * 0.6);
+    g.addColorStop(0, `rgba(${color},0)`); g.addColorStop(1, `rgba(${color},${strength})`);
+    ctx.save(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh); ctx.restore();
+  };
+
+  // ---------- rendering entry ----------
+  // Renders style into canvas at logical 1280x720 (canvas can be any pixel size; it is scaled).
+  H.W = 1280; H.H = 720;
+  H.loadFonts = async function (style) {
+    const specs = style.fonts || [];
+    try { const sample = 'AaZz09' + (window.FONT_SAMPLE || '');
+      await Promise.all(specs.map((f) => document.fonts.load(f, sample))); await document.fonts.ready; } catch (e) { /* render anyway */ }
+  };
+  H.render = function (style, canvas, t) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: !!style.readsPixels });
+    const sx = canvas.width / H.W, sy = canvas.height / H.H;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save(); ctx.scale(sx, sy);
+    style.draw(ctx, H.W, H.H, t == null ? style.frameT || 0 : t);
+    ctx.restore();
+  };
+})();
+// sound.js: a small synthesized sound kit for the style explainers. Plain Web Audio, no audio files.
+// Voiceover mode: SOUND.kit(ctx, { voiceover: true }) drops beds and music, plays anything marked minor
+// (play(..., { minor: true }), tone/noise { minor: true }, or scheduled inside k.withMinor(() => ...)) at about 60%
+// volume instead of full, and sits all effects a little lower, so the narration stays on top while the piece still
+// sounds alive. In the full mix, minor sounds play at full volume. Scores can read k.vo to branch further.
+// A style adds   explainerSound(k) { k.bed('room', 0, D); k.play('pop', 1.25); ... }   and the same
+// call schedules into a live AudioContext (the player) or an OfflineAudioContext (the video render).
+// Times are seconds on the explainer's own clock. Randomness is seeded, so every render is identical.
+//
+// NOTE: the copy of this kit pasted into the conversation was cut off after out(). Everything above the
+// "STAND-IN" marker below is the original, unchanged. Everything after it is a compatible stand-in
+// (tone, noise, play presets, bed, withMinor, SOUND.live, SOUND.renderOffline). Replace this file with the
+// complete original kit when available; scoreSound() only uses play/bed/tone names defined in the stand-in.
+(function () {
+  'use strict';
+  const SOUND = (window.SOUND = {});
+  const TINY = 1e-4;
+
+  // seeded random in [0,1), keyed by any string
+  function rand(key) {
+    let h = 2166136261;
+    for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+    let a = h >>> 0 || 1;
+    return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+
+  // note names to Hz: 'A4' = 440, 'C#5', 'Eb3'
+  const STEP = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function hz(n) {
+    if (typeof n === 'number') return n;
+    const m = /^([A-G])([#b]?)(-?\d)$/.exec(n);
+    const semis = STEP[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + (Number(m[3]) - 4) * 12 - 9;
+    return 440 * Math.pow(2, semis / 12);
+  }
+  SOUND.hz = hz;
+
+  SOUND.kit = function (ctx, opts) {
+    const o = opts || {};
+    const VO = !!o.voiceover;
+    const MINOR = 0.6; // voiceover-mode volume for minor sounds
+    let inMinor = false;
+    const gainOf = (p, d) => (p.gain == null ? d : p.gain) * (VO && (p.minor || inMinor) ? MINOR : 1);
+    const T0 = (o.start || 0) - 0; // explainer time that maps to ctx time `base`
+    const base = ctx.currentTime + (o.delay || 0);
+    // Start times snap to the sample grid (+ a quarter sample): in Chrome a source started a hair off the grid can
+    // spike to about twice its set level.
+    const SR = ctx.sampleRate;
+    const at = (t) => (Math.round((base + (t - T0)) * SR) + 0.25) / SR;
+
+    // ---- buses: sfx, amb, music -> compressor -> master; one shared reverb send
+    const master = ctx.createGain(); master.gain.value = o.master == null ? 0.9 : o.master;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.18;
+    comp.connect(master); master.connect(o.dest || ctx.destination);
+    const bus = {};
+    for (const [name, g] of Object.entries({ sfx: VO ? 0.7 : 0.85, amb: 0.5, music: 0.45 })) { bus[name] = ctx.createGain(); bus[name].gain.value = g; bus[name].connect(comp); }
+
+    // generated room reverb: decaying stereo noise, darker toward the tail
+    const verb = ctx.createConvolver();
+    {
+      const secs = 1.6, n = Math.floor(secs * ctx.sampleRate), ir = ctx.createBuffer(2, n, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) {
+        const r = rand('verb' + c), d = ir.getChannelData(c); let lp = 0;
+        for (let i = 0; i < n; i++) { const u = i / n; lp += (0.6 - 0.45 * u) * ((r() * 2 - 1) - lp); d[i] = lp * Math.pow(1 - u, 3); }
+      }
+      verb.buffer = ir;
+    }
+    const verbIn = ctx.createGain(); verbIn.gain.value = 0.9; verbIn.connect(verb); verb.connect(comp);
+
+    // seeded noise buffers: white, pink-ish and brown
+    const noiseBuf = {};
+    {
+      const n = Math.floor(2.5 * ctx.sampleRate);
+      for (const kind of ['white', 'pink', 'brown']) {
+        const b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0), r = rand('noise-' + kind);
+        let p0 = 0, p1 = 0, p2 = 0, br = 0;
+        for (let i = 0; i < n; i++) {
+          const w = r() * 2 - 1;
+          if (kind === 'white') d[i] = w;
+          else if (kind === 'pink') { p0 = 0.997 * p0 + 0.029 * w; p1 = 0.985 * p1 + 0.032 * w; p2 = 0.95 * p2 + 0.048 * w; d[i] = (p0 + p1 + p2 + w * 0.05) * 2.2; }
+          else { br = (br + 0.02 * w) / 1.02; d[i] = br * 3.2; }
+        }
+        noiseBuf[kind] = b;
+      }
+    }
+
+    // ---- automation helpers
+    // a value or [[dt, value], ...] from the voice start; ramps are exponential (frequencies)
+    function sweep(param, v, t) {
+      if (!Array.isArray(v)) { param.setValueAtTime(v, t); return; }
+      param.setValueAtTime(v[0][1], t + v[0][0]);
+      for (let i = 1; i < v.length; i++) param.exponentialRampToValueAtTime(Math.max(v[i][1], 1), t + v[i][0]);
+    }
+    // amplitude: linear attack to `gain`, optional hold, exponential release to silence by `dur`
+    function shape(param, t, gain, dur, a, hold) {
+      a = Math.min(a == null ? 0.004 : a, dur * 0.9);
+      hold = Math.min(hold || 0, dur - a);
+      param.setValueAtTime(0, t);
+      param.linearRampToValueAtTime(gain, t + a);
+      if (hold > 0) param.setValueAtTime(gain, t + a + hold);
+      param.exponentialRampToValueAtTime(TINY, t + dur);
+      param.setValueAtTime(0, t + dur + 0.001);
+    }
+    function out(node, p) {
+      const pan = ctx.createStereoPanner(); pan.pan.value = Math.max(-1, Math.min(1, p.pan || 0));
+      node.connect(pan); pan.connect(bus[p.bus || 'sfx']);
+      if (p.verb) { const s = ctx.createGain(); s.gain.value = p.verb; pan.connect(s); s.connect(verbIn); }
+    }
+
+    // ======================= STAND-IN (not part of the original kit) =======================
+    const sources = [];
+    const isPast = (t) => t < T0 - 0.03; // live playback from mid-piece skips one-shots that already happened
+    const fhz = (v) => (Array.isArray(v) ? v.map(([dt, f]) => [dt, hz(f)]) : hz(v));
+
+    // flutter: seeded amplitude wobble (a marker tip skipping over the gloss)
+    function flutterNode(s, dur, depth, rate, key) {
+      const g = ctx.createGain(), r = rand('fl' + key), step = 1 / (rate || 30);
+      g.gain.setValueAtTime(1, s);
+      for (let x = step; x < dur; x += step) g.gain.linearRampToValueAtTime(1 - depth * r(), s + x);
+      return g;
+    }
+
+    function tone(t, p) {
+      p = p || {};
+      if (isPast(t)) return;
+      const dur = p.dur || 0.2, s = at(t), osc = ctx.createOscillator();
+      osc.type = p.type || 'sine';
+      sweep(osc.frequency, fhz(p.freq == null ? 440 : p.freq), s);
+      if (p.detune) osc.detune.value = p.detune;
+      const g = ctx.createGain(); shape(g.gain, s, gainOf(p, 0.3), dur, p.a, p.hold);
+      let n = osc;
+      if (p.lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = p.lp; n.connect(f); n = f; }
+      n.connect(g); out(g, p);
+      osc.start(s); osc.stop(s + dur + 0.05); sources.push(osc);
+    }
+
+    function noise(t, p) {
+      p = p || {};
+      if (isPast(t)) return;
+      const dur = p.dur || 0.2, s = at(t), b = ctx.createBufferSource();
+      b.buffer = noiseBuf[p.color || 'pink']; b.loop = true; b.playbackRate.value = p.rate || 1;
+      let n = b;
+      for (const fl of [].concat(p.f || [])) {
+        const f = ctx.createBiquadFilter(); f.type = fl.type || 'bandpass'; sweep(f.frequency, fl.freq, s); f.Q.value = fl.q == null ? 0.8 : fl.q;
+        n.connect(f); n = f;
+      }
+      if (p.flutter) { const fg = flutterNode(s, dur, p.flutter, p.flutterRate, t.toFixed(3) + (p.key || '')); n.connect(fg); n = fg; }
+      const g = ctx.createGain(); shape(g.gain, s, gainOf(p, 0.3), dur, p.a, p.hold);
+      n.connect(g); out(g, p);
+      b.start(s, rand('off' + t.toFixed(3) + (p.color || ''))() * 1.5); b.stop(s + dur + 0.05); sources.push(b);
+    }
+
+    // presets tuned for a dry-erase marker on a glossy whiteboard
+    const PRESETS = {
+      // a marker stroke; dur = how long the stroke draws on
+      marker(t, p) {
+        const d = p.dur || 0.3, g = p.gain == null ? 1 : p.gain, r = rand('mk' + t.toFixed(3));
+        noise(t, { ...p, color: 'pink', dur: d + 0.03, gain: 0.2 * g, a: 0.015, hold: d * 0.75, f: [{ type: 'bandpass', freq: 2600 + r() * 1400, q: 0.9 }, { type: 'highpass', freq: 1200, q: 0.5 }], flutter: 0.55, flutterRate: 28 });
+        tone(t + 0.01, { ...p, type: 'triangle', freq: [[0, 950 + r() * 600], [d, 850 + r() * 700]], dur: d, gain: 0.018 * g, a: 0.03, hold: d * 0.6, lp: 3000 });
+      },
+      squeak(t, p) {
+        const g = p.gain == null ? 1 : p.gain, r = rand('sq' + t.toFixed(3));
+        noise(t, { ...p, color: 'pink', dur: 0.1, gain: 0.18 * g, a: 0.006, f: [{ type: 'bandpass', freq: 3400, q: 1.2 }] });
+        tone(t, { ...p, type: 'triangle', freq: [[0, 1100 + r() * 500], [0.09, 1500 + r() * 600]], dur: 0.1, gain: 0.05 * g, a: 0.01, lp: 3500 });
+      },
+      tap(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'white', dur: 0.045, gain: 0.28 * g, f: [{ type: 'bandpass', freq: 2400, q: 1.6 }] });
+        tone(t, { ...p, freq: 1700, dur: 0.035, gain: 0.04 * g });
+      },
+      pop(t, p) {
+        const g = p.gain == null ? 1 : p.gain, lo = p.low ? 0.6 : 1;
+        tone(t, { ...p, freq: [[0, 480 * lo], [0.07, 1050 * lo]], dur: 0.1, gain: 0.24 * g, a: 0.003 });
+        noise(t, { ...p, color: 'white', dur: 0.03, gain: 0.06 * g, f: [{ type: 'highpass', freq: 3000 }] });
+      },
+      knock(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: [[0, 230], [0.09, 120]], dur: 0.13, gain: 0.3 * g, a: 0.002 });
+        noise(t, { ...p, color: 'brown', dur: 0.06, gain: 0.25 * g, f: [{ type: 'lowpass', freq: 1400 }] });
+      },
+      pebble(t, p) {
+        const g = p.gain == null ? 1 : p.gain, r = rand('pb' + t.toFixed(3));
+        noise(t, { ...p, color: 'white', dur: 0.03, gain: 0.12 * g, f: [{ type: 'bandpass', freq: 1800 + r() * 2200, q: 3 }] });
+      },
+      eraser(t, p) {
+        const d = p.dur || 0.75, g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'pink', dur: d, gain: 0.32 * g, a: 0.05, hold: d * 0.7, f: [{ type: 'bandpass', freq: 750, q: 0.6 }, { type: 'lowpass', freq: 2600, q: 0.3 }], flutter: 0.7, flutterRate: 14 });
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.18 * g, a: 0.05, hold: d * 0.7, f: [{ type: 'lowpass', freq: 300 }], verb: 0.05 });
+      },
+      splash(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'white', dur: 0.5, gain: 0.26 * g, a: 0.005, f: [{ type: 'bandpass', freq: [[0, 4200], [0.45, 900]], q: 0.7 }], verb: 0.25 });
+        tone(t, { ...p, freq: [[0, 140], [0.2, 60]], dur: 0.25, gain: 0.22 * g });
+      },
+      thud(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: [[0, 95], [0.3, 42]], dur: 0.42, gain: 0.5 * g, a: 0.003 });
+        noise(t, { ...p, color: 'brown', dur: 0.25, gain: 0.4 * g, f: [{ type: 'lowpass', freq: 420 }], verb: 0.15 });
+      },
+      gurgle(t, p) {
+        const d = p.dur || 0.6, g = p.gain == null ? 1 : p.gain, r = rand('gg' + t.toFixed(3));
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.2 * g, a: 0.08, hold: d * 0.6, f: [{ type: 'lowpass', freq: 700 }] });
+        for (let i = 0; i < Math.floor(d * 14); i++) { const tt = t + r() * d; tone(tt, { ...p, freq: [[0, 260 + r() * 200], [0.05, 600 + r() * 400]], dur: 0.06, gain: 0.07 * g }); }
+      },
+      hiss(t, p) {
+        const d = p.dur || 0.5, g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'white', dur: d, gain: 0.1 * g, a: 0.08, hold: d * 0.6, f: [{ type: 'highpass', freq: 4500 }], flutter: 0.4, flutterRate: 40 });
+      },
+      rumble(t, p) {
+        const d = p.dur || 1, g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.3 * g, a: 0.2, hold: d * 0.6, f: [{ type: 'lowpass', freq: 170 }] });
+        tone(t, { ...p, type: 'sawtooth', freq: 48, dur: d, gain: 0.03 * g, a: 0.2, hold: d * 0.6, lp: 200 });
+      },
+      ping(t, p) {
+        const g = p.gain == null ? 1 : p.gain, f = hz(p.note || 'E6');
+        tone(t, { ...p, freq: f, dur: 0.6, gain: 0.14 * g, verb: 0.35 });
+        tone(t, { ...p, freq: f * 2.01, dur: 0.3, gain: 0.03 * g });
+      },
+      tick(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        PRESETS.squeak(t, { ...p, gain: 0.7 * g });
+        tone(t + 0.02, { ...p, type: 'triangle', freq: hz(p.note || 'C6'), dur: 0.18, gain: 0.08 * g, verb: 0.2 });
+      },
+      // the key-number hit: a slammed marker cap, low boom, bright accent
+      hit(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: [[0, 120], [0.5, 46]], dur: 0.7, gain: 0.55 * g, a: 0.002, verb: 0.2 });
+        noise(t, { ...p, color: 'white', dur: 0.09, gain: 0.3 * g, f: [{ type: 'bandpass', freq: 2000, q: 0.8 }], verb: 0.3 });
+        for (const n of ['C4', 'G4', 'C5']) tone(t, { ...p, type: 'triangle', freq: hz(n), dur: 0.9, gain: 0.06 * g, lp: 2600, verb: 0.35 });
+      },
+      // --- dimensional / isometric palette
+      whoomp(t, p) {
+        const g = p.gain == null ? 1 : p.gain, lo = p.deep ? 0.7 : 1;
+        tone(t, { ...p, freq: [[0, 190 * lo], [0.3, 55 * lo]], dur: 0.38, gain: 0.42 * g, a: 0.01 });
+        noise(t, { ...p, color: 'pink', dur: 0.28, gain: 0.22 * g, a: 0.02, f: [{ type: 'lowpass', freq: 700 }], verb: 0.12 });
+      },
+      clack(t, p) {
+        const g = p.gain == null ? 1 : p.gain, k = p.pitch || 0;
+        noise(t, { ...p, color: 'white', dur: 0.045, gain: 0.22 * g, f: [{ type: 'bandpass', freq: 1300 + 900 * k, q: 4 }] });
+        tone(t, { ...p, freq: 520 + 320 * k, dur: 0.06, gain: 0.07 * g });
+      },
+      horn(t, p) {
+        const g = p.gain == null ? 1 : p.gain, d = p.dur || 1.2;
+        for (const n of ['A2', 'E3']) tone(t, { ...p, type: 'sawtooth', freq: hz(n), dur: d, gain: 0.09 * g, a: 0.08, hold: d * 0.65, lp: 650, verb: 0.4 });
+      },
+      toot(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, type: 'square', freq: hz(p.note || 'A4'), dur: 0.26, gain: 0.05 * g, a: 0.02, hold: 0.14, lp: 1400 });
+      },
+      blip(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: hz(p.note || 'C6'), dur: 0.08, gain: 0.12 * g, a: 0.003 });
+      },
+      hum(t, p) {
+        const g = p.gain == null ? 1 : p.gain, d = p.dur || 1;
+        tone(t, { ...p, type: 'triangle', freq: p.freq || 72, dur: d, gain: 0.08 * g, a: 0.15, hold: d * 0.7, lp: 400 });
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.1 * g, a: 0.15, hold: d * 0.7, f: [{ type: 'lowpass', freq: 260 }] });
+      },
+      chord(t, p) {
+        const g = p.gain == null ? 1 : p.gain, d = p.dur || 1.6;
+        (p.notes || ['C4', 'E4', 'G4', 'C5']).forEach((n, i) => tone(t + i * 0.025, { ...p, type: 'triangle', freq: hz(n), dur: d, gain: 0.07 * g, a: 0.02, hold: d * 0.25, lp: 2400, verb: 0.45 }));
+      },
+    };
+    function play(name, t, p) { p = p || {}; const f = PRESETS[name]; if (!f) return; if (p.minor) { const m = inMinor; inMinor = true; f(t, p); inMinor = m; } else f(t, p); }
+
+    // ambience bed: VO mode drops it; live playback from mid-piece joins it in progress
+    function bed(name, t0, t1, p) {
+      p = p || {};
+      if (VO) return;
+      const s0 = Math.max(t0, T0), dur = t1 - s0;
+      if (dur <= 0.05) return;
+      const s = at(s0), b = ctx.createBufferSource(); b.buffer = noiseBuf[name === 'room' ? 'pink' : 'brown']; b.loop = true;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 70;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = name === 'room' ? 520 : 300;
+      const g = ctx.createGain(), lvl = p.gain == null ? 0.07 : p.gain, fi = s0 > t0 ? 0.05 : (p.fadeIn || 0.6), fo = p.fadeOut || 0.8;
+      g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(lvl, s + fi);
+      g.gain.setValueAtTime(lvl, s + Math.max(fi, dur - fo)); g.gain.linearRampToValueAtTime(0, s + dur);
+      b.connect(hp); hp.connect(lp); lp.connect(g); out(g, { ...p, bus: 'amb' });
+      b.start(s, rand('bed' + name)() * 2); b.stop(s + dur + 0.05); sources.push(b);
+    }
+    function music() { /* this style uses no music */ }
+    function withMinor(fn) { const m = inMinor; inMinor = true; try { fn(); } finally { inMinor = m; } }
+    function stop() {
+      const now = ctx.currentTime;
+      try { master.gain.cancelScheduledValues(now); master.gain.setValueAtTime(master.gain.value, now); master.gain.linearRampToValueAtTime(0, now + 0.04); } catch (e) {}
+      for (const s of sources) { try { s.stop(now + 0.05); } catch (e) {} }
+      setTimeout(() => { try { master.disconnect(); } catch (e) {} }, 120);
+    }
+    return { vo: VO, ctx, hz, play, tone, noise, bed, music, withMinor, stop };
+  };
+
+  let LIVE = null;
+  // Start the score playing in sync from explainer time `fromT`; returns stop().
+  SOUND.live = function (score, fromT, opts) {
+    if (!LIVE) LIVE = new (window.AudioContext || window.webkitAudioContext)();
+    if (LIVE.state === 'suspended') LIVE.resume();
+    const k = SOUND.kit(LIVE, { ...(opts || {}), start: fromT || 0, delay: 0.03 });
+    try { score(k); } catch (e) { console.error(e); }
+    return () => k.stop();
+  };
+  // Render the score offline; resolves to interleaved stereo Float32Array.
+  SOUND.renderOffline = async function (score, dur, sr, opts) {
+    sr = sr || 48000;
+    const n = Math.ceil(dur * sr), ctx = new OfflineAudioContext(2, n, sr);
+    const k = SOUND.kit(ctx, { ...(opts || {}), start: 0 });
+    score(k);
+    const buf = await ctx.startRendering(), L = buf.getChannelData(0), R = buf.getChannelData(1), out = new Float32Array(n * 2);
+    for (let i = 0; i < n; i++) { out[2 * i] = L[i]; out[2 * i + 1] = R[i]; }
+    return out;
+  };
+})();
+// "Come si costruisce un porto" — Isometric Pastel (Dimensional).
+// Every frame is a pure function of t. All randomness comes from H.rng / H.makeNoise.
+// All timing is read from BEATS (+ per-beat event offsets in EV); edit those for a new take.
+(function () {
+  'use strict';
+  const W = 1280, HH = 720;
+
+  // ---------------- timing ----------------
+  const BEATS = [
+    { id: 'hook',    t0: 0.0,  t1: 2.6,  n: 0, head: '' },
+    { id: 'studio',  t0: 2.6,  t1: 6.2,  n: 1, head: 'Studio del mare' },
+    { id: 'diga',    t0: 6.2,  t1: 10.4, n: 2, head: 'La diga foranea' },
+    { id: 'fondale', t0: 10.4, t1: 14.6, n: 3, head: 'Scavare il fondale' },
+    { id: 'cassoni', t0: 14.6, t1: 18.8, n: 4, head: 'Posare i cassoni' },
+    { id: 'porto',   t0: 18.8, t1: 23.0, n: 5, head: 'Il porto al lavoro' },
+    { id: 'fine',    t0: 23.0, t1: 25.5, n: 0, head: '' },
+  ];
+  const DURATION = 26.5; // last beat + ~1 s hold on the takeaway
+  // event offsets (seconds from the start of their beat)
+  const EV = {
+    hook: { rise: [0, 0.8], t1: [0.3, 0.9], t2: [0.8, 1.3], fall: [2.6, 3.2] },
+    studio: { rise: [0.55, 1.35], head: 1.1, boat: [1.4, 3.5], tagBoat: 1.6, waves: [2.0, 2.6], depth: 2.7 },
+    diga: { head: 0.2, pier: [0.4, 0.9], blocks: [0.8, 2.6], wall: [2.4, 2.9], tagDiga: 2.0, lights: 2.9, calm: [2.6, 3.4], tagCalma: 3.2 },
+    fondale: { head: 0.2, dredger: [0.5, 0.9], tagDraga: 1.0, bill: [0.8, 1.2], pipe: [1.0, 1.6], dig: [1.3, 3.2], hit: 3.2 },
+    cassoni: { head: 0.2, first: 0.5, step: 0.7, slide: 0.4, sink: 0.3, tagCassone: 1.0, fill: [3.2, 3.8], back: [3.4, 3.9], tagSabbia: 3.5 },
+    porto: { head: 0.2, pave: [0.2, 0.6], cranes: [0.5, 0.7, 0.9], tagGru: 1.2, boxes: [1.0, 1.8], ship: [1.0, 2.6], dock: [2.6, 3.4], walkers: 1.5, tagBanchina: 2.0, tagImb: 2.6 },
+    fine: { pull: [0, 0.9], headline: 0.5, tags: [1.0, 1.35, 1.7] },
+  };
+  const B = Object.fromEntries(BEATS.map((b) => [b.id, b]));
+  const at = (id, off) => B[id].t0 + off;                       // absolute time of an event
+  const P = (t, a, b) => H.clamp((t - a) / (b - a));
+  const PR = (t, id, r) => P(t, at(id, r[0]), at(id, r[1]));    // progress over an event range
+  const E = H.ease, L = H.lerp;
+  const pop = (p) => (p <= 0 ? 0 : E.back(H.clamp(p)));
+
+  // ---------------- palette ----------------
+  const C = {
+    bgTop: '#f7f0e8', bgBot: '#e8e4f3', ink: '#2c3140', inkSoft: '#6b7085',
+    coral: '#ff7a6b', sea: '#8ccbe2', seaCalm: '#a6daea', seaDeep: '#6eb2d0', foam: '#ffffff',
+    land: '#efe3c6', grass: '#c7e3b5', beach: '#f3dfb0', pave: '#e6e3de', concrete: '#dcd8d1',
+    rock: '#bdb8b2', armour: '#cfd2d8', sediment: '#e8d3a3', bedrock: '#cbb9a0', sand: '#f0c98a',
+    hull: '#6f87c6', bridge: '#ffffff', shadow: '#3d3a5c',
+    boxes: ['#f4b8a3', '#a9d7c3', '#f6d98c', '#b9c4f0', '#f2a9c0'],
+    people: ['#ff7a6b', '#6f87c6', '#7cc3a5', '#f2b45c'],
+    green: '#4fbf86', red: '#ff5b5b',
+  };
+  const DARK = '#3a3f58';
+  const tone = (col, k) => H.rgba(H.mix(col, DARK, k));
+
+  // ---------------- isometric camera ----------------
+  const C30 = 0.8660254, S30 = 0.5, BASE = 19;
+  const zz = (z) => (z >= 0 ? z : z * 0.5); // below the waterline depths are drawn at half scale
+  const CAM = { fx: 20, fy: 13, fz: 0, zoom: 0.8, ox: 640, oy: 400, dy: 0 };
+  function Pj(x, y, z) {
+    const S = BASE * CAM.zoom;
+    const u = (x - y) * C30, v = (x + y) * S30 - zz(z);
+    const uf = (CAM.fx - CAM.fy) * C30, vf = (CAM.fx + CAM.fy) * S30 - zz(CAM.fz);
+    return [CAM.ox + (u - uf) * S, CAM.oy + (v - vf) * S + CAM.dy];
+  }
+  const CAMS = {
+    hook: { fx: 6, fy: 4, fz: 0, zoom: 1.75, oy: 500 },
+    studio: { fx: 21, fy: 14, fz: -6, zoom: 0.84, oy: 400 },
+    diga: { fx: 24, fy: 18, fz: 0, zoom: 1.45, oy: 400 },
+    fondale: { fx: 34, fy: 8, fz: -4, zoom: 1.0, oy: 380 },
+    cassoni: { fx: 31, fy: 9, fz: -5, zoom: 1.3, oy: 400 },
+    porto: { fx: 22, fy: 10, fz: 2, zoom: 1.08, oy: 420 },
+    fine: { fx: 20, fy: 13, fz: -7, zoom: 0.66, oy: 460 },
+  };
+  function setCam(t) {
+    let i = 0; for (let k = 0; k < BEATS.length; k++) if (t >= BEATS[k].t0) i = k;
+    const b = BEATS[i], cur = CAMS[b.id], prev = CAMS[BEATS[Math.max(1, i - 1)].id];
+    const g = i <= 1 ? 1 : E.inOut(P(t, b.t0, b.t0 + 0.9));
+    const push = 1 + 0.025 * P(t, b.t0, b.t1); // slow camera push inside each beat
+    for (const k of ['fx', 'fy', 'fz', 'zoom', 'oy']) CAM[k] = L(prev[k], cur[k], g);
+    CAM.zoom *= push; CAM.ox = 640; CAM.dy = 0;
+  }
+
+  // ---------------- drawing primitives ----------------
+  function poly(ctx, pts, fill) { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); }
+  function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  // flat three-tone box: top lightest, front-left mid, front-right darkest
+  function box(ctx, x, y, z, w, d, h, col, o = {}) {
+    if (h <= 0.001) return;
+    const z1 = z + h;
+    poly(ctx, [Pj(x + w, y, z), Pj(x + w, y + d, z), Pj(x + w, y + d, z1), Pj(x + w, y, z1)], tone(col, 0.26));
+    poly(ctx, [Pj(x, y + d, z), Pj(x + w, y + d, z), Pj(x + w, y + d, z1), Pj(x, y + d, z1)], tone(col, 0.13));
+    if (!o.noTop) poly(ctx, [Pj(x, y, z1), Pj(x + w, y, z1), Pj(x + w, y + d, z1), Pj(x, y + d, z1)], H.rgba(col));
+    if (o.edge !== false) {
+      ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 1;
+      const a = Pj(x, y + d, z1), b = Pj(x + w, y + d, z1), c = Pj(x + w, y, z1);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.stroke(); ctx.restore();
+    }
+  }
+  function topQuad(ctx, x0, y0, x1, y1, z, col) { poly(ctx, [Pj(x0, y0, z), Pj(x1, y0, z), Pj(x1, y1, z), Pj(x0, y1, z)], col); }
+  function isoCircle(ctx, cx, cy, z, r, n = 32) { const o = []; for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2; o.push(Pj(cx + Math.cos(a) * r, cy + Math.sin(a) * r, z)); } return o; }
+
+  // ---------------- scene items (depth-sorted, with long soft shadows) ----------------
+  let ITEMS = [], SHAD = [];
+  let ALPHA = 1;
+  function item(key, draw, layer = 'above') { const a = ALPHA; ITEMS.push({ key, layer, draw: a >= 1 ? draw : (c) => { c.save(); c.globalAlpha *= a; draw(c); c.restore(); } }); }
+  // a box item; split at the waterline so the water surface can sit between the two halves
+  function boxItem(x, y, z, w, d, h, col, o = {}) {
+    if (h <= 0.001) return;
+    const key = x + w / 2 + y + d / 2 + (o.k || 0);
+    if (z < 0 && z + h > 0) {
+      item(key, (c) => box(c, x, y, z, w, d, -z, col, { ...o, noTop: true, edge: false }), 'under');
+      item(key, (c) => box(c, x, y, 0, w, d, z + h, col, o));
+    } else item(key, (c) => box(c, x, y, z, w, d, h, col, o), z + h <= 0 ? 'under' : 'above');
+    if (z + h > 0 && !o.noShadow) SHAD.push([x, y, Math.max(0, z), w, d, z + h - Math.max(0, z)]);
+  }
+  function drawShadows(ctx) {
+    if (!SHAD.length) return;
+    const lay = shadowLayer(), g = lay.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, HH); g.fillStyle = '#000';
+    for (const [x, y, z, w, d, h] of SHAD) {
+      const sx = 0.75 * h, sy = -0.55 * h; // long shadows fall toward screen-right
+      const f = [[x, y], [x + w, y], [x + w, y + d], [x, y + d]].map(([a, b]) => Pj(a, b, z));
+      const s = [[x, y], [x + w, y], [x + w, y + d], [x, y + d]].map(([a, b]) => Pj(a + sx, b + sy, z));
+      poly(g, f, '#000'); poly(g, s, '#000');
+      for (let i = 0; i < 4; i++) poly(g, [f[i], f[(i + 1) % 4], s[(i + 1) % 4], s[i]], '#000');
+    }
+    ctx.save(); ctx.globalAlpha = 0.15; ctx.filter = 'blur(5px)';
+    ctx.globalCompositeOperation = 'multiply';
+    // tint the shadow toward the cool shadow colour
+    const tint = tintLayer(); const tg = tint.getContext('2d');
+    tg.setTransform(1, 0, 0, 1, 0, 0); tg.globalCompositeOperation = 'source-over'; tg.clearRect(0, 0, W, HH);
+    tg.drawImage(lay, 0, 0); tg.globalCompositeOperation = 'source-in'; tg.fillStyle = C.shadow; tg.fillRect(0, 0, W, HH);
+    ctx.drawImage(tint, 0, 0);
+    ctx.restore();
+  }
+  let SL = null, TL = null;
+  const shadowLayer = () => SL || (SL = H.layer(W, HH));
+  const tintLayer = () => TL || (TL = H.layer(W, HH));
+
+  // ---------------- labels: white pinned tags, header pill, connectors ----------------
+  function tag(ctx, text, ax, ay, dx, dy, p, o = {}) {
+    if (p <= 0) return;
+    const s = pop(p), big = !!o.big;
+    ctx.save();
+    ctx.font = big ? '800 64px Inter' : '600 28px Inter';
+    const tw = ctx.measureText(text).width, w = tw + (big ? 64 : 58), h = big ? 84 : 50;
+    const tx = ax + dx, ty = ay + dy;
+    // pin line + anchor dot
+    const lp = H.clamp(p * 2.2);
+    ctx.strokeStyle = 'rgba(44,49,64,0.55)'; ctx.lineWidth = 2;
+    const ey = ty + (dy < 0 ? h / 2 : -h / 2);
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(L(ax, tx, lp), L(ay, ey, lp)); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ax, ay, 6, 0, 7); ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = C.coral; ctx.stroke();
+    ctx.translate(tx, ty); ctx.scale(s, s);
+    ctx.shadowColor = 'rgba(61,58,92,0.22)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#ffffff'; roundRect(ctx, -w / 2, -h / 2, w, h, h / 2); ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = C.coral; ctx.beginPath(); ctx.arc(-w / 2 + (big ? 28 : 24), 0, big ? 9 : 7, 0, 7); ctx.fill();
+    ctx.fillStyle = big ? C.coral : C.ink; ctx.textBaseline = 'middle';
+    ctx.fillText(text, -w / 2 + (big ? 46 : 40), big ? 3 : 1);
+    ctx.restore();
+  }
+  function headerPill(ctx, n, text, p, alpha = 1) {
+    if (p <= 0 || alpha <= 0) return;
+    ctx.save(); ctx.globalAlpha = alpha;
+    ctx.font = '600 30px Inter'; const tw = ctx.measureText(text).width, w = tw + 92, h = 58, x = 34, y = 30;
+    const s = pop(p); ctx.translate(x, y + h / 2); ctx.scale(s, s); ctx.translate(-x, -(y + h / 2));
+    ctx.shadowColor = 'rgba(61,58,92,0.18)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 5;
+    ctx.fillStyle = '#fff'; roundRect(ctx, x, y, w, h, h / 2); ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.fillStyle = C.coral; ctx.beginPath(); ctx.arc(x + 30, y + h / 2, 19, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '800 24px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(n), x + 30, y + h / 2 + 1);
+    ctx.fillStyle = C.ink; ctx.font = '600 30px Inter'; ctx.textAlign = 'left'; ctx.fillText(text, x + 60, y + h / 2 + 1);
+    ctx.restore();
+  }
+  function headers(ctx, t) {
+    for (let i = 1; i < BEATS.length - 1; i++) {
+      const b = BEATS[i], nb = BEATS[i + 1];
+      if (t < b.t0) continue;
+      const a = i + 1 < BEATS.length - 1 ? 1 - P(t, nb.t0 - 0.15, nb.t0 + 0.1) : 1 - P(t, nb.t0, nb.t0 + 0.3);
+      headerPill(ctx, b.n, b.head, P(t, at(b.id, EV[b.id].head || 0.2), at(b.id, (EV[b.id].head || 0.2) + 0.45)), a);
+    }
+  }
+  // curved dashed connector with an arrowhead
+  function connector(ctx, a, c, b, p, col = C.ink) {
+    if (p <= 0) return;
+    const pts = []; for (let i = 0; i <= 40 * p; i++) { const s = i / 40; pts.push([(1 - s) ** 2 * a[0] + 2 * (1 - s) * s * c[0] + s * s * b[0], (1 - s) ** 2 * a[1] + 2 * (1 - s) * s * c[1] + s * s * b[1]]); }
+    if (pts.length < 2) return;
+    ctx.save(); ctx.strokeStyle = H.rgba(col, 0.85); ctx.lineWidth = 3.5; ctx.setLineDash([10, 9]); ctx.lineCap = 'round';
+    ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); ctx.setLineDash([]);
+    if (p >= 0.98) {
+      const [x2, y2] = pts[pts.length - 1], [x1, y1] = pts[pts.length - 3], ang = Math.atan2(y2 - y1, x2 - x1);
+      ctx.fillStyle = H.rgba(col, 0.9); ctx.beginPath(); ctx.moveTo(x2 + Math.cos(ang) * 6, y2 + Math.sin(ang) * 6);
+      ctx.lineTo(x2 + Math.cos(ang + 2.5) * 16, y2 + Math.sin(ang + 2.5) * 16); ctx.lineTo(x2 + Math.cos(ang - 2.5) * 16, y2 + Math.sin(ang - 2.5) * 16); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ---------------- background + finishing ----------------
+  let BG = null;
+  function background() {
+    if (BG) return BG;
+    const c = H.layer(W, HH), g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, HH); gr.addColorStop(0, C.bgTop); gr.addColorStop(1, C.bgBot);
+    g.fillStyle = gr; g.fillRect(0, 0, W, HH);
+    const rg = g.createRadialGradient(640, 300, 50, 640, 300, 760); rg.addColorStop(0, 'rgba(255,255,255,0.55)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, W, HH);
+    // faint isometric dot grid on the backdrop
+    g.fillStyle = 'rgba(120,112,160,0.08)';
+    for (let j = 0; j < 40; j++) for (let i = 0; i < 60; i++) { const x = i * 28 + (j % 2) * 14, y = j * 16 + 6; g.beginPath(); g.arc(x, y, 1.3, 0, 7); g.fill(); }
+    BG = c; return c;
+  }
+  function finish(ctx, t) {
+    H.vignette(ctx, W, HH, 0.1, '96,88,140');
+    H.grain(ctx, W, HH, 0.022, 500 + Math.floor(t * 24));
+  }
+
+  // ---------------- the world: one long floating tile, x 0..40 along the coast, y 0 (land) .. 26 (open sea) ----------------
+  const TX = 40, TY = 26, ZB = -22, LANDZ = 1.5;
+  // seabed profile along y (what the cut-away face at x = 40 shows)
+  function seabed(y, s) {
+    let z;
+    if (y <= 5.5) z = LANDZ;
+    else if (y <= 9.5) z = L(LANDZ, -10, (y - 5.5) / 4);
+    else if (y <= 21.6) z = -10;
+    else z = L(-10, -11, H.clamp((y - 21.6) / 2));
+    if (s.dig > 0 && y >= 6.6 && y <= 17.4) {
+      const edge = H.clamp(Math.min((y - 6.6) / 0.4, (17.4 - y) / 0.4));
+      z = Math.min(z, L(z, -16, s.dig * edge));
+    }
+    if (s.back > 0 && y >= 5.5 && y <= 7) z = L(z, LANDZ, s.back);
+    return z;
+  }
+  function state(t) {
+    return {
+      dig: E.inOut(PR(t, 'fondale', EV.fondale.dig)),
+      bw: PR(t, 'diga', EV.diga.blocks), wall: PR(t, 'diga', EV.diga.wall), pier: PR(t, 'diga', EV.diga.pier),
+      fill: PR(t, 'cassoni', EV.cassoni.fill), back: E.inOut(PR(t, 'cassoni', EV.cassoni.back)),
+      caisson: [0, 1, 2, 3].map((i) => {
+        const t0 = at('cassoni', EV.cassoni.first + i * EV.cassoni.step);
+        return { slide: E.out(P(t, t0, t0 + EV.cassoni.slide)), sink: E.inOut(P(t, t0 + EV.cassoni.slide, t0 + EV.cassoni.slide + EV.cassoni.sink)), on: t >= t0 };
+      }),
+      pave: E.out(PR(t, 'porto', EV.porto.pave)),
+    };
+  }
+
+  // underside soft shadow on the backdrop: the tile floats
+  function tileShadow(ctx) {
+    const c = Pj(TX / 2, TY / 2, ZB - 14), S = BASE * CAM.zoom;
+    ctx.save(); ctx.filter = 'blur(18px)'; ctx.fillStyle = 'rgba(61,58,92,0.16)';
+    ctx.beginPath(); ctx.ellipse(c[0] + 30, c[1] + 20, 30 * S, 9 * S, 0, 0, 7); ctx.fill(); ctx.restore();
+  }
+  function tileBody(ctx, t, s) {
+
+    // front-left face (y = TY): open-sea section
+    const fy = TY;
+    poly(ctx, [Pj(0, fy, ZB), Pj(TX, fy, ZB), Pj(TX, fy, -17), Pj(0, fy, -17)], tone(C.bedrock, 0.13));
+    poly(ctx, [Pj(0, fy, -17), Pj(TX, fy, -17), Pj(TX, fy, -11), Pj(0, fy, -11)], tone(C.sediment, 0.13));
+    poly(ctx, [Pj(0, fy, -11), Pj(TX, fy, -11), Pj(TX, fy, 0), Pj(0, fy, 0)], H.rgba(H.mix(C.seaDeep, DARK, 0.06), 0.92));
+
+    // front-right face (x = TX): the cut-away cross-section, land → quay → basin → breakwater → open sea
+    const ys = []; for (let y = 0; y <= TY + 0.001; y += 0.25) ys.push(y);
+    const prof = ys.map((y) => [y, seabed(y, s)]);
+    poly(ctx, [Pj(TX, 0, ZB), Pj(TX, TY, ZB), Pj(TX, TY, -17), ...prof.slice().reverse().map(([y, z]) => Pj(TX, y, Math.min(z, -17 + (z + 17) * 0)))], tone(C.bedrock, 0.26));
+    // sediment band: from 6 m below the bed up to the bed
+    poly(ctx, [...prof.map(([y, z]) => Pj(TX, y, z)), ...prof.slice().reverse().map(([y, z]) => Pj(TX, y, Math.max(ZB, Math.min(z, 0) - 6)))], tone(C.sediment, 0.24));
+    // land fill above the waterline
+    poly(ctx, [...prof.filter(([y, z]) => z >= 0).map(([y, z]) => Pj(TX, y, z)), ...prof.filter(([y, z]) => z >= 0).reverse().map(([y]) => Pj(TX, y, 0))], tone(C.land, 0.24));
+    // water column
+    const wet = prof.filter(([y, z]) => z < 0);
+    if (wet.length) poly(ctx, [...wet.map(([y, z]) => Pj(TX, y, z)), Pj(TX, TY, 0), Pj(TX, wet[0][0], 0)], H.rgba(H.mix(C.seaDeep, DARK, 0.12), 0.95));
+    // caisson in section (the last one sits on the face)
+    const k = s.caisson[3];
+    if (k.on) {
+      const y0 = L(13, 7, k.slide), top = L(5, LANDZ, k.sink), bot = top - 17.5;
+      if (k.sink > 0.99) poly(ctx, [Pj(TX, 6.6, -17), Pj(TX, 10.9, -17), Pj(TX, 10.9, -16), Pj(TX, 6.6, -16)], tone(C.rock, 0.26));
+      poly(ctx, [Pj(TX, y0, bot), Pj(TX, y0 + 3.5, bot), Pj(TX, y0 + 3.5, top), Pj(TX, y0, top)], tone(C.concrete, 0.24));
+      for (let c = 0; c < 2; c++) {
+        const a = y0 + 0.35 + c * 1.6, b = a + 1.2;
+        const fillTop = bot + 1 + (top - bot - 1.6) * s.fill;
+        poly(ctx, [Pj(TX, a, bot + 1), Pj(TX, b, bot + 1), Pj(TX, b, top - 0.4), Pj(TX, a, top - 0.4)], tone(C.seaDeep, 0.2));
+        if (s.fill > 0) poly(ctx, [Pj(TX, a, bot + 1), Pj(TX, b, bot + 1), Pj(TX, b, fillTop), Pj(TX, a, fillTop)], tone(C.sand, 0.2));
+      }
+    }
+    // breakwater in section
+    if (s.bw > 0) {
+      const h = H.clamp(s.bw * 1.2);
+      const crest = L(-10, 1.2, h);
+      poly(ctx, [Pj(TX, 16.6, -10), Pj(TX, 18.4, crest), Pj(TX, 20.0, crest), Pj(TX, 22.2, -10)], tone(C.rock, 0.24));
+      poly(ctx, [Pj(TX, 20.0, crest), Pj(TX, 20.9, crest), Pj(TX, 23.4, -10), Pj(TX, 22.2, -10)], tone(C.armour, 0.22));
+      if (s.wall > 0) { const wz = crest + 2.2 * pop(s.wall); poly(ctx, [Pj(TX, 18.5, crest), Pj(TX, 19.9, crest), Pj(TX, 19.9, wz), Pj(TX, 19.2, wz), Pj(TX, 19.2, crest + 1.2), Pj(TX, 18.5, crest + 1.2)], tone(C.concrete, 0.22)); }
+    }
+    // depth scale ticks on the face
+    ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2;
+    for (const z of [-5, -10, -15]) { const a = Pj(TX, TY, z), b = Pj(TX, TY - 0.8, z); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+    ctx.restore();
+  }
+
+  function seaAndLand(ctx, t, s) {
+    // land top
+    topQuad(ctx, 0, 0, TX, 5.5, LANDZ, H.rgba(C.land));
+    // grass strip at the back
+    topQuad(ctx, 0, 0, TX, 1.6, LANDZ, H.rgba(C.grass));
+    // beach slope (above water part)
+    poly(ctx, [Pj(0, 5.5, LANDZ), Pj(TX, 5.5, LANDZ), Pj(TX, 6.2, 0), Pj(0, 6.2, 0)], H.rgba(C.beach));
+    // seabed seen through the water
+    topQuad(ctx, 0, 6.2, TX, TY, -10, H.rgba(H.mix(C.sediment, C.seaDeep, 0.35)));
+    if (s.dig > 0) {
+      topQuad(ctx, 10 + 30 * (1 - s.dig), 6.6, TX, 17.4, L(-10, -16, s.dig), H.rgba(H.mix(C.sediment, C.seaDeep, 0.6)));
+    }
+  }
+
+  function water(ctx, t, s) {
+    const calm = s.bw > 0.6;
+    // whole sea surface
+    poly(ctx, [Pj(0, 6.2, 0), Pj(TX, 6.2, 0), Pj(TX, TY, 0), Pj(0, TY, 0)], H.rgba(C.sea, 0.82));
+    // the calm basin inside the breakwater
+    if (s.bw > 0) { ctx.save(); ctx.globalAlpha = H.clamp((s.bw - 0.4) * 2); poly(ctx, [Pj(10, 6.2, 0), Pj(TX, 6.2, 0), Pj(TX, 17.6, 0), Pj(10, 17.6, 0)], H.rgba(C.seaCalm, 0.75)); ctx.restore(); }
+    // incoming wave crests: they travel to the shore until the breakwater stops them
+    ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+    const stopFull = 7, stopBw = 21.4;
+    for (let k = 0; k < 7; k++) {
+      const y = TY - ((t * 1.6 + k * 3.1) % (TY - stopFull));
+      const r = H.rng(40 + k);
+      for (let seg = 0; seg < 5; seg++) {
+        const x0 = seg * 8 + r.range(0, 2), x1 = x0 + r.range(3, 5.5);
+        const blocked = calm && y < stopBw && x1 > 10;
+        if (blocked) continue;
+        const a = H.clamp((TY - y) / 2) * H.clamp((y - stopFull) / 2);
+        ctx.globalAlpha = a * 0.8;
+        const p0 = Pj(x0, y, 0), p1 = Pj(x1, y, 0); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke();
+      }
+    }
+    // foam along the breakwater's seaward face
+    if (calm) {
+      ctx.globalAlpha = 0.9; ctx.fillStyle = '#fff';
+      for (let i = 0; i < 26; i++) { const x = 10.5 + i * 1.15, ph = Math.sin(t * 3 + i * 1.7) * 0.5 + 0.5; const p = Pj(x, 22.0 + ph * 0.3, 0); ctx.beginPath(); ctx.ellipse(p[0], p[1], 4 + ph * 3, 2 + ph, 0, 0, 7); ctx.fill(); }
+    }
+    // shoreline foam
+    ctx.globalAlpha = 0.7; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; const a = Pj(0, 6.3, 0), b = Pj(calm ? 14 : TX, 6.3, 0); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---------------- props ----------------
+  function shipItems(x, y, len, beam, o = {}) {
+    const hull = o.hull || C.hull; const prevA = ALPHA; ALPHA = o.alpha == null ? 1 : o.alpha;
+    boxItem(x, y, -0.8, len, beam, 2.2, hull, { k: 0.1 });
+    // bow wedge
+    item(x + len + y + beam / 2 + 0.2, (c) => {
+      const bl = beam * 0.9, z0 = -0.8, z1 = 1.4;
+      const A = [x + len, y], Bp = [x + len + bl, y + beam / 2], Cp = [x + len, y + beam];
+      if (z0 < 0) {/* below water part is hidden by the water surface */}
+      poly(c, [Pj(A[0], A[1], 0), Pj(Bp[0], Bp[1], 0), Pj(Bp[0], Bp[1], z1), Pj(A[0], A[1], z1)], tone(hull, 0.3));
+      poly(c, [Pj(Bp[0], Bp[1], 0), Pj(Cp[0], Cp[1], 0), Pj(Cp[0], Cp[1], z1), Pj(Bp[0], Bp[1], z1)], tone(hull, 0.13));
+      poly(c, [Pj(A[0], A[1], z1), Pj(Bp[0], Bp[1], z1), Pj(Cp[0], Cp[1], z1)], H.rgba(hull));
+    });
+    const bh = o.small ? 1.4 : 3.2;
+    boxItem(x + 0.3, y + 0.3, 1.4, o.small ? 1.4 : 2.2, beam - 0.6, bh, C.bridge, { k: 0.3 });
+    boxItem(x + 0.7, y + 0.5, 1.4 + bh, 0.7, beam - 1.0, 0.5, C.coral, { k: 0.31 });
+    if (o.boxes) {
+      const r = H.rng(o.seed || 9);
+      for (let i = 0; i < Math.floor((len - 3.6) / 1.6); i++) for (let j = 0; j < 2; j++) {
+        const hgt = r.int(1, 2);
+        boxItem(x + 3 + i * 1.6, y + 0.25 + j * (beam - 0.5) / 2, 1.4, 1.45, (beam - 0.5) / 2 - 0.05, hgt * 0.9, r.pick(C.boxes), { k: 0.35, noShadow: true });
+      }
+    }
+    ALPHA = prevA;
+  }
+  function smallBoat(x, y, col, o = {}) {
+    boxItem(x, y, -0.4, 3, 1.4, 1.0, col, { k: 0.1 });
+    boxItem(x + 0.5, y + 0.25, 0.6, 1.0, 0.9, 1.0, '#fff', { k: 0.2 });
+  }
+  function crane(x, p) {
+    if (p <= 0) return;
+    const s = pop(p), h = 7 * s;
+    for (const [dx, dy] of [[0, 7.6], [3, 7.6], [0, 9.8], [3, 9.8]]) boxItem(x + dx, dy, LANDZ, 0.45, 0.45, h, C.coral, { k: 0.5 });
+    boxItem(x - 0.2, 7.4, LANDZ + h, 3.9, 3.0, 1.0 * s, C.coral, { k: 0.6 });
+    boxItem(x + 1.2, 2.5, LANDZ + h + 1.0 * s, 1.1, 13.5, 0.7 * s, '#ff9a8d', { k: 1.5 });
+    boxItem(x + 0.9, 7.6, LANDZ + h + 1.7 * s, 1.7, 2.2, 1.0 * s, '#ffffff', { k: 1.6 });
+  }
+  function lighthouse(x, y, col, p, blink) {
+    if (p <= 0) return;
+    const s = pop(p);
+    boxItem(x - 0.4, y - 0.4, LANDZ, 0.8, 0.8, 3.0 * s, '#ffffff', { k: 2 });
+    boxItem(x - 0.45, y - 0.45, LANDZ + 3.0 * s, 0.9, 0.9, 0.7 * s, col, { k: 2.1 });
+    if (blink > 0) item(x + y + 3, (c) => {
+      const q = Pj(x, y, LANDZ + 3.35 * s), S = BASE * CAM.zoom;
+      const g = c.createRadialGradient(q[0], q[1], 0, q[0], q[1], 2.2 * S);
+      g.addColorStop(0, H.rgba(col, 0.55 * blink)); g.addColorStop(1, H.rgba(col, 0));
+      c.fillStyle = g; c.beginPath(); c.arc(q[0], q[1], 2.2 * S, 0, 7); c.fill();
+    });
+  }
+  function person(x, y, z, col, phase) {
+    item(x + y + 0.05, (c) => {
+      const S = BASE * CAM.zoom, p = Pj(x, y, z), step = Math.sin(phase) * 0.06 * S;
+      c.fillStyle = 'rgba(61,58,92,0.18)'; c.beginPath(); c.ellipse(p[0] + 0.25 * S, p[1], 0.35 * S, 0.12 * S, 0, 0, 7); c.fill();
+      c.fillStyle = tone(col, 0.25); c.fillRect(p[0] - 0.12 * S + step, p[1] - 0.45 * S, 0.1 * S, 0.45 * S); c.fillRect(p[0] + 0.02 * S - step, p[1] - 0.45 * S, 0.1 * S, 0.45 * S);
+      c.fillStyle = H.rgba(col); roundRect(c, p[0] - 0.17 * S, p[1] - 1.05 * S, 0.34 * S, 0.62 * S, 0.12 * S); c.fill();
+      c.fillStyle = '#ffd9c2'; c.beginPath(); c.arc(p[0], p[1] - 1.22 * S, 0.17 * S, 0, 7); c.fill();
+      c.fillStyle = '#ffd34d'; c.beginPath(); c.arc(p[0], p[1] - 1.3 * S, 0.17 * S, Math.PI, 0); c.fill(); // hard hat
+    });
+  }
+  function billboard(t, p, value) {
+    if (p <= 0) return;
+    const s = pop(p), x0 = 24, x1 = 34, y = 2.6, z0 = LANDZ + 2.6 * s, z1 = z0 + 6.2 * s;
+    boxItem(25.5, 2.2, LANDZ, 0.4, 0.4, 2.8 * s, '#b7bccb', { k: -1 });
+    boxItem(32.1, 2.2, LANDZ, 0.4, 0.4, 2.8 * s, '#b7bccb', { k: -1 });
+    boxItem(x0, 2.0, z0, x1 - x0, 0.6, z1 - z0, '#ffffff', { k: -0.8 });
+    item(x0 + y + 9, (c) => {
+      const o = Pj(x0, y, z1), S = BASE * CAM.zoom;
+      c.save(); c.setTransform(C30 * S / 19, S30 * S / 19, 0, S / 19, o[0], o[1]);
+      c.fillStyle = C.inkSoft; c.font = '600 30px Inter'; c.fillText('PROFONDITÀ', 16, 40);
+      c.fillStyle = C.coral; c.font = '800 66px Inter'; c.fillText(value, 16, 106);
+      c.restore();
+    });
+  }
+
+  // ---------------- the world scene ----------------
+  function world(ctx, t) {
+    const s = state(t);
+    ITEMS = []; SHAD = [];
+
+    // --- study: survey boat on a lawn-mower track with sonar rings
+    const st = PR(t, 'studio', EV.studio.boat);
+    if (st > 0 && t < at('diga', 0.8)) {
+      const legs = [[6, 13], [30, 13], [30, 16.5], [6, 16.5]], seg = st * 3, i = Math.min(2, Math.floor(seg)), f = seg - i;
+      const bx = L(legs[i][0], legs[i + 1][0], f), by = L(legs[i][1], legs[i + 1][1], f);
+      const fade = 1 - P(t, at('diga', 0.4), at('diga', 0.8));
+      if (fade > 0.02) {
+        smallBoat(bx - 1.5, by - 0.7, C.coral);
+        item(bx + by - 0.5, (c) => {
+          c.save(); c.globalAlpha = fade;
+          for (let k = 0; k < 3; k++) { const ph = (t * 0.9 + k / 3) % 1; c.strokeStyle = `rgba(255,255,255,${0.8 * (1 - ph)})`; c.lineWidth = 2; const pts = isoCircle(c, bx, by, 0, 1 + ph * 4); c.beginPath(); pts.forEach(([x, y], j) => (j ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.stroke(); }
+          c.restore();
+        }, 'under');
+      }
+    }
+
+    // --- breakwater: armour blocks pop from the root (x = 40) to the head (x = 10)
+    if (s.bw > 0) {
+      const r = H.rng(77);
+      for (let i = 0; i < 26; i++) {
+        const x = TX - 1.15 - i * 1.15, pp = H.clamp(s.bw * 1.3 - (i / 26)) ;
+        for (let row = 0; row < 3; row++) {
+          const yy = [17.4, 20.0, 21.0][row], sz = row === 0 ? 0.8 : 1.0, hgt = (row === 0 ? 0.7 : r.range(0.9, 1.4)) * pop(pp);
+          if (pp > 0) boxItem(x + r.range(-0.1, 0.1), yy, -0.3, sz, sz, hgt + 0.3, row === 0 ? C.rock : C.armour, { k: 0.2 });
+        }
+        if (pp > 0) boxItem(x, 18.2, -0.3, 1.15, 1.8, 0.8 * pop(pp), C.rock, { noShadow: true });
+      }
+      if (s.wall > 0) boxItem(10, 18.6, 0.5, 30, 1.3, 1.9 * pop(s.wall), C.concrete, { k: 0.4 });
+    }
+    if (s.pier > 0) boxItem(3, 6.2, -2, 2, 6.8, (2 + LANDZ) * pop(s.pier), C.concrete);
+    const lp = P(t, at('diga', EV.diga.lights), at('diga', EV.diga.lights + 0.4)), blink = (0.5 + 0.5 * Math.sin(t * 5)) * lp;
+    lighthouse(10.6, 19.3, C.green, lp, blink);
+    lighthouse(4, 12.6, C.red, lp, (0.5 + 0.5 * Math.sin(t * 5 + 2)) * lp);
+
+    // --- dredger + floating pipeline + depth billboard
+    const dp = PR(t, 'fondale', EV.fondale.dredger);
+    if (dp > 0 && t < at('cassoni', 0.4)) {
+      const fade = 1 - P(t, at('cassoni', 0), at('cassoni', 0.4));
+      if (fade > 0.05) {
+        const dx = 22 + 9 * s.dig, sc = pop(dp);
+        boxItem(dx, 11, -0.6, 7 * sc, 3, 1.8, '#f2b45c', { k: 0.1 });
+        boxItem(dx + 0.5, 11.4, 1.2, 2, 2.2, 2.4 * sc, '#ffffff', { k: 0.3 });
+        boxItem(dx + 6.2, 11.9, 1.2, 0.4, 1.2, 4.2 * sc, C.coral, { k: 0.4 });
+        const pp = PR(t, 'fondale', EV.fondale.pipe);
+        for (let i = 0; i < 7; i++) if (pp > i / 7) { const fx = dx - 1 - i * 1.4, fy = L(12, 6.8, i / 6); boxItem(fx, fy, -0.2, 0.9, 0.9, 0.55, '#ffffff', { k: 0.1, noShadow: true }); }
+      }
+    }
+    // the billboard folds away before the quay equipment arrives
+    const bp = PR(t, 'fondale', EV.fondale.bill) * (1 - P(t, at('porto', 0), at('porto', 0.35)));
+    const depth = Math.round(L(-10, -16, s.dig));
+    billboard(t, bp, `${depth === 0 ? 0 : '−' + Math.abs(depth)} m`);
+
+    // --- caissons: towed in, sunk onto the bed, filled with sand
+    s.caisson.forEach((k, i) => {
+      if (!k.on) return;
+      const x = 14 + i * 6.5, y = L(13, 7, k.slide), top = L(5, LANDZ, k.sink), w = i === 3 ? TX - x : 6.4;
+      boxItem(x, y, top - 17.5, w, 3.5, 17.5, C.concrete, { k: 0.2 });
+      // open cells on top, sand fills them
+      item(x + w / 2 + y + 1.75 + 0.3, (c) => {
+        for (let a = 0; a < 3; a++) for (let b2 = 0; b2 < 2; b2++) {
+          const cx0 = x + 0.3 + a * (w - 0.6) / 3, cy0 = y + 0.3 + b2 * 1.45, cw = (w - 0.6) / 3 - 0.25, cd = 1.2;
+          topQuad(c, cx0, cy0, cx0 + cw, cy0 + cd, top + 0.001, s.fill > 0 ? H.rgba(H.mix(C.seaDeep, C.sand, s.fill)) : tone(C.seaDeep, 0.15));
+        }
+      });
+    });
+    // tug pulling the caisson that is arriving
+    s.caisson.forEach((k, i) => { if (k.on && k.slide < 1) smallBoat(14 + i * 6.5 + 2, L(17, 11, k.slide), '#7cc3a5'); });
+    if (s.back > 0) boxItem(14, 5.5, LANDZ - 0.01, TX - 14, 1.5 * s.back, 0.01, C.land, { noShadow: true });
+
+    // --- quay paving, cranes, containers, ship, workers
+    if (s.pave > 0) item(14 + 13 + 5, (c) => { c.save(); c.globalAlpha = s.pave; topQuad(c, 14, 1.6, TX, 10.5, LANDZ + 0.02, H.rgba(C.pave)); c.restore(); }, 'flat');
+    EV.porto.cranes.forEach((o, i) => crane(19 + i * 7, P(t, at('porto', o), at('porto', o + 0.45))));
+    const boxesP = PR(t, 'porto', EV.porto.boxes);
+    if (boxesP > 0) {
+      const r = H.rng(311); let idx = 0;
+      for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
+        const pp = H.clamp(boxesP * 1.4 - idx / 12), n = r.int(1, 3), col = r.pick(C.boxes); idx++;
+        if (pp > 0) boxItem(15 + i * 3.4, 2.2 + j * 1.5, LANDZ, 2.8, 1.2, 0.95 * n * pop(pp), col, { k: 0 });
+      }
+    }
+    const sp = E.inOut(PR(t, 'porto', EV.porto.ship)), dk = E.inOut(PR(t, 'porto', EV.porto.dock));
+    if (sp > 0) {
+      const x = L(-6, 15.5, sp), y = L(13.8, 10.8, dk);
+      shipItems(x, y, 18, 2.9, { boxes: true, seed: 5, alpha: H.clamp((x + 6) / 6) });
+    }
+    if (t >= at('porto', EV.porto.walkers)) {
+      const a = P(t, at('porto', EV.porto.walkers), at('porto', EV.porto.walkers + 0.4));
+      if (a > 0.5) for (let i = 0; i < 5; i++) {
+        const sp2 = 0.6 + (i % 3) * 0.2, base = 16 + i * 4.5, x = base + ((t * sp2 + i * 1.3) % 4), y = 6.4 + (i % 2) * 0.5;
+        person(x, y, LANDZ, C.people[i % 4], t * 9 + i);
+      }
+    }
+    return s;
+  }
+
+  function renderWorld(ctx, t) {
+    const s = world(ctx, t);
+    tileShadow(ctx);
+    seaAndLand(ctx, t, s);
+    ITEMS.filter((i) => i.layer === 'under').sort((a, b) => a.key - b.key).forEach((i) => i.draw(ctx));
+    tileBody(ctx, t, s);
+    water(ctx, t, s);
+    ITEMS.filter((i) => i.layer === 'flat').forEach((i) => i.draw(ctx));
+    drawShadows(ctx);
+    ITEMS.filter((i) => i.layer === 'above').sort((a, b) => a.key - b.key).forEach((i) => i.draw(ctx));
+    return s;
+  }
+
+  // ---------------- the hook tile ----------------
+  function hookTile(ctx, t) {
+    ITEMS = []; SHAD = [];
+    const rise = E.back(PR(t, 'hook', EV.hook.rise)), fall = E.in(P(t, at('hook', EV.hook.fall[0]), at('hook', EV.hook.fall[1])));
+    CAM.fx = CAMS.hook.fx; CAM.fy = CAMS.hook.fy; CAM.fz = 0; CAM.zoom = CAMS.hook.zoom; CAM.oy = CAMS.hook.oy;
+    CAM.dy = (1 - rise) * 320 + fall * 520;
+    withAlpha(ctx, H.clamp(rise * 1.5) * (1 - fall), (ctx) => hookBody(ctx, t));
+    hookTitle(ctx, t, fall);
+  }
+  function hookBody(ctx, t) {
+    const tx = 12, ty = 8;
+    const c = Pj(tx / 2, ty / 2, -8), S = BASE * CAM.zoom;
+    ctx.save(); ctx.filter = 'blur(14px)'; ctx.fillStyle = 'rgba(61,58,92,0.18)'; ctx.beginPath(); ctx.ellipse(c[0] + 20, c[1] + 18, 8 * S, 2.5 * S, 0, 0, 7); ctx.fill(); ctx.restore();
+    poly(ctx, [Pj(0, ty, -6), Pj(tx, ty, -6), Pj(tx, ty, 0), Pj(0, ty, 0)], tone(C.seaDeep, 0.13));
+    poly(ctx, [Pj(tx, 0, -6), Pj(tx, ty, -6), Pj(tx, ty, 0), Pj(tx, 2, 0), Pj(tx, 2, LANDZ), Pj(tx, 0, LANDZ)], tone(C.sediment, 0.26));
+    poly(ctx, [Pj(tx, 2.6, -4), Pj(tx, ty, -4), Pj(tx, ty, 0), Pj(tx, 2.6, 0)], tone(C.seaDeep, 0.22));
+    topQuad(ctx, 0, 0, tx, 2, LANDZ, H.rgba(C.land));
+    poly(ctx, [Pj(0, 2, LANDZ), Pj(tx, 2, LANDZ), Pj(tx, 2.6, 0), Pj(0, 2.6, 0)], H.rgba(C.beach));
+    poly(ctx, [Pj(0, 2.6, 0), Pj(tx, 2.6, 0), Pj(tx, ty, 0), Pj(0, ty, 0)], H.rgba(C.sea, 0.95));
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
+    for (let k = 0; k < 3; k++) { const y = ty - ((t * 1.2 + k * 1.8) % 5); const a = Pj(1, y, 0), b = Pj(5, y, 0); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+    const bob = Math.sin(t * 2) * 0.08;
+    shipItems(2.2, 4.6 + bob, 6.4, 1.7, { boxes: true, seed: 3, small: true });
+    person(9, 1, LANDZ, C.people[0], 0);
+    drawShadows(ctx);
+    ITEMS.sort((a, b) => a.key - b.key).forEach((i) => i.draw(ctx));
+  }
+  function hookTitle(ctx, t, fall) {
+    ctx.save(); ctx.globalAlpha = 1 - fall; ctx.textAlign = 'center'; ctx.fillStyle = C.ink;
+    const a1 = PR(t, 'hook', EV.hook.t1), a2 = PR(t, 'hook', EV.hook.t2);
+    ctx.globalAlpha = (1 - fall) * a1; ctx.font = '800 56px Inter'; ctx.fillText('Come si costruisce', 640, 120 - (1 - E.out(a1)) * 20);
+    ctx.globalAlpha = (1 - fall) * a2; ctx.fillStyle = C.coral; ctx.font = '800 72px Inter'; ctx.fillText('un porto?', 640, 200 - (1 - E.out(a2)) * 20);
+    ctx.restore();
+  }
+
+  // ---------------- tags per beat ----------------
+  function tags(ctx, t, s) {
+    const T = (id, off) => P(t, at(id, off), at(id, off + 0.45));
+    const out = (id) => 1 - P(t, B[id].t1 - 0.25, B[id].t1); // tags clear in the pause before the next beat
+    const g = (x, y, z) => Pj(x, y, z);
+    if (t >= B.studio.t0 && t < B.diga.t0 + 0.6) {
+      const st = PR(t, 'studio', EV.studio.boat), legs = [[6, 13], [30, 13], [30, 16.5], [6, 16.5]], seg = st * 3, i = Math.min(2, Math.floor(seg)), f = seg - i;
+      const bx = L(legs[i][0], legs[i + 1][0], f), by = L(legs[i][1], legs[i + 1][1], f), a = g(bx, by, 1.5);
+      const o = out('studio');
+      tag(ctx, 'Rilievo del fondale', a[0], a[1], 0, -96, T('studio', EV.studio.tagBoat) * o);
+      const wp = PR(t, 'studio', EV.studio.waves);
+      if (o > 0) { ctx.save(); ctx.globalAlpha = o; connector(ctx, g(4, 25, 0), g(-2, 15, 4), g(3, 8, 0.5), wp, C.coral); ctx.restore(); }
+      const w = g(3, 22, 0); tag(ctx, 'Onde', w[0], w[1], -60, 60, T('studio', EV.studio.waves[1]) * o);
+      const d = g(TX, 13, -10); tag(ctx, 'Fondale −10 m', d[0], d[1], 150, -10, T('studio', EV.studio.depth) * o);
+    }
+    if (t >= B.diga.t0 && t < B.fondale.t0) {
+      const o = out('diga');
+      const a = g(16, 19.2, 2.4); tag(ctx, 'Diga foranea', a[0], a[1], -40, -120, T('diga', EV.diga.tagDiga) * o);
+      const c = g(32, 12, 0); tag(ctx, 'Acqua calma', c[0], c[1], 20, -110, T('diga', EV.diga.tagCalma) * o);
+      const m = g(30, 21.4, 1.2); tag(ctx, 'Massi', m[0], m[1], 40, 90, T('diga', EV.diga.tagCalma - 0.4) * o);
+    }
+    if (t >= B.fondale.t0 && t < B.cassoni.t0) {
+      const o = out('fondale');
+      const dx = 22 + 9 * s.dig, a = g(dx + 3, 12, 3.5); tag(ctx, 'Draga', a[0], a[1], -30, -100, T('fondale', EV.fondale.tagDraga) * o);
+      // down arrows on the cut face while the bed is lowered
+      const ap = PR(t, 'fondale', EV.fondale.dig);
+      if (ap > 0 && o > 0) {
+        ctx.save(); ctx.globalAlpha = o * H.clamp(ap * 4); ctx.strokeStyle = C.coral; ctx.fillStyle = C.coral; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        for (const y of [10, 13, 16]) { const p0 = g(TX, y, -7), p1 = g(TX, y, L(-9, -15, s.dig)); ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p1[0], p1[1] + 6); ctx.lineTo(p1[0] - 8, p1[1] - 6); ctx.lineTo(p1[0] + 8, p1[1] - 6); ctx.closePath(); ctx.fill(); }
+        ctx.restore();
+      }
+      const h = P(t, at('fondale', EV.fondale.hit), at('fondale', EV.fondale.hit + 0.35)), f = g(TX, 12, -16);
+      tag(ctx, '−16 m', f[0], f[1], 170, -40, h * o, { big: true });
+    }
+    if (t >= B.cassoni.t0 && t < B.porto.t0) {
+      const o = out('cassoni');
+      const a = g(28, 8.8, LANDZ); tag(ctx, 'Cassone in c.a.', a[0], a[1], -90, -130, T('cassoni', EV.cassoni.tagCassone) * o);
+      const b = g(TX, 8.8, -9); tag(ctx, 'Sabbia', b[0], b[1], 120, 40, T('cassoni', EV.cassoni.tagSabbia) * o);
+    }
+    if (t >= B.porto.t0 && t < B.fine.t0) {
+      const o = out('porto');
+      const a = g(26.5, 8.5, 10); tag(ctx, 'Gru', a[0], a[1], -10, -80, T('porto', EV.porto.tagGru) * o);
+      const b = g(30, 9.5, LANDZ); tag(ctx, 'Banchina', b[0], b[1], 120, 70, T('porto', EV.porto.tagBanchina) * o);
+      const c = g(7, 16, 0); tag(ctx, 'Imboccatura', c[0], c[1], -60, 90, T('porto', EV.porto.tagImb) * o);
+    }
+    if (t >= B.fine.t0) {
+      const hp = P(t, at('fine', EV.fine.headline), at('fine', EV.fine.headline + 0.5));
+      ctx.save(); ctx.globalAlpha = hp; ctx.fillStyle = C.ink; ctx.font = '800 54px Inter'; ctx.textAlign = 'center';
+      ctx.fillText('Ecco il porto', 640, 78 - (1 - E.out(hp)) * 16); ctx.restore();
+      const [a1, a2, a3] = EV.fine.tags;
+      const a = g(22, 19, 2.5); tag(ctx, 'Diga → acqua calma', a[0], a[1], -130, 90, T('fine', a1));
+      const b = g(TX, 12, -16); tag(ctx, '−16 m', b[0], b[1], 160, -20, T('fine', a2), { big: true });
+      const c = g(20, 6, 8); tag(ctx, 'Banchine su cassoni', c[0], c[1], -170, -80, T('fine', a3));
+    }
+  }
+
+  // draw fn at full opacity into a layer, then composite it at alpha a
+  let AL = null;
+  function withAlpha(ctx, a, fn) {
+    if (a <= 0.001) { fn(nullCtx()); return; }
+    if (a >= 0.999) { fn(ctx); return; }
+    const lay = AL || (AL = H.layer(W, HH)), g = lay.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, HH); g.globalAlpha = 1; g.filter = 'none';
+    fn(g);
+    ctx.save(); ctx.globalAlpha *= a; ctx.drawImage(lay, 0, 0); ctx.restore();
+  }
+  let NC = null;
+  const nullCtx = () => { const c = (NC || (NC = H.layer(W, HH))).getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, HH); return c; };
+
+  // ---------------- the explainer ----------------
+  function explainer(ctx, W_, H_, t) {
+    t = H.clamp(t, 0, DURATION);
+    ctx.save();
+    ctx.drawImage(background(), 0, 0);
+    if (t < at('studio', EV.studio.rise[0] + 0.05)) hookTile(ctx, t);
+    else if (t < at('hook', EV.hook.fall[1])) hookTile(ctx, t);
+    if (t >= at('studio', EV.studio.rise[0])) {
+      setCam(t);
+      const r = PR(t, 'studio', EV.studio.rise);
+      CAM.dy = (1 - E.back(r)) * 420;
+      let s; withAlpha(ctx, H.clamp(r * 1.6), (c) => { s = renderWorld(c, t); });
+      tags(ctx, t, s);
+      headers(ctx, t);
+    }
+    ctx.restore();
+    finish(ctx, t);
+  }
+
+  window.PORTO_ISO = { BEATS, EV, DURATION, at };
+  window.explainer = explainer;
+  window.DURATION = DURATION;
+  window.BEATS = BEATS;
+})();
+// scoreSound(k): every time comes from BEATS + EV in porto-iso.js, the same numbers the picture uses.
+function scoreSound(k) {
+  const { at, EV } = window.PORTO_ISO;
+  const m = { minor: true };
+  const pop = (t, o) => k.play('pop', t, { ...m, ...(o || {}) });
+
+  // 1 — hook
+  k.play('whoomp', at('hook', 0.55));
+  k.play('pop', at('hook', EV.hook.t1[0]), { gain: 0.8 });
+  k.play('pop', at('hook', EV.hook.t2[0]), { gain: 0.9 });
+  k.play('hiss', at('hook', 0.9), { ...m, dur: 1.4, gain: 0.35 });          // water lapping
+
+  // 2 — studio: question tile drops, site tile rises
+  k.tone(at('hook', EV.hook.fall[0]), { ...m, freq: [[0, 520], [0.5, 160]], dur: 0.5, gain: 0.12 });
+  k.play('whoomp', at('studio', EV.studio.rise[0] + 0.55), { deep: true });
+  k.play('pop', at('studio', EV.studio.head));
+  k.play('hum', at('studio', EV.studio.boat[0]), { ...m, dur: EV.studio.boat[1] - EV.studio.boat[0], freq: 110, gain: 0.6 });
+  for (let x = EV.studio.boat[0]; x < EV.studio.boat[1]; x += 0.37) k.play('blip', at('studio', x), { ...m, note: 'E6', gain: 0.6, pan: 0.2 });
+  for (let i = 0; i < 6; i++) k.play('tap', at('studio', EV.studio.waves[0] + i * 0.1), { ...m, gain: 0.5, pan: -0.5 });
+  pop(at('studio', EV.studio.tagBoat)); pop(at('studio', EV.studio.waves[1]), { pan: -0.5 }); pop(at('studio', EV.studio.depth), { pan: 0.6 });
+
+  // 3 — diga
+  k.play('pop', at('diga', EV.diga.head));
+  k.play('knock', at('diga', EV.diga.pier[0]), { pan: -0.6 });
+  const [b0, b1] = EV.diga.blocks;
+  for (let i = 0; i < 26; i++) k.play('clack', at('diga', b0 + (b1 - b0) * i / 33.8), { ...m, pitch: i / 26, pan: 0.6 - i / 26 });
+  pop(at('diga', EV.diga.tagDiga), { pan: -0.4 });
+  k.play('thud', at('diga', EV.diga.wall[0] + 0.15), { gain: 0.6 });
+  k.tone(at('diga', EV.diga.calm[0]), { freq: 'G3', dur: 1.2, gain: 0.07, a: 0.2, hold: 0.4, verb: 0.4 });
+  k.tone(at('diga', EV.diga.calm[0]), { freq: 'D4', dur: 1.2, gain: 0.05, a: 0.2, hold: 0.4, verb: 0.4 });
+  pop(at('diga', EV.diga.tagCalma - 0.4), { pan: 0.3 });
+  k.play('ping', at('diga', EV.diga.lights), { note: 'E6', pan: -0.5 });
+  k.play('ping', at('diga', EV.diga.lights + 0.1), { note: 'B5', pan: -0.7 });
+  pop(at('diga', EV.diga.tagCalma), { pan: 0.5 });
+
+  // 4 — fondale
+  k.play('pop', at('fondale', EV.fondale.head));
+  k.play('whoomp', at('fondale', EV.fondale.dredger[0] + 0.2), { gain: 0.5 });
+  k.play('whoomp', at('fondale', EV.fondale.bill[0] + 0.2), { gain: 0.4 });
+  pop(at('fondale', EV.fondale.tagDraga));
+  for (let i = 0; i < 7; i++) k.play('tap', at('fondale', EV.fondale.pipe[0] + (EV.fondale.pipe[1] - EV.fondale.pipe[0]) * i / 7), { ...m, gain: 0.4 });
+  const [d0, d1] = EV.fondale.dig;
+  k.play('hum', at('fondale', d0), { ...m, dur: d1 - d0, gain: 0.9 });
+  // billboard ticks exactly when the displayed metre changes (eased count, so they slow as it settles)
+  let last = -10;
+  for (let x = d0; x <= d1 + 1e-6; x += 1 / 120) {
+    const v = Math.round(H.lerp(-10, -16, H.ease.inOut(H.clamp((x - d0) / (d1 - d0)))));
+    if (v !== last) { k.play('blip', at('fondale', x), { ...m, note: 'A5', pan: -0.3 }); last = v; }
+  }
+  k.play('hit', at('fondale', EV.fondale.hit));                            // the key number, full volume
+
+  // 5 — cassoni
+  k.play('pop', at('cassoni', EV.cassoni.head));
+  const c = EV.cassoni;
+  for (let i = 0; i < 4; i++) {
+    const t0 = c.first + i * c.step;
+    k.play('toot', at('cassoni', t0), { ...m, pan: -0.2 + i * 0.2 });
+    k.play('gurgle', at('cassoni', t0 + c.slide), { ...m, dur: c.sink });
+    k.play('thud', at('cassoni', t0 + c.slide + c.sink), { gain: 0.55, pan: -0.2 + i * 0.2 });
+  }
+  pop(at('cassoni', c.tagCassone));
+  k.play('hiss', at('cassoni', c.fill[0]), { dur: c.fill[1] - c.fill[0], gain: 0.8, pan: 0.5 });
+  pop(at('cassoni', c.tagSabbia), { pan: 0.6 });
+
+  // 6 — porto
+  k.tone(at('porto', 0), { ...m, freq: [[0, 400], [0.3, 180]], dur: 0.3, gain: 0.1 });   // billboard folds away
+  k.play('pop', at('porto', EV.porto.head));
+  EV.porto.cranes.forEach((o, i) => k.play('pop', at('porto', o), { gain: 0.9, pan: -0.1 + i * 0.2 }));
+  for (let i = 0; i < 12; i++) k.play('knock', at('porto', EV.porto.boxes[0] + (EV.porto.boxes[1] - EV.porto.boxes[0]) * i / 12), { ...m, gain: 0.35, pan: 0.3 });
+  k.play('horn', at('porto', EV.porto.ship[0]), { pan: -0.6 });
+  pop(at('porto', EV.porto.tagGru));
+  for (let x = EV.porto.walkers + 0.4; x < 4.0; x += 0.32) k.play('tap', at('porto', x), { ...m, gain: 0.18, pan: 0.2 });
+  pop(at('porto', EV.porto.tagBanchina), { pan: 0.5 });
+  k.play('toot', at('porto', EV.porto.dock[0]), { ...m, note: 'D5' });
+  pop(at('porto', EV.porto.tagImb), { pan: -0.5 });
+
+  // 7 — takeaway
+  k.play('pop', at('fine', EV.fine.headline), { gain: 0.9 });
+  EV.fine.tags.forEach((o, i) => { k.play('pop', at('fine', o), { gain: 0.8 }); k.play('blip', at('fine', o), { note: ['C6', 'E6', 'G6'][i], gain: 0.8 }); });
+  k.play('chord', at('fine', EV.fine.tags[2] + 0.3), { dur: 1.8 });         // resolves on the last tag
+}
+window.scoreSound = scoreSound;
+</script>
+<div id="stage"><canvas id="cv" width="1280" height="720" aria-label="Animated isometric explainer: how a port is built"></canvas>
+  <button id="big" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+  <div id="drop" hidden>Drop the voiceover audio here</div></div>
+<div class="bar">
+  <button id="play" aria-label="Play">▶</button>
+  <input id="seek" type="range" min="0" max="26.5" step="0.01" value="0" aria-label="Scrub">
+  <span id="time">0.0 / 26.5</span>
+  <button id="snd" aria-pressed="true" title="Sound effects on/off">♪ <span class="lbl">Sound</span></button>
+  <button id="loop" aria-pressed="true" title="Loop">⟲ <span class="lbl">Loop</span></button>
+  <label class="vo" id="vobtn" title="Load a voiceover audio file (or drop it on the picture)"><button tabindex="-1" style="pointer-events:none">🎙 <span class="lbl">Load voiceover</span></button><input id="vofile" type="file" accept="audio/*" aria-label="Load voiceover"></label>
+  <span id="voname"></span>
+</div>
+<script>
+(async function () {
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d', { willReadFrequently: true });
+  const stage = document.getElementById('stage'), seekEl = document.getElementById('seek'), timeEl = document.getElementById('time');
+  const playBtn = document.getElementById('play'), big = document.getElementById('big'), sndBtn = document.getElementById('snd'), loopBtn = document.getElementById('loop');
+  const voFile = document.getElementById('vofile'), voBtn = document.getElementById('vobtn'), voName = document.getElementById('voname'), drop = document.getElementById('drop');
+  const D = window.DURATION;
+  let t = 0, playing = false, last = 0, soundOn = true, loop = true, stopSound = null, audio = null;
+  const len = () => (audio && isFinite(audio.duration) ? Math.max(D, audio.duration) : D);
+
+  function fit() { const s = Math.min(stage.clientWidth / 1280, stage.clientHeight / 720); cv.style.width = (1280 * s) + 'px'; cv.style.height = (720 * s) + 'px'; }
+  addEventListener('resize', fit); fit();
+
+  function draw(tt) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    window.explainer(ctx, 1280, 720, tt);
+  }
+  function show(tt) { t = tt; draw(Math.min(t, D)); seekEl.max = len(); seekEl.value = t; timeEl.textContent = t.toFixed(1) + ' / ' + len().toFixed(1); }
+  window.seek = (tt) => { t = Math.max(0, Math.min(D, tt)); draw(t); seekEl.value = t; timeEl.textContent = t.toFixed(1) + ' / ' + len().toFixed(1); };
+
+  const killSound = () => { if (stopSound) { stopSound(); stopSound = null; } };
+  const startSound = () => { killSound(); if (soundOn && playing) stopSound = SOUND.live(window.scoreSound, t, { voiceover: true }); };
+
+  function setPlaying(p) {
+    playing = p; playBtn.textContent = p ? '❚❚' : '▶'; playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play'); big.hidden = p;
+    if (p) {
+      if (t >= len() - 0.01) show(0);
+      if (audio) { audio.currentTime = t; audio.play().catch(() => {}); }
+      last = performance.now(); startSound(); requestAnimationFrame(tick);
+    } else { if (audio) audio.pause(); killSound(); }
+  }
+  function restart() { show(0); if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); } startSound(); }
+  function tick(now) {
+    if (!playing) return;
+    // with a voiceover loaded the audio element is the clock; otherwise our own
+    if (audio) t = audio.currentTime; else t += (now - last) / 1000;
+    last = now;
+    const end = len();
+    if (t >= end - 0.005 || (audio && audio.ended && t >= D)) {
+      if (loop) restart(); else { show(end); setPlaying(false); return; }
+    } else show(t);
+    requestAnimationFrame(tick);
+  }
+  playBtn.onclick = big.onclick = () => setPlaying(!playing);
+  seekEl.addEventListener('input', () => { killSound(); const v = +seekEl.value; if (audio) audio.currentTime = v; show(v); last = performance.now(); });
+  seekEl.addEventListener('change', () => { if (playing) startSound(); });
+  sndBtn.onclick = () => { soundOn = !soundOn; sndBtn.setAttribute('aria-pressed', soundOn); if (soundOn) startSound(); else killSound(); };
+  loopBtn.onclick = () => { loop = !loop; loopBtn.setAttribute('aria-pressed', loop); };
+  addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); setPlaying(!playing); } });
+
+  function loadVoice(file) {
+    if (!file || !/^audio\//.test(file.type || 'audio/')) return;
+    const was = playing; if (playing) setPlaying(false);
+    if (audio) { audio.pause(); URL.revokeObjectURL(audio.src); }
+    audio = new Audio(URL.createObjectURL(file)); audio.preload = 'auto';
+    audio.addEventListener('loadedmetadata', () => show(Math.min(t, len())));
+    voName.textContent = file.name; voBtn.classList.add('loaded');
+    show(0); if (was) setPlaying(true);
+  }
+  voFile.addEventListener('change', () => loadVoice(voFile.files[0]));
+  stage.addEventListener('dragover', (e) => { e.preventDefault(); drop.hidden = false; });
+  stage.addEventListener('dragleave', () => { drop.hidden = true; });
+  stage.addEventListener('drop', (e) => { e.preventDefault(); drop.hidden = true; loadVoice(e.dataTransfer.files[0]); });
+
+  try { await Promise.all(['800 56px Inter', '800 72px Inter', '600 28px Inter', '600 30px Inter', '800 64px Inter'].map((f) => document.fonts.load(f, 'AaZz09àè·→−'))); await document.fonts.ready; } catch (e) {}
+  window.seek(0);
+  window.__ready = true;
+})();
+</script>

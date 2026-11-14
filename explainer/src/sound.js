@@ -228,6 +228,34 @@
         noise(t, { ...p, color: 'white', dur: 0.09, gain: 0.3 * g, f: [{ type: 'bandpass', freq: 2000, q: 0.8 }], verb: 0.3 });
         for (const n of ['C4', 'G4', 'C5']) tone(t, { ...p, type: 'triangle', freq: hz(n), dur: 0.9, gain: 0.06 * g, lp: 2600, verb: 0.35 });
       },
+      // --- dimensional / isometric palette
+      whoomp(t, p) {
+        const g = p.gain == null ? 1 : p.gain, lo = p.deep ? 0.7 : 1;
+        tone(t, { ...p, freq: [[0, 190 * lo], [0.3, 55 * lo]], dur: 0.38, gain: 0.42 * g, a: 0.01 });
+        noise(t, { ...p, color: 'pink', dur: 0.28, gain: 0.22 * g, a: 0.02, f: [{ type: 'lowpass', freq: 700 }], verb: 0.12 });
+      },
+      clack(t, p) {
+        const g = p.gain == null ? 1 : p.gain, k = p.pitch || 0;
+        noise(t, { ...p, color: 'white', dur: 0.045, gain: 0.22 * g, f: [{ type: 'bandpass', freq: 1300 + 900 * k, q: 4 }] });
+        tone(t, { ...p, freq: 520 + 320 * k, dur: 0.06, gain: 0.07 * g });
+      },
+      horn(t, p) {
+        const g = p.gain == null ? 1 : p.gain, d = p.dur || 1.2;
+        for (const n of ['A2', 'E3']) tone(t, { ...p, type: 'sawtooth', freq: hz(n), dur: d, gain: 0.09 * g, a: 0.08, hold: d * 0.65, lp: 650, verb: 0.4 });
+      },
+      toot(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, type: 'square', freq: hz(p.note || 'A4'), dur: 0.26, gain: 0.05 * g, a: 0.02, hold: 0.14, lp: 1400 });
+      },
+      blip(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: hz(p.note || 'C6'), dur: 0.08, gain: 0.12 * g, a: 0.003 });
+      },
+      hum(t, p) {
+        const g = p.gain == null ? 1 : p.gain, d = p.dur || 1;
+        tone(t, { ...p, type: 'triangle', freq: p.freq || 72, dur: d, gain: 0.08 * g, a: 0.15, hold: d * 0.7, lp: 400 });
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.1 * g, a: 0.15, hold: d * 0.7, f: [{ type: 'lowpass', freq: 260 }] });
+      },
       chord(t, p) {
         const g = p.gain == null ? 1 : p.gain, d = p.dur || 1.6;
         (p.notes || ['C4', 'E4', 'G4', 'C5']).forEach((n, i) => tone(t + i * 0.025, { ...p, type: 'triangle', freq: hz(n), dur: d, gain: 0.07 * g, a: 0.02, hold: d * 0.25, lp: 2400, verb: 0.45 }));
