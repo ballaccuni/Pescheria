@@ -14,8 +14,9 @@ import {
 import { COLORS, Waves } from "../LogoAnimation";
 import { fontFamily } from "../font";
 import { Chef, type ChefMood, type HandPose } from "./Chef";
+import { BowlStage, SHELLED_COUNT, shellLandAt } from "./BowlStage";
 import { BLEND, MixerStage } from "./MixerStage";
-import { GROUPS, MUSSELS_KEPT, PanStage, musselOpenAt, panHandleEnd } from "./PanStage";
+import { GROUPS, PanStage, musselOpenAt, panHandleEnd } from "./PanStage";
 import { PlateStage, ZEST } from "./PlateStage";
 import { PotStage } from "./PotStage";
 import { TrayStage } from "./TrayStage";
@@ -311,6 +312,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             }
             if (seg.kind === "pot") return <PotStage key={i} {...common} />;
             if (seg.kind === "mixer") return <MixerStage key={i} {...common} />;
+            if (seg.kind === "bowl") return <BowlStage key={i} {...common} />;
             return <TrayStage key={i} tl={tl} frame={frame} fps={fps} offset={m.offset} />;
           })}
 
@@ -484,9 +486,10 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       } else if (a.kind === "lemonZest") {
         add(a.at + 16, "grate", 0.5);
         add(a.at + 30, "sprinkle", 0.3);
+      } else if (a.kind === "transfer") {
+        for (let i = 0; i < 14; i += 3) add(a.at + i * 3 + 8, "plop", 0.25);
       } else if (a.kind === "shell") {
-        const n = (GROUPS.mussels?.count ?? 0) - MUSSELS_KEPT;
-        for (let i = 0; i < n; i += 3) add(a.at + i * 4 + 4, "plop", 0.18);
+        for (let k = 0; k < SHELLED_COUNT; k += 2) add(shellLandAt(a.at, k), "plop", 0.2);
       } else if (a.kind === "cream") {
         add(a.at + 2, "pour", 0.6);
         add(a.at + 16, "sizzle-burst", 0.35);

@@ -56,12 +56,30 @@ const CREAM = "#EBD39C";
 
 type Placed = { x: number; y: number; rot: number; phase: number };
 
+/** Cozze in due cerchi: la cerniera verso il centro, così aperte non si toccano. */
+export const musselRings = (outerR: number, innerR: number, outerN = 9, innerN = 5) => {
+  const pts: Placed[] = [];
+  const ring = (n: number, r: number, off: number) => {
+    for (let k = 0; k < n; k++) {
+      const a = off + (k / n) * Math.PI * 2;
+      pts.push({ x: Math.cos(a) * r, y: Math.sin(a) * r, rot: (a * 180) / Math.PI, phase: k * 1.7 + r });
+    }
+  };
+  ring(outerN, outerR, -Math.PI / 2);
+  ring(innerN, innerR, -Math.PI / 2 + Math.PI / innerN);
+  return pts;
+};
+
 const placeItems = (kinds: AddKind[]) => {
   const out: Partial<Record<AddKind, Placed[]>> = {};
   const occupied: { x: number; y: number; d: number }[] = [];
   for (const kind of kinds) {
     const g = GROUPS[kind];
     if (!g) continue;
+    if (kind === "mussels") {
+      out[kind] = musselRings(196, 92);
+      continue;
+    }
     const rnd = mulberry32(g.seed);
     const maxR = PAN.inner - 38;
     const list: Placed[] = [];

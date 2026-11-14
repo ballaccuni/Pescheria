@@ -36,10 +36,18 @@ export const pastaCozzePatate: Recipe = {
       duration: 130,
     },
     {
+      title: "Nel piatto",
+      text: "Quando sono aperte, trasferisci le cozze in un piatto",
+      stage: "bowl",
+      add: ["transfer"],
+      duration: 80,
+    },
+    {
       title: "Sguscia le cozze",
-      text: "Sguscia quasi tutte le cozze e tienine qualcuna intera",
+      text: "Sguscia la maggior parte delle cozze e tienine qualcuna intera per il piatto",
+      stage: "bowl",
       add: ["shell"],
-      duration: 85,
+      duration: 105,
     },
     {
       title: "Nel mixer",

@@ -14,6 +14,7 @@ export type AddKind =
   | "lemon"
   | "lemonZest"
   | "mussels"
+  | "transfer"
   | "shell"
   | "cream"
   | "paccheri"
@@ -45,7 +46,7 @@ export type IconKind =
   | "paccheri";
 
 /** Dove si svolge un passo. Il piatto è a parte (plate: true). */
-export type StageKind = "pan" | "tray" | "pot" | "mixer";
+export type StageKind = "pan" | "tray" | "pot" | "mixer" | "bowl";
 
 export type Step = {
   title: string;

@@ -63,10 +63,22 @@ const FISH_PARSLEY = scatter(16, 1, 0, 25).map((s, i) => {
   return { x: 2 + Math.cos(a) * rr * 116, y: Math.sin(a) * rr * 32, rot: s.rot };
 });
 const GARNISH_SPOTS = scatter(14, 190, 26, 26);
-const PACCHERI_SPOTS = scatter(13, 112, 44, 27);
+// paccheri in ordine: un cerchio interno e quattro tra le cozze, nessuno sopra l'altro
+const PACCHERI_SPOTS = (() => {
+  const out: Spot[] = [];
+  for (let k = 0; k < 6; k++) {
+    const a = (k / 6) * Math.PI * 2 + 0.2;
+    out.push({ x: Math.cos(a) * 54, y: Math.sin(a) * 54, rot: (a * 180) / Math.PI });
+  }
+  for (let k = 0; k < 4; k++) {
+    const a = -Math.PI / 2 + k * (Math.PI / 2) + 0.4 + Math.PI / 4;
+    out.push({ x: Math.cos(a) * 132, y: Math.sin(a) * 132, rot: (a * 180) / Math.PI });
+  }
+  return out;
+})();
 const MUSSEL_SPOTS = [0, 1, 2, 3].map((i) => {
   const a = -Math.PI / 2 + i * (Math.PI / 2) + 0.4;
-  return { x: Math.cos(a) * 128, y: Math.sin(a) * 128, rot: (a * 180) / Math.PI + 90 };
+  return { x: Math.cos(a) * 144, y: Math.sin(a) * 144, rot: (a * 180) / Math.PI };
 });
 const ZEST_SPOTS = scatter(34, 150, 12, 28);
 /** grattugia sul piatto: inizio (dall'arrivo del piatto) e durata */
@@ -229,7 +241,7 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
           </g>
         )}
         {PACCHERI_SPOTS.map((p, i) => (
-          <Drop key={`pc${i}`} local={local} start={46 + i * 2} fps={fps} x={p.x} y={p.y} rot={p.rot} scale={1.25}>
+          <Drop key={`pc${i}`} local={local} start={46 + i * 2} fps={fps} x={p.x} y={p.y} rot={p.rot} scale={1.1}>
             <Pacchero coated={1} />
           </Drop>
         ))}
