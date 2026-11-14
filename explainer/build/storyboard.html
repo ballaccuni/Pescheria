@@ -1,0 +1,912 @@
+<title>Porto Storyboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Permanent+Marker&family=Inter:wght@400;600&display=block">
+<style>
+  /* Layout: a pinned-up storyboard wall — panels in a two-column grid, notes under each frame. */
+  :root {
+    --bg: #e9ebe7; --card: #fbfbf9; --fg: #1f2430; --muted: #5b616d; --line: #d3d6d0;
+    --red: #cc3229; --blue: #1d4fb6; --green: #1b8a4b;
+    --display: 'Permanent Marker', 'Comic Sans MS', cursive; --hand: 'Kalam', 'Comic Sans MS', cursive;
+    --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #1b1e24; --card: #252931; --fg: #e8eaee; --muted: #a3a9b4; --line: #3a3f49;
+    --red: #ff7a6e; --blue: #8fb0ff; --green: #6fd39a; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #1b1e24; --card: #252931; --fg: #e8eaee; --muted: #a3a9b4; --line: #3a3f49;
+    --red: #ff7a6e; --blue: #8fb0ff; --green: #6fd39a; color-scheme: dark }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+  .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 28px; }
+  header h1 { font: 400 clamp(30px, 5vw, 46px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+  header p { margin: 8px 0 0; color: var(--muted); max-width: 70ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .meta b { color: var(--fg); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 540px), 1fr)); gap: 22px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; display: grid; min-width: 0; }
+  .panel canvas { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; background: #e5e7e3; }
+  .notes { padding: 14px 16px 16px; display: grid; gap: 8px; min-width: 0; }
+  .beat { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .beat .n { font: 400 26px/1 var(--display); color: var(--red); }
+  .beat .name { font: 700 20px/1.2 var(--hand); }
+  .beat .time { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+  dl { margin: 0; display: grid; grid-template-columns: 92px 1fr; gap: 6px 12px; }
+  dt { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+  dd { margin: 0; min-width: 0; }
+  .onscreen { font: 700 16px/1.45 var(--hand); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 3px; margin-right: 6px; border: 1px solid currentColor; }
+  .tag.cont { color: var(--blue); } .tag.cut { color: var(--red); }
+  section.facts { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; }
+  section.facts h2 { font: 400 26px/1.2 var(--display); margin: 0 0 10px; }
+  section.facts ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80ch; }
+  .warn { border-left: 4px solid var(--red); }
+  @media (max-width: 560px) { dl { grid-template-columns: 1fr; } dt { padding-top: 0; } }
+</style>
+<script>
+// Shared helpers + style registry for the style-frame explorations.
+// Every style is a pure function of time: draw(ctx, W, H, t). Same t => same pixels.
+(function () {
+  const STYLES = (window.STYLES = window.STYLES || []);
+  window.registerStyle = (s) => STYLES.push(s);
+
+  const H = (window.H = {});
+
+  // ---------- seeded randomness ----------
+  // H.rng(seed) -> r() in [0,1). Extras: r.range(a,b), r.int(a,b), r.pick(arr), r.gauss(), r.chance(p)
+  H.rng = function (seed = 1) {
+    let a = typeof seed === 'string' ? hashStr(seed) : (seed >>> 0) || 1;
+    const r = function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    r.range = (lo, hi) => lo + r() * (hi - lo);
+    r.int = (lo, hi) => Math.floor(lo + r() * (hi - lo + 1));
+    r.pick = (arr) => arr[Math.floor(r() * arr.length)];
+    r.chance = (p) => r() < p;
+    r.gauss = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    return r;
+  };
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  // ---------- gradient noise ----------
+  // H.makeNoise(seed) -> { n2(x,y), n3(x,y,z), fbm2(x,y,oct), fbm3(x,y,z,oct) }  (outputs roughly -1..1)
+  H.makeNoise = function (seed = 1) {
+    const r = H.rng(seed), p = new Uint8Array(512), perm = [...Array(256).keys()];
+    for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+    for (let i = 0; i < 512; i++) p[i] = perm[i & 255];
+    const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const g3 = (h, x, y, z) => { h &= 15; const u = h < 8 ? x : y, v = h < 4 ? y : h === 12 || h === 14 ? x : z; return ((h & 1) ? -u : u) + ((h & 2) ? -v : v); };
+    function n3(x, y, z) {
+      const X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255;
+      x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+      const u = fade(x), v = fade(y), w = fade(z);
+      const A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z, B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
+      return lerp(lerp(lerp(g3(p[AA], x, y, z), g3(p[BA], x - 1, y, z), u), lerp(g3(p[AB], x, y - 1, z), g3(p[BB], x - 1, y - 1, z), u), v),
+        lerp(lerp(g3(p[AA + 1], x, y, z - 1), g3(p[BA + 1], x - 1, y, z - 1), u), lerp(g3(p[AB + 1], x, y - 1, z - 1), g3(p[BB + 1], x - 1, y - 1, z - 1), u), v), w);
+    }
+    const n2 = (x, y) => n3(x, y, 0.5);
+    const fbm3 = (x, y, z, oct = 4) => { let s = 0, a = 0.5, f = 1, norm = 0; for (let i = 0; i < oct; i++) { s += a * n3(x * f, y * f, z * f); norm += a; a *= 0.5; f *= 2; } return s / norm; };
+    const fbm2 = (x, y, oct = 4) => fbm3(x, y, 0.5, oct);
+    return { n2, n3, fbm2, fbm3 };
+  };
+
+  // ---------- math ----------
+  H.lerp = (a, b, t) => a + (b - a) * t;
+  H.clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
+  H.map = (v, a, b, c, d) => c + ((v - a) / (b - a)) * (d - c);
+  H.smooth = (e0, e1, x) => { const t = H.clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+  H.ease = {
+    inOut: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+    out: (t) => 1 - Math.pow(1 - t, 3),
+    in: (t) => t * t * t,
+    back: (t) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+  };
+
+  // ---------- color ----------
+  H.hex = (h) => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map((c) => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  H.rgba = (hexOrArr, a = 1) => { const [r, g, b] = Array.isArray(hexOrArr) ? hexOrArr : H.hex(hexOrArr); return `rgba(${r | 0},${g | 0},${b | 0},${a})`; };
+  H.mix = (c1, c2, t) => { const a = Array.isArray(c1) ? c1 : H.hex(c1), b = Array.isArray(c2) ? c2 : H.hex(c2); return [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * t); };
+
+  // ---------- canvas utilities ----------
+  // Offscreen canvas of the same logical size (use for layers, masks, compositing).
+  H.layer = (W, H_, ) => { const c = document.createElement('canvas'); c.width = W; c.height = H_; return c; };
+  // Monochrome grain / film noise over the whole canvas. amount ~ 0.03-0.15
+  H.grain = function (ctx, W, Hh, amount = 0.08, seed = 7, mono = true) {
+    const img = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height), d = img.data, r = H.rng(seed), k = amount * 255;
+    for (let i = 0; i < d.length; i += 4) {
+      const n = (r() - 0.5) * k;
+      if (mono) { d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+      else { d[i] += (r() - 0.5) * k; d[i + 1] += (r() - 0.5) * k; d[i + 2] += (r() - 0.5) * k; }
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+  // Paper-ish texture tile: fills with base color + fibrous noise (cheap; drawn into ctx).
+  H.paper = function (ctx, W, Hh, base = '#f3ecdc', seed = 3, strength = 0.06) {
+    ctx.save(); ctx.fillStyle = base; ctx.fillRect(0, 0, W, Hh);
+    const nz = H.makeNoise(seed), cell = 4, [br, bg, bb] = H.hex(base);
+    for (let y = 0; y < Hh; y += cell) for (let x = 0; x < W; x += cell) {
+      const v = nz.fbm2(x * 0.01, y * 0.01, 3) * 0.6 + nz.n2(x * 0.15, y * 0.04) * 0.4;
+      const s = 1 + v * strength * 2;
+      ctx.fillStyle = `rgb(${br * s | 0},${bg * s | 0},${bb * s | 0})`; ctx.fillRect(x, y, cell, cell);
+    }
+    ctx.restore();
+  };
+  // Vignette
+  H.vignette = function (ctx, W, Hh, strength = 0.5, color = '0,0,0') {
+    const g = ctx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * 0.3, W / 2, Hh / 2, Math.hypot(W, Hh) * 0.6);
+    g.addColorStop(0, `rgba(${color},0)`); g.addColorStop(1, `rgba(${color},${strength})`);
+    ctx.save(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh); ctx.restore();
+  };
+
+  // ---------- rendering entry ----------
+  // Renders style into canvas at logical 1280x720 (canvas can be any pixel size; it is scaled).
+  H.W = 1280; H.H = 720;
+  H.loadFonts = async function (style) {
+    const specs = style.fonts || [];
+    try { const sample = 'AaZz09' + (window.FONT_SAMPLE || '');
+      await Promise.all(specs.map((f) => document.fonts.load(f, sample))); await document.fonts.ready; } catch (e) { /* render anyway */ }
+  };
+  H.render = function (style, canvas, t) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: !!style.readsPixels });
+    const sx = canvas.width / H.W, sy = canvas.height / H.H;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save(); ctx.scale(sx, sy);
+    style.draw(ctx, H.W, H.H, t == null ? style.frameT || 0 : t);
+    ctx.restore();
+  };
+})();
+// "Come si costruisce un porto" — Whiteboard Explainer (Hand-Drawn).
+// Every frame is a pure function of t. All randomness comes from H.rng / H.makeNoise.
+(function () {
+  'use strict';
+  const W = 1280, HH = 720;
+  const DURATION = 24;
+  const INK = { k: '#1f2430', b: '#1d4fb6', r: '#cc3229', g: '#1b8a4b', gray: '#6d727c' };
+  const FK = 'Kalam', FM = "'Permanent Marker'";
+  const P = (t, a, b) => H.clamp((t - a) / (b - a));
+  const E = H.ease;
+  const L = H.lerp;
+
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  const NZ = new Map();
+  const nzf = (seed) => { const k = (seed >>> 0) % 4093 + 1; if (!NZ.has(k)) NZ.set(k, H.makeNoise(k)); return NZ.get(k); };
+
+  // ---------------- polyline helpers ----------------
+  function cum(q) { const o = [0]; for (let i = 1; i < q.length; i++) o.push(o[i - 1] + Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1])); return o; }
+  function resample(pts, step) {
+    const o = [pts[0].slice()];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step));
+      for (let k = 1; k <= n; k++) o.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+    }
+    return o;
+  }
+  function normals(q) {
+    return q.map((p, i) => {
+      const a = q[Math.max(0, i - 1)], b = q[Math.min(q.length - 1, i + 1)];
+      const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+      return [-dy / l, dx / l];
+    });
+  }
+  function wobble(pts, seed, amp) {
+    const q = resample(pts, 6), nz = nzf(seed), Lc = cum(q), N = normals(q);
+    return q.map((p, i) => {
+      const s = Lc[i];
+      const o = (nz.n2(s * 0.011, 1.3) * 2 + nz.n2(s * 0.05, 7.7) * 0.6) * amp;
+      return [p[0] + N[i][0] * o, p[1] + N[i][1] * o];
+    });
+  }
+  function cut(q, p) {
+    if (p >= 1) return q;
+    const Lc = cum(q), lim = Lc[Lc.length - 1] * p, o = [q[0]];
+    for (let i = 1; i < q.length; i++) {
+      if (Lc[i] <= lim) o.push(q[i]);
+      else { const f = (lim - Lc[i - 1]) / ((Lc[i] - Lc[i - 1]) || 1); o.push([q[i - 1][0] + (q[i][0] - q[i - 1][0]) * f, q[i - 1][1] + (q[i][1] - q[i - 1][1]) * f]); break; }
+    }
+    return o;
+  }
+  const offs = (q, d, N) => q.map((p, i) => [p[0] + N[i][0] * d, p[1] + N[i][1] * d]);
+  function trace(ctx, q) { ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length; i++) ctx.lineTo(q[i][0], q[i][1]); }
+  const seq = (p, i, n) => H.clamp(p * n - i);
+
+  // ---------------- dry-erase marker stroke ----------------
+  // Streaky chisel-tip body, darker pooled edges, ink pools at both ends, optional second (double-trace) pass.
+  function marker(ctx, pts, o = {}) {
+    const p = o.p == null ? 1 : o.p;
+    if (p <= 0.001 || pts.length < 2) return;
+    const seed = o.seed || 1, w = o.w || 5, col = H.hex(o.color || INK.k), passes = o.dbl ? 2 : 1, A = o.alpha == null ? 1 : o.alpha;
+    for (let ps = 0; ps < passes; ps++) {
+      const r = H.rng(seed * 31 + ps * 977);
+      let q = wobble(pts, seed + ps * 53, o.amp == null ? 1.3 : o.amp);
+      if (ps) { const dx = r.range(-2.2, 2.2), dy = r.range(-2.2, 2.2); q = q.map((v) => [v[0] + dx, v[1] + dy]); }
+      q = cut(q, ps ? H.clamp(p * 1.15 - 0.15) : p);
+      if (q.length < 2) continue;
+      const N = normals(q);
+      ctx.save();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.globalAlpha = A * (ps ? 0.75 : 1);
+      ctx.globalCompositeOperation = 'multiply';
+      if (o.dash) ctx.setLineDash(o.dash);
+      ctx.strokeStyle = H.rgba(col, 0.82); ctx.lineWidth = w; trace(ctx, q); ctx.stroke();
+      // pooled edges: the ink gathers along both sides of a dry-erase stroke
+      ctx.strokeStyle = H.rgba(col, 0.42); ctx.lineWidth = Math.max(0.8, w * 0.16);
+      trace(ctx, offs(q, w * 0.42, N)); ctx.stroke();
+      trace(ctx, offs(q, -w * 0.42, N)); ctx.stroke();
+      ctx.setLineDash([]);
+      if (!o.dash) {
+        // ink pools where the tip lands and lifts
+        ctx.fillStyle = H.rgba(col, 0.32);
+        for (const e of [q[0], q[q.length - 1]]) { ctx.beginPath(); ctx.arc(e[0], e[1], w * 0.56, 0, 7); ctx.fill(); }
+        // dry streaks of the chisel tip
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = 'rgba(244,246,243,0.4)';
+        for (let k = 0; k < 2; k++) {
+          const d = (k ? -1 : 1) * w * r.range(0.06, 0.22);
+          ctx.lineWidth = Math.max(0.6, w * r.range(0.07, 0.13));
+          ctx.setLineDash([r.range(24, 70), r.range(8, 30)]); ctx.lineDashOffset = r.range(0, 60);
+          trace(ctx, offs(q, d, N)); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+    }
+  }
+
+  // ---------------- shapes ----------------
+  function ellipsePts(cx, cy, rx, ry, seed) {
+    const r = H.rng(seed), a0 = r.range(-2.4, -1.6), sweep = Math.PI * 2 + r.range(0.25, 0.5), o = [];
+    for (let i = 0; i <= 48; i++) { const s = i / 48, a = a0 + sweep * s, g = 1 + 0.06 * s; o.push([cx + Math.cos(a) * rx * g, cy + Math.sin(a) * ry * g]); }
+    return o;
+  }
+  function rectPts(x, y, w, h) { return [[x + 4, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y - 3]]; }
+  function polyClosed(pts) { return pts.concat([pts[0]]); }
+  function quadPts(a, c, b, n = 24) { const o = []; for (let i = 0; i <= n; i++) { const s = i / n; o.push([(1 - s) * (1 - s) * a[0] + 2 * (1 - s) * s * c[0] + s * s * b[0], (1 - s) * (1 - s) * a[1] + 2 * (1 - s) * s * c[1] + s * s * b[1]]); } return o; }
+  function wavyLine(x1, x2, y, amp, freq, ph = 0, step = 10) { const o = []; for (let x = x1; x <= x2 + 0.1; x += step) o.push([x, y + Math.sin(x * freq + ph) * amp]); return o; }
+  function pathOf(poly) { const p = new Path2D(); p.moveTo(poly[0][0], poly[0][1]); for (let i = 1; i < poly.length; i++) p.lineTo(poly[i][0], poly[i][1]); p.closePath(); return p; }
+
+  function arrow(ctx, x1, y1, x2, y2, o = {}) {
+    const p = o.p == null ? 1 : o.p;
+    if (p <= 0) return;
+    const bend = o.bend || 0, mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, l = Math.hypot(dx, dy) || 1;
+    const cx = mx - dy / l * bend, cy = my + dx / l * bend;
+    marker(ctx, quadPts([x1, y1], [cx, cy], [x2, y2]), { ...o, p: H.clamp(p / 0.78) });
+    const hp = H.clamp((p - 0.78) / 0.22);
+    if (hp <= 0) return;
+    const ang = Math.atan2(y2 - cy, x2 - cx), hl = o.head || 22;
+    for (const s of [-1, 1]) {
+      const a = ang + Math.PI - s * 0.5;
+      marker(ctx, [[x2, y2], [x2 + Math.cos(a) * hl, y2 + Math.sin(a) * hl]], { ...o, p: hp, dbl: false, seed: (o.seed || 1) + s * 11 + 3 });
+    }
+  }
+
+  // ---------------- handwriting ----------------
+  // Letter-by-letter lettering: per-glyph jitter, a faint second trace (ink pooling) and dry-tip streaks.
+  function write(ctx, str, x, y, o = {}) {
+    const size = o.size || 30, isM = o.font === 'M', p = o.p == null ? 1 : o.p, col = H.hex(o.color || INK.k), A = o.alpha == null ? 1 : o.alpha;
+    ctx.save();
+    ctx.font = `${isM ? 400 : 700} ${size}px ${isM ? FM : FK}`;
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
+    const chars = [...str], ws = chars.map((c) => ctx.measureText(c).width), tw = ws.reduce((a, b) => a + b, 0);
+    let cx = o.align === 'center' ? x - tw / 2 : o.align === 'right' ? x - tw : x;
+    const n = chars.length * p, r = H.rng(o.seed || hashStr(str));
+    for (let i = 0; i < chars.length; i++) {
+      const rot = r.range(-0.05, 0.05) * (o.wild == null ? 1 : o.wild), jy = r.gauss() * size * 0.022, sc = 1 + r.range(-0.035, 0.035), dx2 = r.range(0.6, 1.2), dy2 = r.range(0.3, 0.9);
+      if (i >= n) break;
+      const al = H.clamp(n - i) * A;
+      if (chars[i] !== ' ') {
+        ctx.save();
+        ctx.translate(cx + ws[i] / 2, y + jy); ctx.rotate(rot); ctx.scale(sc, sc);
+        ctx.globalAlpha = al;
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = H.rgba(col, 0.86); ctx.fillText(chars[i], 0, 0);
+        ctx.fillStyle = H.rgba(col, 0.2); ctx.fillText(chars[i], dx2, dy2);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = 'rgba(244,246,243,0.32)'; ctx.lineWidth = Math.max(0.6, size * 0.016);
+        ctx.strokeText(chars[i], -0.6, 0.5);
+        ctx.restore();
+      }
+      cx += ws[i];
+    }
+    ctx.restore();
+    return tw;
+  }
+
+  function header(ctx, num, text, p, seed, alpha = 1) {
+    if (p <= 0) return;
+    marker(ctx, ellipsePts(62, 58, 26, 25, seed), { color: INK.r, w: 4, p: P(p, 0, 0.3), seed, alpha });
+    write(ctx, String(num), 62, 71, { font: 'M', size: 34, color: INK.r, align: 'center', p: P(p, 0.15, 0.35), alpha, seed: seed + 1 });
+    write(ctx, text, 102, 72, { font: 'M', size: 36, p: P(p, 0.3, 1), alpha, seed: seed + 2 });
+  }
+  function headerSwap(ctx, t, list) {
+    for (let i = 0; i < list.length; i++) {
+      const [s, n, txt] = list[i];
+      if (t < s) continue;
+      const a = i + 1 < list.length ? 1 - P(t, list[i + 1][0] - 0.3, list[i + 1][0]) : 1;
+      if (a <= 0) continue;
+      header(ctx, n, txt, P(t, s, s + 0.6), 400 + i * 10, a);
+    }
+  }
+
+  // labels with a leader line that lands on the thing it names
+  function label(ctx, txt, x, y, tx, ty, p, o = {}) {
+    if (p <= 0) return;
+    const tw = write(ctx, txt, x, y, { size: o.size || 30, color: o.color || INK.k, p: P(p, 0, 0.7), align: o.align, seed: o.seed });
+    if (tx == null) return;
+    const sx = o.from ? o.from[0] : (o.align === 'right' ? x + 8 : o.align === 'center' ? x : x + tw + 8), sy = o.from ? o.from[1] : y - 10;
+    arrow(ctx, sx, sy, tx, ty, { p: P(p, 0.55, 1), w: 3, head: 14, color: o.lineColor || INK.k, seed: (o.seed || 7) + 5, bend: o.bend || 10 });
+  }
+
+  // ---------------- materials ----------------
+  function pebble(ctx, x, y, rad, seed, col, fillA = 0.1) {
+    const r = H.rng(seed), n = 7, pts = [];
+    for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + r.range(-0.25, 0.25), rr = rad * r.range(0.7, 1.15); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8]); }
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < n; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath();
+    ctx.fillStyle = H.rgba(col, fillA); ctx.fill(); ctx.stroke();
+  }
+  const SCATTER = new Map();
+  function scatter(key, poly, n, seed) {
+    if (SCATTER.has(key)) return SCATTER.get(key);
+    const r = H.rng(seed), path = pathOf(poly), c = H.layer(2, 2).getContext('2d');
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const [x, y] of poly) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const out = []; let guard = 0;
+    while (out.length < n && guard++ < n * 30) { const x = r.range(x0, x1), y = r.range(y0, y1); if (c.isPointInPath(path, x, y)) out.push([x, y, r(), hashStr(key) + out.length]); }
+    out.sort((a, b) => b[1] - a[1]); // fills from the bottom up, like dumped rock
+    SCATTER.set(key, out);
+    return out;
+  }
+  function rubble(ctx, key, poly, n, rmin, rmax, p, col = INK.k) {
+    if (p <= 0) return;
+    const pts = scatter(key, poly, n, hashStr(key));
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = H.rgba(col, 0.75); ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    const m = Math.floor(pts.length * p);
+    for (let i = 0; i < m; i++) pebble(ctx, pts[i][0], pts[i][1], L(rmin, rmax, pts[i][2]), pts[i][3], col);
+    ctx.restore();
+  }
+  function hatch(ctx, poly, gap, ang, p, o = {}) {
+    if (p <= 0) return;
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const [x, y] of poly) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R = Math.hypot(x1 - x0, y1 - y0) / 2 + 4, ca = Math.cos(ang), sa = Math.sin(ang);
+    const r = H.rng(o.seed || 5), lines = Math.floor((2 * R) / gap), m = Math.floor(lines * p);
+    ctx.save(); ctx.clip(pathOf(poly)); ctx.globalCompositeOperation = 'multiply';
+    ctx.strokeStyle = H.rgba(o.color || INK.gray, o.alpha || 0.55); ctx.lineWidth = o.w || 1.8; ctx.lineCap = 'round';
+    for (let i = 0; i < m; i++) {
+      const d = -R + i * gap + r.range(-1.5, 1.5), px = cx - sa * d, py = cy + ca * d;
+      ctx.beginPath(); ctx.moveTo(px - ca * R, py - sa * R + r.range(-2, 2)); ctx.lineTo(px + ca * R, py + sa * R + r.range(-2, 2)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // standard drawing symbol for concrete: scattered dots and small triangles
+  function concrete(ctx, key, poly, n, p) {
+    if (p <= 0) return;
+    const pts = scatter(key, poly, n, hashStr(key) + 3), m = Math.floor(pts.length * p);
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = H.rgba(INK.gray, 0.8); ctx.fillStyle = H.rgba(INK.gray, 0.7); ctx.lineWidth = 1.6;
+    for (let i = 0; i < m; i++) {
+      const [x, y, k, s] = pts[i];
+      if (k < 0.4) { const a = s % 7; ctx.beginPath(); for (let j = 0; j < 3; j++) { const aa = a + j * 2.1; ctx.lineTo(x + Math.cos(aa) * 5, y + Math.sin(aa) * 5); } ctx.closePath(); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, 7); ctx.fill(); }
+    }
+    ctx.restore();
+  }
+  function stipple(ctx, key, poly, n, p, col, rad = 1.7, minY = -1e9) {
+    if (p <= 0) return;
+    const pts = scatter(key, poly, n, hashStr(key) + 9), m = Math.floor(pts.length * p);
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = H.rgba(col, 0.7);
+    for (let i = 0; i < m; i++) { const [x, y, k] = pts[i]; if (y < minY) continue; ctx.beginPath(); ctx.arc(x, y, rad * (0.6 + k * 0.8), 0, 7); ctx.fill(); }
+    ctx.restore();
+  }
+
+  // ---------------- board, ghosts, eraser, finishing ----------------
+  let BOARD = null;
+  function boardBase() {
+    if (BOARD) return BOARD;
+    const c = H.layer(W, HH), g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, HH); gr.addColorStop(0, '#f3f4f1'); gr.addColorStop(1, '#e5e7e3');
+    g.fillStyle = gr; g.fillRect(0, 0, W, HH);
+    // glossy melamine micro-texture
+    const nz = H.makeNoise(11), cell = 4;
+    for (let y = 0; y < HH; y += cell) for (let x = 0; x < W; x += cell) {
+      const v = nz.fbm2(x * 0.006, y * 0.006, 3) * 0.6 + nz.n2(x * 0.08, y * 0.02) * 0.4;
+      g.fillStyle = v > 0 ? `rgba(110,116,124,${v * 0.05})` : `rgba(255,255,255,${-v * 0.09})`;
+      g.fillRect(x, y, cell, cell);
+    }
+    // old eraser swipes: broad, faint grey arcs
+    const r = H.rng(77);
+    g.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      g.strokeStyle = `rgba(120,126,134,${r.range(0.018, 0.035)})`; g.lineWidth = r.range(50, 90);
+      const x = r.range(0, W), y = r.range(0, HH);
+      g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + r.range(-200, 200), y + r.range(-120, 120), x + r.range(-300, 300), y + r.range(-160, 160)); g.stroke();
+    }
+    // ghost of the last lesson that was erased from this board
+    g.save(); g.filter = 'blur(1.3px)'; g.globalAlpha = 0.075; g.fillStyle = '#2a3140'; g.strokeStyle = '#2a3140'; g.lineWidth = 5;
+    g.font = `700 46px ${FK}`; g.fillText('a² + b² = c²', 860, 650);
+    g.font = `700 38px ${FK}`; g.fillText('x = (−b ± √Δ) / 2a', 150, 170);
+    g.beginPath(); g.moveTo(980, 520); g.lineTo(1160, 520); g.lineTo(980, 380); g.closePath(); g.stroke();
+    g.font = `700 30px ${FK}`; g.fillText('ipotenusa', 1080, 430);
+    g.strokeStyle = '#1d4fb6'; g.globalAlpha = 0.06; g.beginPath(); g.ellipse(300, 560, 120, 60, 0.1, 0, 7); g.stroke();
+    g.restore();
+    BOARD = c;
+    return c;
+  }
+
+  // final frames of each erased scene, kept as layers; their ghosts are what the eraser leaves behind
+  const LAYERS = {};
+  function finalLayer(key, fn) { if (LAYERS[key]) return LAYERS[key]; const c = H.layer(W, HH), g = c.getContext('2d'); fn(g); LAYERS[key] = c; return c; }
+  const FINAL = {
+    A: () => finalLayer('A', (g) => sceneA(g, 2.0)),
+    B: () => finalLayer('B', (g) => sceneB(g, 5.2)),
+    C: () => finalLayer('C', (g) => sceneC(g, 16.4)),
+  };
+  function ghostLayer(key) {
+    return finalLayer('ghost' + key, (g) => {
+      g.filter = 'blur(1.6px) grayscale(0.7)'; g.globalAlpha = 0.085; g.drawImage(FINAL[key](), 0, 0); g.filter = 'none'; g.globalAlpha = 1;
+      const r = H.rng(hashStr(key)); g.lineCap = 'round';
+      for (let i = 0; i < 6; i++) {
+        g.strokeStyle = `rgba(120,126,134,${r.range(0.02, 0.04)})`; g.lineWidth = r.range(50, 80);
+        const x = 100 + i * 200 + r.range(-40, 40);
+        g.beginPath(); g.moveTo(x, -20); g.bezierCurveTo(x + 120, 200, x - 120, 450, x + 60, 740); g.stroke();
+      }
+    });
+  }
+  function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function drawEraser(ctx, x, y, a) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+    ctx.save(); ctx.filter = 'blur(6px)'; ctx.fillStyle = 'rgba(30,34,44,0.22)'; roundRect(ctx, -74, -28, 164, 80, 14); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#4f535c'; roundRect(ctx, -80, 6, 160, 30, 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 14; i++) { ctx.beginPath(); ctx.moveTo(-76 + i * 11, 10); ctx.lineTo(-74 + i * 11, 34); ctx.stroke(); }
+    const g = ctx.createLinearGradient(0, -40, 0, 14); g.addColorStop(0, '#3a5a8e'); g.addColorStop(1, '#1d3257');
+    ctx.fillStyle = g; roundRect(ctx, -82, -40, 164, 52, 14); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; roundRect(ctx, -70, -34, 140, 10, 5); ctx.fill();
+    ctx.restore();
+  }
+  // felt eraser zig-zags across the board: what it passes leaves only a ghost
+  function wipe(ctx, t, t0, dur, key) {
+    const u = H.clamp((t - t0) / dur), e = E.inOut(u), ex = -140 + (W + 280) * e;
+    const front = (y) => ex - 50 + Math.sin(y * 0.018 + u * 7) * 22;
+    const edge = []; for (let y = -20; y <= HH + 20; y += 20) edge.push([front(y), y]);
+    ctx.save(); ctx.beginPath(); ctx.moveTo(W + 60, -20); for (const [x, y] of edge) ctx.lineTo(x, y); ctx.lineTo(W + 60, HH + 20); ctx.closePath(); ctx.clip(); ctx.drawImage(FINAL[key](), 0, 0); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.moveTo(-60, -20); for (const [x, y] of edge) ctx.lineTo(x, y); ctx.lineTo(-60, HH + 20); ctx.closePath(); ctx.clip(); ctx.drawImage(ghostLayer(key), 0, 0); ctx.restore();
+    const ph = u * Math.PI * 7, ey = 360 + Math.sin(ph) * 250;
+    drawEraser(ctx, ex, ey, Math.cos(ph) * 0.22);
+  }
+
+  function finish(ctx, t) {
+    ctx.save();
+    // ceiling-light sheen drifting slightly as the camera breathes
+    const sx = 880 + Math.sin(t * 0.33) * 36, sy = -60 + Math.cos(t * 0.27) * 10;
+    let g = ctx.createRadialGradient(sx, sy, 10, sx, sy, 560);
+    g.addColorStop(0, 'rgba(255,255,255,0.5)'); g.addColorStop(0.45, 'rgba(255,255,255,0.16)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, HH);
+    ctx.save(); ctx.translate(sx - 240, 64); ctx.rotate(-0.05); ctx.scale(1, 0.1);
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, 330); g.addColorStop(0, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(-340, -340, 680, 680); ctx.restore();
+    const o = Math.sin(t * 0.2) * 0.02;
+    g = ctx.createLinearGradient(0, 0, W, HH);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.36 + o, 'rgba(255,255,255,0)'); g.addColorStop(0.44 + o, 'rgba(255,255,255,0.11)'); g.addColorStop(0.5 + o, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, HH);
+    ctx.restore();
+    H.vignette(ctx, W, HH, 0.12, '60,64,72');
+    H.grain(ctx, W, HH, 0.035, 1000 + Math.floor(t * 24));
+  }
+
+  // ---------------- drawings for this topic ----------------
+  function anchor(ctx, cx, cy, s, p, seed, col = INK.k) {
+    const st = [
+      ellipsePts(cx, cy - 66 * s, 13 * s, 13 * s, seed),
+      [[cx, cy - 52 * s], [cx, cy + 62 * s]],
+      [[cx - 32 * s, cy - 32 * s], [cx + 32 * s, cy - 32 * s]],
+      quadPts([cx - 52 * s, cy + 14 * s], [cx, cy + 92 * s], [cx + 52 * s, cy + 14 * s]),
+      [[cx - 52 * s, cy + 14 * s], [cx - 62 * s, cy + 30 * s]], [[cx - 52 * s, cy + 14 * s], [cx - 36 * s, cy + 24 * s]],
+      [[cx + 52 * s, cy + 14 * s], [cx + 62 * s, cy + 30 * s]], [[cx + 52 * s, cy + 14 * s], [cx + 36 * s, cy + 24 * s]],
+    ];
+    st.forEach((pts, i) => marker(ctx, pts, { p: seq(p, i, st.length), w: 6, seed: seed + i * 7, color: col }));
+  }
+
+  const COAST = [[-20, 562], [160, 548], [330, 556], [520, 566], [700, 560], [880, 552], [1060, 560], [1300, 548]];
+  const LAND = COAST.concat([[1300, 740], [-20, 740]]);
+  function coast(ctx, p, seed) {
+    marker(ctx, COAST, { w: 6, p: P(p, 0, 0.55), seed, dbl: true });
+    ctx.save(); ctx.beginPath(); ctx.rect(-20, 0, 1320, 618); ctx.clip();
+    hatch(ctx, LAND, 14, -0.9, P(p, 0.4, 1), { seed: seed + 2, alpha: 0.5 });
+    ctx.restore();
+  }
+  function shipPlan(ctx, x, y, len, beam, ang, p, seed) {
+    if (p <= 0) return;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    const hull = [[-len / 2, -beam / 2], [len * 0.3, -beam / 2], [len / 2, 0], [len * 0.3, beam / 2], [-len / 2, beam / 2], [-len / 2, -beam / 2 - 2]];
+    marker(ctx, hull, { w: 4, p: P(p, 0, 0.6), seed, dbl: true });
+    marker(ctx, rectPts(-len / 2 + 6, -beam / 2 + 5, 12, beam - 10), { w: 3, p: P(p, 0.5, 0.75), seed: seed + 3 });
+    for (let i = 0; i < 4; i++) marker(ctx, rectPts(-len / 2 + 26 + i * (len * 0.16), -beam / 2 + 6, len * 0.13, beam - 12), { w: 2.5, p: P(p, 0.6 + i * 0.08, 0.72 + i * 0.08), seed: seed + 10 + i, color: INK.b });
+    ctx.restore();
+  }
+  function navLight(ctx, x, y, col, p, seed) {
+    if (p <= 0) return;
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = H.rgba(col, 0.85 * Math.min(1, p * 2));
+    ctx.beginPath(); ctx.arc(x, y, 9 * E.back(Math.min(1, p * 1.6)), 0, 7); ctx.fill(); ctx.restore();
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i - 2) * 0.55, r1 = 16, r2 = 30;
+      marker(ctx, [[x + Math.cos(a) * r1, y + Math.sin(a) * r1], [x + Math.cos(a) * r2, y + Math.sin(a) * r2]], { w: 3, color: col, p: P(p, 0.3 + i * 0.1, 0.6 + i * 0.1), seed: seed + i });
+    }
+  }
+
+  // ---------------- scenes ----------------
+  // A — hook: the question
+  function sceneA(ctx, t) {
+    write(ctx, 'Come si costruisce', 640, 300, { font: 'M', size: 74, p: E.out(P(t, 0.1, 0.85)), align: 'center', seed: 21 });
+    write(ctx, 'un porto?', 640, 425, { font: 'M', size: 112, color: INK.b, p: P(t, 0.8, 1.3), align: 'center', seed: 22 });
+    marker(ctx, wavyLine(410, 880, 462, 5, 0.035), { color: INK.r, w: 8, p: P(t, 1.3, 1.6), seed: 23 });
+    anchor(ctx, 170, 330, 1.25, P(t, 0.3, 1.3), 24);
+    marker(ctx, wavyLine(330, 950, 560, 9, 0.05), { color: INK.b, w: 5, p: P(t, 1.45, 1.85), seed: 25 });
+    marker(ctx, wavyLine(400, 880, 600, 9, 0.05, 1.7), { color: INK.b, w: 5, p: P(t, 1.55, 1.95), seed: 26 });
+  }
+
+  const ISO = [[470, '-5 m'], [370, '-10 m'], [265, '-15 m']];
+  // B — 1. study the sea: map view
+  function sceneB(ctx, t) {
+    const T = t - 2.75;
+    if (T <= 0) return;
+    header(ctx, 1, 'Studiare il mare', P(T, 0, 0.6), 31);
+    coast(ctx, P(T, 0.1, 0.9), 32);
+    write(ctx, 'TERRA', 640, 680, { font: 'M', size: 40, p: P(T, 0.7, 1.0), align: 'center', color: INK.k, seed: 33 });
+    ISO.forEach(([y, txt], i) => {
+      const a = P(T, 0.8 + i * 0.2, 1.2 + i * 0.2);
+      marker(ctx, wavyLine(0, 1110, y, 10, 0.006 + i * 0.001, i * 1.3, 20), { w: 3.5, color: INK.b, p: a, seed: 40 + i, dash: [18, 12] });
+      write(ctx, txt, 1250, y + 10, { size: 30, color: INK.b, align: 'right', p: P(T, 1.15 + i * 0.2, 1.35 + i * 0.2), seed: 45 + i });
+    });
+    [[120, 140, 250, 240], [300, 125, 430, 228], [480, 110, 610, 212]].forEach(([x1, y1, x2, y2], i) => {
+      const a = P(T, 1.3 + i * 0.12, 1.65 + i * 0.12);
+      const nx = (y2 - y1), ny = -(x2 - x1), l = Math.hypot(nx, ny);
+      marker(ctx, quadPts([x1 - nx / l * 34, y1 - ny / l * 34], [x1 + 10, y1 - 8], [x1 + nx / l * 34, y1 + ny / l * 34]), { w: 4, color: INK.b, p: P(a, 0, 0.35), seed: 50 + i });
+      arrow(ctx, x1, y1, x2, y2, { p: P(a, 0.3, 1), w: 5, seed: 53 + i, bend: 8 });
+    });
+    write(ctx, 'onde dominanti', 650, 150, { size: 34, p: P(T, 1.75, 2.05), seed: 57 });
+    const rows = [290, 320, 350], trk = [];
+    rows.forEach((y, i) => { const a = i % 2 ? 1010 : 650, b = i % 2 ? 650 : 1010; trk.push([a, y], [b, y]); });
+    marker(ctx, trk, { w: 2.5, p: P(T, 1.75, 2.1), seed: 60, dash: [6, 8] });
+    shipPlan(ctx, 1030, 350, 70, 24, 0, P(T, 1.9, 2.15), 61);
+    write(ctx, 'misura dei fondali →', 620, 332, { size: 30, align: 'right', p: P(T, 1.95, 2.3), seed: 62 });
+  }
+
+  // C — one long cross-section the camera travels along: breakwater → dredged basin → caisson quay
+  const WL = 300;                                    // still-water level
+  const CORE = [[330, 620], [575, 262], [690, 262], [880, 620]];
+  const FIL = [[285, 620], [560, 242], [705, 242], [925, 620]];
+  const CROWN = [[560, 242], [560, 168], [605, 168], [605, 205], [722, 205], [722, 242]];
+  const NAT = [[960, 618], [1050, 560], [1400, 522], [2000, 508], [2600, 500], [3400, 495]];
+  const natY = (x) => { for (let i = 1; i < NAT.length; i++) if (x <= NAT[i][0]) return L(NAT[i - 1][1], NAT[i][1], (x - NAT[i - 1][0]) / (NAT[i][0] - NAT[i - 1][0])); return 495; };
+  const camC = (t) => 1280 * E.inOut(P(t, 9.0, 9.8)) + 1280 * E.inOut(P(t, 12.6, 13.3));
+  const zoomC = (t) => 1 + 0.12 * E.out(P(t, 11.8, 12.15)) * (1 - E.inOut(P(t, 12.3, 12.7)));
+  const cutterX = (t) => t < 10.4 ? 1750 : L(1750, 2300, E.inOut(P(t, 10.4, 11.3)));
+  const frontX = (t) => t < 10.4 ? L(1050, 1750, P(t, 10.0, 10.4)) : t < 12.6 ? cutterX(t) : L(2300, 3380, E.inOut(P(t, 12.6, 13.3)));
+  const natExt = (t) => t < 9.0 ? L(960, 1320, P(t, 6.15, 6.5)) : t < 12.6 ? L(1320, 2600, E.inOut(P(t, 9.0, 9.8))) : L(2600, 3400, E.inOut(P(t, 12.6, 13.3)));
+
+  function slice(pts, x0, x1) {
+    const o = [];
+    for (let i = 0; i < pts.length; i++) {
+      const [x, y] = pts[i];
+      if (i > 0) {
+        const [px, py] = pts[i - 1];
+        for (const b of [x0, x1]) if ((px < b && x > b) || (px > b && x < b)) o.push([b, L(py, y, (b - px) / (x - px))]);
+      }
+      if (x >= x0 && x <= x1) o.push([x, y]);
+    }
+    return o.sort((a, b) => a[0] - b[0]);
+  }
+
+  function dredger(ctx, cx, p, seed) {
+    if (p <= 0) return;
+    const hull = [[cx - 400, 278], [cx - 388, 330], [cx - 142, 330], [cx - 122, 278], [cx - 400, 276]];
+    marker(ctx, hull, { w: 5, p: P(p, 0, 0.3), seed, dbl: true });
+    marker(ctx, rectPts(cx - 312, 222, 64, 56), { w: 4, p: P(p, 0.2, 0.4), seed: seed + 1 });
+    marker(ctx, [[cx - 296, 238], [cx - 266, 238]], { w: 3, color: INK.b, p: P(p, 0.35, 0.45), seed: seed + 2 });
+    marker(ctx, [[cx - 152, 278], [cx - 172, 210], [cx - 126, 262]], { w: 4, p: P(p, 0.35, 0.55), seed: seed + 3 });
+    marker(ctx, [[cx - 172, 212], [cx - 62, 478]], { w: 2, p: P(p, 0.5, 0.65), seed: seed + 4 });
+    marker(ctx, [[cx - 140, 298], [cx - 16, 632]], { w: 8, p: P(p, 0.45, 0.7), seed: seed + 5, dbl: true });
+    marker(ctx, ellipsePts(cx, 640, 22, 20, seed + 6), { w: 4, p: P(p, 0.65, 0.85), seed: seed + 6 });
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + cx * 0.02; marker(ctx, [[cx + Math.cos(a) * 20, 640 + Math.sin(a) * 18], [cx + Math.cos(a) * 32, 640 + Math.sin(a) * 29]], { w: 3, p: P(p, 0.8, 0.95), seed: seed + 7 + i }); }
+    marker(ctx, [[cx - 400, 296], [cx - 900, 300]], { w: 4, p: P(p, 0.7, 0.95), seed: seed + 14 });
+    for (let i = 0; i < 6; i++) { const fx = cx - 450 - i * 80; marker(ctx, ellipsePts(fx, 300, 14, 8, seed + 20 + i), { w: 3, p: P(p, 0.8 + i * 0.03, 0.9 + i * 0.03), seed: seed + 20 + i }); }
+  }
+
+  function sceneC(ctx, t) {
+    if (t < 5.95) return;
+    headerSwap(ctx, t, [[5.95, 2, 'La diga foranea'], [9.8, 3, 'Scavare il fondale'], [13.3, 4, 'Posare i cassoni']]);
+    const cam = camC(t), z = zoomC(t);
+    ctx.save();
+    ctx.translate(380, 480); ctx.scale(z, z); ctx.translate(-380, -480);
+    ctx.translate(-cam, 0);
+
+    // --- water surface: rough at sea, calm inside
+    marker(ctx, wavyLine(-80, 470, WL, 11, 0.045, 0, 8), { color: INK.b, w: 5, p: P(t, 5.95, 6.3), seed: 101 });
+    marker(ctx, wavyLine(745, 1600, WL, 1.5, 0.02), { color: INK.b, w: 4, p: P(t, 6.1, 6.45), seed: 102 });
+    marker(ctx, wavyLine(1600, 2950, WL, 1.5, 0.02), { color: INK.b, w: 4, p: E.inOut(P(t, 9.0, 9.8)), seed: 103 });
+
+    // --- seabed: natural line (dashed once dredged), new dredged line, sediment dots
+    const fx = frontX(t), ext = natExt(t);
+    marker(ctx, [[-80, 628], [330, 621]], { w: 5, p: P(t, 6.0, 6.3), seed: 110 });
+    if (ext > 960) {
+      const solid = slice(NAT, Math.max(960, Math.min(fx, ext)), ext);
+      if (solid.length > 1) marker(ctx, solid, { w: 5, seed: 111 });
+      const dashed = slice(NAT, 1050, Math.min(fx, ext, 2900));
+      if (dashed.length > 1 && fx > 1060) marker(ctx, dashed, { w: 3.5, seed: 112, dash: [14, 12], color: INK.gray });
+    }
+    if (fx > 1052) {
+      const nb = [[1050, 560], [1110, 650]]; if (fx > 1110) nb.push([fx, 650]);
+      marker(ctx, slice(nb, 1050, fx), { w: 5, seed: 113, dbl: true });
+    }
+    {
+      const pts = scatter('sed', [[-80, 520], [3400, 520], [3400, 740], [-80, 740]], 1400, 9), vis0 = cam - 60, vis1 = cam + W + 60;
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = H.rgba(INK.gray, 0.55);
+      for (const [x, y, k] of pts) {
+        if (x < vis0 || x > vis1) continue;
+        const bed = x < 960 ? 625 : (x >= 1050 && x < fx ? 652 : natY(x));
+        const drawn = x < 960 ? t > 6.2 : x < ext;
+        if (!drawn || y < bed + 8 || (x > 2860 && x < 3400 && y < 660)) continue;
+        ctx.beginPath(); ctx.ellipse(x, y, 2.4 + k * 2, 1.2, 0, 0, 7); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // --- breakwater (rubble mound)
+    rubble(ctx, 'core', CORE, 150, 7, 12, P(t, 6.3, 6.9));
+    marker(ctx, polyClosed(CORE).slice(0, 4), { w: 3, p: P(t, 6.5, 6.9), seed: 120, color: INK.gray });
+    marker(ctx, polyClosed(FIL).slice(0, 4), { w: 3.5, p: P(t, 6.75, 7.1), seed: 121 });
+    rubble(ctx, 'filH', [[705, 242], [925, 620], [948, 620], [722, 238]], 26, 7, 10, P(t, 6.8, 7.15));
+    {
+      const a = [200, 622], b = [548, 232], n = 9, len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, nx = uy, ny = -ux;
+      for (let i = 0; i < n; i++) {
+        const s = (i + 0.5) / n, px = a[0] + (b[0] - a[0]) * s - nx * 4, py = a[1] + (b[1] - a[1]) * s - ny * 4;
+        const r = H.rng(130 + i), sz = r.range(40, 48), ang = Math.atan2(uy, ux) + r.range(-0.25, 0.25);
+        const c = [[-sz / 2, -sz / 2], [sz / 2, -sz / 2], [sz / 2, sz / 2], [-sz / 2, sz / 2]].map(([x, y]) => [px + x * Math.cos(ang) - y * Math.sin(ang) + nx * sz * 0.1, py + x * Math.sin(ang) + y * Math.cos(ang) + ny * sz * 0.1]);
+        // nx,ny points into the mound; push blocks outward (seaward)
+        const out = c.map(([x, y]) => [x - nx * sz * 0.6, y - ny * sz * 0.6]);
+        marker(ctx, polyClosed(out), { w: 4, p: P(t, 7.0 + i * 0.06, 7.12 + i * 0.06), seed: 131 + i, dbl: true });
+      }
+    }
+    marker(ctx, polyClosed(CROWN), { w: 5, p: P(t, 7.55, 7.9), seed: 140, dbl: true });
+    concrete(ctx, 'crown', CROWN, 26, P(t, 7.75, 7.95));
+    label(ctx, 'nucleo di pietrame', 985, 478, 790, 470, P(t, 6.9, 7.3), { seed: 150, from: [978, 468] });
+    label(ctx, 'mantellata in massi', 22, 430, 300, 488, P(t, 7.6, 8.0), { seed: 151, from: [150, 446], bend: -12 });
+    label(ctx, 'muro paraonde', 770, 150, 668, 196, P(t, 7.95, 8.3), { seed: 152, from: [762, 140] });
+    write(ctx, 'mare aperto', 30, 232, { size: 32, color: INK.r, p: P(t, 8.05, 8.3), seed: 153 });
+    arrow(ctx, 60, 266, 430, 292, { w: 6, color: INK.r, p: P(t, 8.1, 8.45), seed: 154, bend: -26, head: 26 });
+    for (let i = 0; i < 3; i++) { const a = -2.2 + i * 0.5; marker(ctx, [[446 + Math.cos(a) * 16, 278 + Math.sin(a) * 16], [446 + Math.cos(a) * 38, 278 + Math.sin(a) * 38]], { w: 4, color: INK.r, p: P(t, 8.42 + i * 0.03, 8.55 + i * 0.03), seed: 156 + i }); }
+    write(ctx, 'acqua calma', 960, 262, { size: 32, color: INK.b, p: P(t, 8.5, 8.8), seed: 160 });
+    arrow(ctx, 790, 336, 930, 336, { w: 3, color: INK.b, p: P(t, 8.55, 8.85), seed: 161, head: 14 });
+
+    // --- dredging
+    if (t >= 9.6) {
+      const cx = cutterX(t);
+      dredger(ctx, cx, P(t, 9.8, 10.4), 200);
+      write(ctx, 'draga', cx - 280, 200, { size: 32, align: 'center', p: P(t, 10.25, 10.5), seed: 220 });
+      for (let i = 0; i < 3; i++) arrow(ctx, 1300 + i * 170, 548, 1300 + i * 170, 618, { w: 4, color: INK.r, p: P(t, 10.9 + i * 0.08, 11.15 + i * 0.08), seed: 222 + i, head: 14 });
+      write(ctx, 'fondale naturale', 1880, 482, { size: 28, color: INK.gray, p: P(t, 10.6, 10.95), seed: 226 });
+      // dimension line from water level to the new bottom
+      const dp = P(t, 11.1, 11.4);
+      marker(ctx, [[1478, WL + 4], [1522, WL + 4]], { w: 3, color: INK.r, p: dp, seed: 230 });
+      marker(ctx, [[1478, 650], [1522, 650]], { w: 3, color: INK.r, p: dp, seed: 231 });
+      arrow(ctx, 1500, 475, 1500, WL + 8, { w: 4, color: INK.r, p: dp, seed: 232, head: 16 });
+      arrow(ctx, 1500, 475, 1500, 646, { w: 4, color: INK.r, p: dp, seed: 233, head: 16 });
+      const nw = write(ctx, '-16', 1550, 515, { font: 'M', size: 104, color: INK.r, p: P(t, 11.4, 11.65), seed: 234, wild: 1.5 });
+      write(ctx, 'm', 1550 + nw + 14, 515, { size: 96, color: INK.r, p: P(t, 11.62, 11.75), seed: 236 });
+      marker(ctx, ellipsePts(1680, 482, 168, 82, 235), { w: 6, color: INK.r, p: E.out(P(t, 11.8, 12.1)), seed: 235, dbl: true });
+    }
+
+    // --- caisson quay
+    if (t >= 12.6) {
+      const RB = [[2880, 652], [2930, 615], [3330, 615], [3380, 652]];
+      rubble(ctx, 'bed', RB, 70, 6, 9, P(t, 13.3, 13.7));
+      marker(ctx, RB, { w: 3.5, p: P(t, 13.3, 13.6), seed: 300 });
+      const sink = 150 * (1 - E.inOut(P(t, 14.2, 14.8))), top = 290 - sink, bot = 615 - sink;
+      const cp = P(t, 13.6, 14.0);
+      marker(ctx, rectPts(2950, top, 320, bot - top), { w: 5, p: cp, seed: 301, dbl: true });
+      marker(ctx, [[2962, bot - 16], [3258, bot - 16]], { w: 3, p: P(cp, 0.5, 1), seed: 302 });
+      [3030, 3110, 3190].forEach((x, i) => {
+        marker(ctx, [[x - 4, top + 10], [x - 4, bot - 16]], { w: 3, p: P(cp, 0.5 + i * 0.1, 0.8 + i * 0.1), seed: 303 + i });
+        marker(ctx, [[x + 4, top + 10], [x + 4, bot - 16]], { w: 3, p: P(cp, 0.55 + i * 0.1, 0.85 + i * 0.1), seed: 306 + i });
+      });
+      if (t >= 14.2 && t < 14.85) {
+        const lvl = bot - 18 - (bot - top - 40) * 0.75 * E.out(P(t, 14.2, 14.8));
+        [2990, 3070, 3150, 3230].forEach((x, i) => marker(ctx, wavyLine(x - 30, x + 30, lvl, 2, 0.3, i), { w: 3, color: INK.b, seed: 310 + i }));
+      }
+      for (let i = 0; i < 2; i++) arrow(ctx, 3040 + i * 140, top - 90, 3040 + i * 140, top - 20, { w: 5, color: INK.r, p: P(t, 14.15 + i * 0.06, 14.4 + i * 0.06) * (1 - P(t, 15.0, 15.3)), seed: 315 + i });
+      const lvl = 597 - 290 * P(t, 14.85, 15.4);
+      [[2962, 3026], [3034, 3106], [3114, 3186], [3194, 3258]].forEach(([a, b], i) => {
+        if (t >= 14.85) stipple(ctx, 'sand' + i, [[a, 300], [b, 300], [b, 597], [a, 597]], 90, 1, '#b07a2a', 2, lvl);
+      });
+      const CAP = [[2940, 240], [3290, 240], [3290, 290], [2940, 290]];
+      marker(ctx, polyClosed(CAP), { w: 5, p: P(t, 15.3, 15.6), seed: 320, dbl: true });
+      concrete(ctx, 'cap', CAP, 34, P(t, 15.45, 15.7));
+      const BF = [[3270, 290], [3290, 290], [3290, 240], [3900, 240], [3900, 652], [3380, 652], [3270, 615]];
+      hatch(ctx, BF, 16, -0.8, P(t, 15.4, 15.85), { seed: 321, alpha: 0.45 });
+      marker(ctx, [[3290, 240], [3900, 240]], { w: 5, p: P(t, 15.4, 15.7), seed: 322 });
+      marker(ctx, rectPts(2974, 214, 22, 26), { w: 4, p: P(t, 15.8, 15.95), seed: 323 });
+      marker(ctx, ellipsePts(2985, 212, 18, 6, 324), { w: 4, p: P(t, 15.85, 16.0), seed: 324 });
+      label(ctx, 'scanno di pietrame', 2585, 700, 2905, 640, P(t, 13.55, 13.9), { seed: 330, from: [2858, 690], bend: -8 });
+      label(ctx, 'cassone in c.a.', 2610, 390, 2944, 400, P(t, 13.95, 14.3), { seed: 331 });
+      label(ctx, 'sabbia', 2690, 500, 3000, 520, P(t, 15.0, 15.3), { seed: 332, color: '#8a5a14' });
+      label(ctx, 'banchina', 3360, 195, 3292, 232, P(t, 15.9, 16.2), { size: 36, seed: 333, from: [3352, 186], bend: 8 });
+    }
+    ctx.restore();
+  }
+
+  // D — 5. back to the map: the finished port, then the takeaway
+  const BW = [[200, 552], [214, 380], [258, 282], [380, 236], [600, 222], [900, 228]];
+  const PIER = [[1080, 556], [1076, 430], [1042, 352]];
+  function band(ctx, pts, half, p, seed) {
+    const q = resample(pts, 8), N = normals(q);
+    marker(ctx, offs(q, half, N), { w: 4.5, p, seed, dbl: true });
+    marker(ctx, offs(q, -half, N), { w: 4.5, p, seed: seed + 1, dbl: true });
+  }
+  function sceneD(ctx, t) {
+    if (t < 17.15) return;
+    header(ctx, 5, 'Il porto prende forma', P(t, 17.15, 17.75), 500);
+    const s = E.inOut(P(t, 20.6, 21.1));
+    ctx.save();
+    ctx.translate(L(0, 14, s), L(0, 150, s)); ctx.scale(L(1, 0.6, s), L(1, 0.6, s));
+    coast(ctx, P(t, 17.15, 17.6), 32);
+    // breakwater with armour blocks on the seaward face
+    band(ctx, BW, 15, P(t, 17.5, 18.05), 510);
+    {
+      const q = resample(BW, 30), N = normals(q), m = Math.floor(q.length * P(t, 17.7, 18.15));
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = H.rgba(INK.k, 0.7); ctx.lineWidth = 2;
+      for (let i = 1; i < m; i++) pebble(ctx, q[i][0] + N[i][0] * 25, q[i][1] + N[i][1] * 25, 9, 520 + i, INK.k, 0.15);
+      ctx.restore();
+    }
+    band(ctx, PIER, 12, P(t, 18.1, 18.4), 530);
+    // quay and reclaimed yard
+    marker(ctx, [[262, 522], [1060, 522]], { w: 6, p: P(t, 18.1, 18.45), seed: 540, dbl: true });
+    hatch(ctx, [[262, 522], [1060, 522], [1062, 558], [262, 554]], 12, -0.9, P(t, 18.2, 18.5), { seed: 541, alpha: 0.4 });
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) marker(ctx, rectPts(300 + i * 58, 575 + j * 26, 48, 18), { w: 2.5, p: P(t, 18.55 + i * 0.03, 18.7 + i * 0.03), seed: 550 + i * 2 + j, color: j ? INK.r : INK.b });
+    shipPlan(ctx, 500, 494, 280, 36, 0, P(t, 18.4, 18.7), 560);
+    [420, 520, 610].forEach((x, i) => {
+      marker(ctx, rectPts(x - 14, 520, 28, 30), { w: 3.5, p: P(t, 18.5 + i * 0.08, 18.65 + i * 0.08), seed: 570 + i });
+      marker(ctx, [[x, 520], [x, 462]], { w: 4, p: P(t, 18.6 + i * 0.08, 18.75 + i * 0.08), seed: 575 + i, color: INK.r });
+    });
+    // entrance lights, IALA region A: green on the right entering (breakwater head), red on the left (pier head)
+    navLight(ctx, 900, 228, INK.g, P(t, 18.9, 19.15), 580);
+    navLight(ctx, 1042, 352, INK.r, P(t, 19.0, 19.25), 586);
+    // incoming waves stopped by the breakwater
+    arrow(ctx, 90, 120, 196, 262, { w: 5, color: INK.r, p: P(t, 18.0, 18.3), seed: 590, bend: 6 });
+    arrow(ctx, 470, 92, 492, 196, { w: 5, color: INK.r, p: P(t, 18.1, 18.4), seed: 591, bend: -6 });
+    // ship entering through the gap
+    const route = quadPts([1300, 110], [1000, 230], [760, 410], 30), sp = E.inOut(P(t, 19.2, 20.0));
+    marker(ctx, route, { w: 3, p: P(t, 19.2, 19.55), seed: 595, dash: [10, 10], color: INK.gray });
+    if (sp > 0) {
+      const k = Math.min(route.length - 2, Math.floor(sp * (route.length - 1))), a = route[k], b = route[k + 1];
+      shipPlan(ctx, a[0], a[1], 110, 22, Math.atan2(b[1] - a[1], b[0] - a[0]), 1, 597);
+    }
+    label(ctx, 'diga foranea', 360, 196, null, null, P(t, 18.0, 18.3), { size: 34, seed: 600 });
+    write(ctx, 'acque calme', 560, 380, { size: 34, color: INK.b, p: P(t, 19.5, 19.85), seed: 601, align: 'center' });
+    label(ctx, 'imboccatura', 1100, 318, 1000, 296, P(t, 19.85, 20.2), { seed: 602, from: [1094, 306], bend: 8 });
+    label(ctx, 'banchina', 700, 612, 690, 528, P(t, 20.1, 20.45), { seed: 603, from: [740, 584], bend: 10 });
+    ctx.restore();
+
+    // takeaway
+    if (t >= 21.0) {
+      write(ctx, 'Un porto ha:', 830, 215, { font: 'M', size: 50, p: P(t, 21.05, 21.4), seed: 610 });
+      [['una diga → mare calmo', 21.4], ['un fondale profondo', 21.85], ['banchine solide', 22.3]].forEach(([txt, s0], i) => {
+        const y = 300 + i * 78;
+        marker(ctx, [[836, y - 12], [848, y], [872, y - 30]], { w: 5, color: INK.g, p: P(t, s0, s0 + 0.15), seed: 620 + i });
+        write(ctx, txt, 888, y, { size: 34, p: P(t, s0 + 0.1, s0 + 0.45), seed: 625 + i });
+      });
+      write(ctx, 'Ripara, scava, attracca: ecco il porto.', 640, 655, { size: 46, p: P(t, 22.5, 23.0), align: 'center', seed: 630 });
+      marker(ctx, wavyLine(240, 1040, 676, 4, 0.03), { color: INK.r, w: 7, p: P(t, 23.0, 23.25), seed: 631 });
+    }
+  }
+
+  // ---------------- the explainer ----------------
+  function explainer(ctx, W_, H_, t) {
+    t = H.clamp(t, 0, DURATION);
+    ctx.save();
+    ctx.drawImage(boardBase(), 0, 0);
+    const br = 1 + 0.004 * Math.sin(t * 0.9);
+    ctx.translate(640, 360); ctx.scale(br, br); ctx.translate(-640 + Math.sin(t * 0.5) * 2, -360 + Math.cos(t * 0.4) * 1.5);
+    if (t < 2.0) sceneA(ctx, t);
+    else if (t < 2.75) wipe(ctx, t, 2.0, 0.75, 'A');
+    else if (t < 5.2) { ctx.drawImage(ghostLayer('A'), 0, 0); sceneB(ctx, t); }
+    else if (t < 5.95) { ctx.drawImage(ghostLayer('A'), 0, 0); wipe(ctx, t, 5.2, 0.75, 'B'); }
+    else if (t < 16.4) { ctx.drawImage(ghostLayer('B'), 0, 0); sceneC(ctx, t); }
+    else if (t < 17.15) { ctx.drawImage(ghostLayer('B'), 0, 0); wipe(ctx, t, 16.4, 0.75, 'C'); }
+    else { ctx.drawImage(ghostLayer('C'), 0, 0); sceneD(ctx, t); }
+    ctx.restore();
+    finish(ctx, t);
+  }
+
+  window.PORTO = { explainer, DURATION, INK, marker, write, arrow, finish, boardBase };
+  window.explainer = explainer;
+  window.DURATION = DURATION;
+})();
+</script>
+<div class="wrap">
+  <header>
+    <h1>Come si costruisce un porto</h1>
+    <p>Storyboard for a 24-second whiteboard explainer with no voiceover. Every panel is drawn by the same code that will run the animation, at the beat's key frame. Approve it or tell me what to change, and I'll build the animation from it.</p>
+    <div class="meta"><span><b>Length</b> 24.0 s</span><span><b>Frame</b> 1280×720</span><span><b>Beats</b> 7</span><span><b>Scene changes</b> 3, each with the felt eraser</span><span><b>Text</b> Italian</span></div>
+  </header>
+  <div class="grid" id="grid"></div>
+  <section class="facts">
+    <h2>Facts and numbers I assumed</h2>
+    <ul>
+      <li>The port is a generic Mediterranean-style harbour: a <b>rubble-mound breakwater</b> (core of quarry stone, a filter layer, an armour layer of large blocks, and a concrete crown wall), and <b>quays built from reinforced-concrete cellular caissons</b>. Many real ports use piles, sheet piles or block walls instead.</li>
+      <li><b>-16 m</b> design depth: typical for a port that takes large container ships (draughts of about 14–16 m). Real ports range from about 10 to 18 m.</li>
+      <li>The caissons are cast in a floating dock, towed out, sunk onto a levelled stone bed by letting water into their cells, then <b>filled with sand</b> (sometimes gravel or rubble) and capped with a concrete beam carrying bollards.</li>
+      <li>The dredger is a <b>cutter suction dredger</b> (draga aspirante-refluente con disgregatore) pumping spoil through a floating pipeline.</li>
+      <li>Entrance lights follow <b>IALA Region A</b> (Europe): green on the right and red on the left for a ship entering port.</li>
+      <li>The construction order is shown as studies → breakwater → dredging → quays. Real projects overlap these phases.</li>
+      <li>Depth contours (-5, -10, -15 m) and the cross-section are schematic. Slopes are drawn steeper than real ones (about 1:1.5 to 1:2) so everything fits the frame.</li>
+    </ul>
+  </section>
+  <section class="facts warn">
+    <h2>Two inputs didn't arrive</h2>
+    <ul>
+      <li>Your message was cut off in the middle of <b>sound.js</b>, and the <b>reference animation's source code</b> wasn't included at all. These panels use my own implementation of the style card: chisel-tip marker strokes with pooled edges and dry streaks, double tracing, letter-by-letter lettering, the felt-eraser wipe with ghost residue, the ceiling-light sheen, and grain. The H library is used unchanged.</li>
+      <li>For the final build, please paste the full reference source and the complete SOUND kit. I'll copy their texture and finishing functions in at the same strength, and I'll use the kit's real sound names for the sounds listed above.</li>
+    </ul>
+  </section>
+</div>
+<script>
+const BEATS = [
+  { n: 1, name: 'Hook', t0: 0.0, t1: 2.0, key: 1.95,
+    text: 'Come si costruisce / un porto?',
+    flow: ['cut', 'Opening frame. The board already carries a faint ghost of an older lesson. The question is written letter by letter, then an anchor doodle, a red underline and two blue wave lines are drawn on.'],
+    sound: 'Quiet classroom room-tone bed (under everything until 23.5 s). Marker squeaks track each word as it is written (0.1–1.3 s). A short scratchy stroke for the anchor. A crisp tap when the red underline completes at 1.6 s.' },
+  { n: 2, name: 'Studiare il mare', t0: 2.0, t1: 5.2, key: 5.15,
+    text: '1 · Studiare il mare — TERRA · -5 m · -10 m · -15 m · onde dominanti · misura dei fondali →',
+    flow: ['cut', 'Felt eraser zig-zags left to right (2.0–2.75 s), leaving a grey ghost of the title. The story moves from the question to the site itself, seen from above as a map. Then the coastline and hatched land, dashed depth contours with labels, three wave arrows, and a survey boat\'s dotted track.'],
+    sound: 'Eraser rub (felt on gloss) for 0.75 s. One long marker stroke for the coast and fast scratches for the hatching. Short dotted squeaks for each contour, and a soft pop as each depth label lands. Three quick marker flicks for the wave arrows. Light pen taps along the survey track.' },
+  { n: 3, name: 'La diga foranea', t0: 5.2, t1: 9.0, key: 8.95,
+    text: '2 · La diga foranea — nucleo di pietrame · mantellata in massi · muro paraonde · mare aperto · acqua calma',
+    flow: ['cut', 'Eraser wipe (5.2–5.95 s) from the map to a cross-section, a different view of the same coast. The section is built layer by layer: water and seabed, the stone core (filling from the bottom up), the filter layer, armour blocks, then the crown wall. A red wave arrow from the open sea hits the armour and splashes. Behind the breakwater, a small blue arrow shows the calm water.'],
+    sound: 'Eraser rub. A dense patter of marker dots for the core stones. Eight light knocks as each armour block is drawn. A squeak for the crown wall. The red wave arrow ends in a splash hit at 8.45 s. A soft, lower pop for "acqua calma".' },
+  { n: 4, name: 'Scavare il fondale', t0: 9.0, t1: 12.6, key: 12.25,
+    text: '3 · Scavare il fondale — draga · fondale naturale · -16 m',
+    flow: ['cont', 'Continuous. The camera slides right along the same section while the marker keeps drawing the calm water and seabed. The breakwater leaves frame left, and the header is erased and rewritten. The dredger draws on and moves right. Behind its cutter the seabed drops to a new line and the old bottom turns dashed. A red dimension line and "-16 m" are scrawled, then circled, with a 12% punch-in on the number.'],
+    sound: 'A long marker line carries the camera move. A low, quiet rumble while the dredger advances (10.4–11.3 s). Three marker flicks for the red down arrows. Hard, fast squeaks for "-16 m". The biggest hit of the piece lands as the circle closes (12.1 s), followed by a beat of silence.' },
+  { n: 5, name: 'Posare i cassoni', t0: 12.6, t1: 16.4, key: 16.3,
+    text: '4 · Posare i cassoni — scanno di pietrame · cassone in c.a. · sabbia · banchina',
+    flow: ['cont', 'Continuous. The camera keeps travelling right, and the trench line follows it to the quay. A stone bed is placed, then a cellular caisson is drawn floating high. Red arrows push it down while ballast water rises in its cells, and it sinks onto the bed. Sand fills the cells from the bottom up, then the capping beam, the backfill behind it, and a bollard. The quay is finished.'],
+    sound: 'Pebble patter for the stone bed. Marker outline squeaks for the caisson. A filtered water gurgle while it sinks (14.2–14.8 s), ending in a soft heavy thud as it seats. A dry sand hiss during the fill. Pops as the labels land, and a final tap for the bollard.' },
+  { n: 6, name: 'Il porto prende forma', t0: 16.4, t1: 20.6, key: 20.5,
+    text: '5 · Il porto prende forma — diga foranea · acque calme · imboccatura · banchina',
+    flow: ['cut', 'Eraser wipe (16.4–17.15 s) back to the map. This is a reveal: the same coastline from beat 2 returns, now with the whole port on it. The breakwater with its armour blocks, the opposite pier, the quay with cranes and containers, and a moored ship. Waves stop at the breakwater, the green and red entrance lights blink on, and a ship sails in through the entrance on a dashed route.'],
+    sound: 'Eraser rub. Marker strokes for the breakwater, pier and quay, and quick ticks for the container boxes. Two short pings (higher for green, lower for red) as the lights appear. Dotted squeaks along the ship\'s route. Pops for the labels.' },
+  { n: 7, name: 'Takeaway', t0: 20.6, t1: 24.0, key: 23.9,
+    text: 'Un porto ha: ✓ una diga → mare calmo · ✓ un fondale profondo · ✓ banchine solide — Ripara, scava, attracca: ecco il porto.',
+    flow: ['cont', 'Continuous. The whole map shrinks into the left half, like the camera pulling back. A checklist is written on the right, one green tick per idea. The closing line is written along the bottom and underlined in red, then held for about 1 s.'],
+    sound: 'Three tick squeaks, each a step higher in pitch. A marker scrawl for the final line. A warm, resolving chord as the underline completes (23.2 s), while the room-tone bed fades out underneath.' },
+];
+const fmt = (s) => s.toFixed(1) + ' s';
+(async function () {
+  const grid = document.getElementById('grid');
+  const items = BEATS.map((b) => {
+    const el = document.createElement('article'); el.className = 'panel';
+    el.innerHTML = `<canvas width="1280" height="720" aria-label="Beat ${b.n} key frame"></canvas>
+      <div class="notes">
+        <div class="beat"><span class="n">${b.n}</span><span class="name">${b.name}</span><span class="time">${fmt(b.t0)} – ${fmt(b.t1)} · key frame ${fmt(b.key)}</span></div>
+        <dl>
+          <dt>On screen</dt><dd class="onscreen">${b.text}</dd>
+          <dt>Flow in</dt><dd><span class="tag ${b.flow[0] === 'cut' ? 'cut' : 'cont'}">${b.flow[0] === 'cut' ? 'Scene change' : 'Continuous'}</span>${b.flow[1]}</dd>
+          <dt>Sound</dt><dd>${b.sound}</dd>
+        </dl>
+      </div>`;
+    grid.appendChild(el);
+    return [el.querySelector('canvas'), b];
+  });
+  try { await Promise.all(['400 74px "Permanent Marker"', '700 30px Kalam', '400 30px Kalam'].map((f) => document.fonts.load(f, 'AaZz09àè·→✓'))); } catch (e) {}
+  for (const [cv, b] of items) {
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    window.explainer(ctx, 1280, 720, b.key);
+    await new Promise((r) => setTimeout(r, 0));
+  }
+  window.__done = true;
+})();
+</script>

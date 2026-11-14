@@ -1,0 +1,84 @@
+<div class="wrap">
+  <header>
+    <h1>Come si costruisce un porto</h1>
+    <p>Storyboard for a 24-second whiteboard explainer with no voiceover. Every panel is drawn by the same code that will run the animation, at the beat's key frame. Approve it or tell me what to change, and I'll build the animation from it.</p>
+    <div class="meta"><span><b>Length</b> 24.0 s</span><span><b>Frame</b> 1280×720</span><span><b>Beats</b> 7</span><span><b>Scene changes</b> 3, each with the felt eraser</span><span><b>Text</b> Italian</span></div>
+  </header>
+  <div class="grid" id="grid"></div>
+  <section class="facts">
+    <h2>Facts and numbers I assumed</h2>
+    <ul>
+      <li>The port is a generic Mediterranean-style harbour: a <b>rubble-mound breakwater</b> (core of quarry stone, a filter layer, an armour layer of large blocks, and a concrete crown wall), and <b>quays built from reinforced-concrete cellular caissons</b>. Many real ports use piles, sheet piles or block walls instead.</li>
+      <li><b>-16 m</b> design depth: typical for a port that takes large container ships (draughts of about 14–16 m). Real ports range from about 10 to 18 m.</li>
+      <li>The caissons are cast in a floating dock, towed out, sunk onto a levelled stone bed by letting water into their cells, then <b>filled with sand</b> (sometimes gravel or rubble) and capped with a concrete beam carrying bollards.</li>
+      <li>The dredger is a <b>cutter suction dredger</b> (draga aspirante-refluente con disgregatore) pumping spoil through a floating pipeline.</li>
+      <li>Entrance lights follow <b>IALA Region A</b> (Europe): green on the right and red on the left for a ship entering port.</li>
+      <li>The construction order is shown as studies → breakwater → dredging → quays. Real projects overlap these phases.</li>
+      <li>Depth contours (-5, -10, -15 m) and the cross-section are schematic. Slopes are drawn steeper than real ones (about 1:1.5 to 1:2) so everything fits the frame.</li>
+    </ul>
+  </section>
+  <section class="facts warn">
+    <h2>Two inputs didn't arrive</h2>
+    <ul>
+      <li>Your message was cut off in the middle of <b>sound.js</b>, and the <b>reference animation's source code</b> wasn't included at all. These panels use my own implementation of the style card: chisel-tip marker strokes with pooled edges and dry streaks, double tracing, letter-by-letter lettering, the felt-eraser wipe with ghost residue, the ceiling-light sheen, and grain. The H library is used unchanged.</li>
+      <li>For the final build, please paste the full reference source and the complete SOUND kit. I'll copy their texture and finishing functions in at the same strength, and I'll use the kit's real sound names for the sounds listed above.</li>
+    </ul>
+  </section>
+</div>
+<script>
+const BEATS = [
+  { n: 1, name: 'Hook', t0: 0.0, t1: 2.0, key: 1.95,
+    text: 'Come si costruisce / un porto?',
+    flow: ['cut', 'Opening frame. The board already carries a faint ghost of an older lesson. The question is written letter by letter, then an anchor doodle, a red underline and two blue wave lines are drawn on.'],
+    sound: 'Quiet classroom room-tone bed (under everything until 23.5 s). Marker squeaks track each word as it is written (0.1–1.3 s). A short scratchy stroke for the anchor. A crisp tap when the red underline completes at 1.6 s.' },
+  { n: 2, name: 'Studiare il mare', t0: 2.0, t1: 5.2, key: 5.15,
+    text: '1 · Studiare il mare — TERRA · -5 m · -10 m · -15 m · onde dominanti · misura dei fondali →',
+    flow: ['cut', 'Felt eraser zig-zags left to right (2.0–2.75 s), leaving a grey ghost of the title. The story moves from the question to the site itself, seen from above as a map. Then the coastline and hatched land, dashed depth contours with labels, three wave arrows, and a survey boat\'s dotted track.'],
+    sound: 'Eraser rub (felt on gloss) for 0.75 s. One long marker stroke for the coast and fast scratches for the hatching. Short dotted squeaks for each contour, and a soft pop as each depth label lands. Three quick marker flicks for the wave arrows. Light pen taps along the survey track.' },
+  { n: 3, name: 'La diga foranea', t0: 5.2, t1: 9.0, key: 8.95,
+    text: '2 · La diga foranea — nucleo di pietrame · mantellata in massi · muro paraonde · mare aperto · acqua calma',
+    flow: ['cut', 'Eraser wipe (5.2–5.95 s) from the map to a cross-section, a different view of the same coast. The section is built layer by layer: water and seabed, the stone core (filling from the bottom up), the filter layer, armour blocks, then the crown wall. A red wave arrow from the open sea hits the armour and splashes. Behind the breakwater, a small blue arrow shows the calm water.'],
+    sound: 'Eraser rub. A dense patter of marker dots for the core stones. Eight light knocks as each armour block is drawn. A squeak for the crown wall. The red wave arrow ends in a splash hit at 8.45 s. A soft, lower pop for "acqua calma".' },
+  { n: 4, name: 'Scavare il fondale', t0: 9.0, t1: 12.6, key: 12.25,
+    text: '3 · Scavare il fondale — draga · fondale naturale · -16 m',
+    flow: ['cont', 'Continuous. The camera slides right along the same section while the marker keeps drawing the calm water and seabed. The breakwater leaves frame left, and the header is erased and rewritten. The dredger draws on and moves right. Behind its cutter the seabed drops to a new line and the old bottom turns dashed. A red dimension line and "-16 m" are scrawled, then circled, with a 12% punch-in on the number.'],
+    sound: 'A long marker line carries the camera move. A low, quiet rumble while the dredger advances (10.4–11.3 s). Three marker flicks for the red down arrows. Hard, fast squeaks for "-16 m". The biggest hit of the piece lands as the circle closes (12.1 s), followed by a beat of silence.' },
+  { n: 5, name: 'Posare i cassoni', t0: 12.6, t1: 16.4, key: 16.3,
+    text: '4 · Posare i cassoni — scanno di pietrame · cassone in c.a. · sabbia · banchina',
+    flow: ['cont', 'Continuous. The camera keeps travelling right, and the trench line follows it to the quay. A stone bed is placed, then a cellular caisson is drawn floating high. Red arrows push it down while ballast water rises in its cells, and it sinks onto the bed. Sand fills the cells from the bottom up, then the capping beam, the backfill behind it, and a bollard. The quay is finished.'],
+    sound: 'Pebble patter for the stone bed. Marker outline squeaks for the caisson. A filtered water gurgle while it sinks (14.2–14.8 s), ending in a soft heavy thud as it seats. A dry sand hiss during the fill. Pops as the labels land, and a final tap for the bollard.' },
+  { n: 6, name: 'Il porto prende forma', t0: 16.4, t1: 20.6, key: 20.5,
+    text: '5 · Il porto prende forma — diga foranea · acque calme · imboccatura · banchina',
+    flow: ['cut', 'Eraser wipe (16.4–17.15 s) back to the map. This is a reveal: the same coastline from beat 2 returns, now with the whole port on it. The breakwater with its armour blocks, the opposite pier, the quay with cranes and containers, and a moored ship. Waves stop at the breakwater, the green and red entrance lights blink on, and a ship sails in through the entrance on a dashed route.'],
+    sound: 'Eraser rub. Marker strokes for the breakwater, pier and quay, and quick ticks for the container boxes. Two short pings (higher for green, lower for red) as the lights appear. Dotted squeaks along the ship\'s route. Pops for the labels.' },
+  { n: 7, name: 'Takeaway', t0: 20.6, t1: 24.0, key: 23.9,
+    text: 'Un porto ha: ✓ una diga → mare calmo · ✓ un fondale profondo · ✓ banchine solide — Ripara, scava, attracca: ecco il porto.',
+    flow: ['cont', 'Continuous. The whole map shrinks into the left half, like the camera pulling back. A checklist is written on the right, one green tick per idea. The closing line is written along the bottom and underlined in red, then held for about 1 s.'],
+    sound: 'Three tick squeaks, each a step higher in pitch. A marker scrawl for the final line. A warm, resolving chord as the underline completes (23.2 s), while the room-tone bed fades out underneath.' },
+];
+const fmt = (s) => s.toFixed(1) + ' s';
+(async function () {
+  const grid = document.getElementById('grid');
+  const items = BEATS.map((b) => {
+    const el = document.createElement('article'); el.className = 'panel';
+    el.innerHTML = `<canvas width="1280" height="720" aria-label="Beat ${b.n} key frame"></canvas>
+      <div class="notes">
+        <div class="beat"><span class="n">${b.n}</span><span class="name">${b.name}</span><span class="time">${fmt(b.t0)} – ${fmt(b.t1)} · key frame ${fmt(b.key)}</span></div>
+        <dl>
+          <dt>On screen</dt><dd class="onscreen">${b.text}</dd>
+          <dt>Flow in</dt><dd><span class="tag ${b.flow[0] === 'cut' ? 'cut' : 'cont'}">${b.flow[0] === 'cut' ? 'Scene change' : 'Continuous'}</span>${b.flow[1]}</dd>
+          <dt>Sound</dt><dd>${b.sound}</dd>
+        </dl>
+      </div>`;
+    grid.appendChild(el);
+    return [el.querySelector('canvas'), b];
+  });
+  try { await Promise.all(['400 74px "Permanent Marker"', '700 30px Kalam', '400 30px Kalam'].map((f) => document.fonts.load(f, 'AaZz09àè·→✓'))); } catch (e) {}
+  for (const [cv, b] of items) {
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    window.explainer(ctx, 1280, 720, b.key);
+    await new Promise((r) => setTimeout(r, 0));
+  }
+  window.__done = true;
+})();
+</script>
