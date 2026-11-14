@@ -493,13 +493,21 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
           />
         </Sequence>
       )}
+      {/* in teglia non c'è lo sfrigolio: il mare in sottofondo evita i silenzi */}
+      {recipe.vessel === "tray" && (
+        <Audio
+          src={staticFile("sfx/ocean.wav")}
+          loop
+          volume={(f) => interpolate(f, [0, 30, tl.total - 45, tl.total], [0, 0.2 * MASTER, 0.2 * MASTER, 0], clamp)}
+        />
+      )}
       {oven && (
         <Sequence from={oven.start + 18} durationInFrames={oven.duration - 40} name="SFX forno">
           <Audio
             src={staticFile("sfx/oven-hum.wav")}
             loop
             volume={(f) =>
-              interpolate(f, [0, 14, oven.duration - 58, oven.duration - 42], [0, 0.5 * MASTER, 0.5 * MASTER, 0], clamp)
+              interpolate(f, [0, 14, oven.duration - 58, oven.duration - 42], [0, 0.28 * MASTER, 0.28 * MASTER, 0], clamp)
             }
           />
         </Sequence>
