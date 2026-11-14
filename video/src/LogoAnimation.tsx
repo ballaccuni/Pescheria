@@ -82,7 +82,8 @@ const Bubbles: React.FC<{ start: number }> = ({ start }) => {
         const progress = local / 70;
         if (progress > 1) return null;
         const y = 300 - progress * 190;
-        const x = 200 + Math.sin(progress * Math.PI * 2) * 8 + b.drift * progress;
+        const x =
+          200 + Math.sin(progress * Math.PI * 2) * 8 + b.drift * progress;
         const opacity = interpolate(progress, [0, 0.15, 0.75, 1], [0, 1, 1, 0]);
         return (
           <div
@@ -127,15 +128,31 @@ const Waves: React.FC = () => {
       height={height}
       style={{ position: "absolute", inset: 0 }}
     >
-      <path d={wave(10, 520, 0.05, height - 46)} fill={COLORS.blue} opacity={0.12} />
-      <path d={wave(8, 380, -0.07, height - 28)} fill={COLORS.blue} opacity={0.18} />
+      <path
+        d={wave(10, 520, 0.05, height - 46)}
+        fill={COLORS.blue}
+        opacity={0.12}
+      />
+      <path
+        d={wave(8, 380, -0.07, height - 28)}
+        fill={COLORS.blue}
+        opacity={0.18}
+      />
     </svg>
   );
 };
 
-const HOURS: { day: string; morning: string | null; afternoon: string | null }[] = [
+const HOURS: {
+  day: string;
+  morning: string | null;
+  afternoon: string | null;
+}[] = [
   { day: "Lunedì", morning: null, afternoon: "17:30 – 20:00" },
-  { day: "Martedì – Venerdì", morning: "8:00 – 13:30", afternoon: "17:30 – 20:00" },
+  {
+    day: "Martedì – Venerdì",
+    morning: "8:00 – 13:30",
+    afternoon: "17:30 – 20:00",
+  },
   { day: "Sabato", morning: "8:00 – 13:00", afternoon: null },
 ];
 
@@ -186,6 +203,13 @@ export const LogoAnimation: React.FC = () => {
     easing: Easing.inOut(Easing.cubic),
   });
   const orariLabel = interpolate(frame, [215, 235], [0, 1], clamp);
+  const headersIn = interpolate(frame, [228, 248], [0, 1], clamp);
+
+  // --- Scena 3: slogan e orari lasciano spazio al sito web ---
+  const infoOut = interpolate(frame, [395, 415], [1, 0], {
+    ...clamp,
+    easing: Easing.in(Easing.cubic),
+  });
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.cream, fontFamily }}>
@@ -248,118 +272,148 @@ export const LogoAnimation: React.FC = () => {
         />
       </div>
 
-      {/* Slogan */}
-      <div
+      <AbsoluteFill
         style={{
-          position: "absolute",
-          top: 420,
-          width: "100%",
-          textAlign: "center",
+          opacity: infoOut,
+          transform: `translateY(${(1 - infoOut) * -30}px)`,
         }}
       >
+        {/* Slogan */}
         <div
           style={{
+            position: "absolute",
+            top: 420,
+            width: "100%",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              color: COLORS.blue,
+              fontSize: 30,
+              fontWeight: 500,
+              letterSpacing: 7,
+              textTransform: "uppercase",
+              opacity: slogan1,
+              transform: `translateY(${(1 - slogan1) * 20}px)`,
+            }}
+          >
+            Da tre generazioni
+          </div>
+          <div
+            style={{
+              color: COLORS.slate,
+              fontSize: 50,
+              fontWeight: 500,
+              marginTop: 10,
+              opacity: slogan2,
+              transform: `translateY(${(1 - slogan2) * 24}px)`,
+            }}
+          >
+            per voi solo il pesce migliore
+          </div>
+        </div>
+
+        {/* Divisore */}
+        <div
+          style={{
+            position: "absolute",
+            top: 600,
+            left: width / 2 - 260 * divider,
+            width: 520 * divider,
+            height: 3,
+            borderRadius: 2,
+            backgroundColor: COLORS.blue,
+            opacity: 0.6,
+          }}
+        />
+
+        {/* Orari */}
+        <div
+          style={{
+            position: "absolute",
+            top: 625,
+            width: "100%",
+            textAlign: "center",
             color: COLORS.blue,
-            fontSize: 30,
-            fontWeight: 500,
-            letterSpacing: 7,
-            textTransform: "uppercase",
-            opacity: slogan1,
-            transform: `translateY(${(1 - slogan1) * 20}px)`,
+            fontSize: 26,
+            fontWeight: 600,
+            letterSpacing: 8,
+            opacity: orariLabel,
           }}
         >
-          Da tre generazioni
+          ORARI
+        </div>
+        {/* Intestazioni Mattina / Pomeriggio */}
+        <div
+          style={{
+            position: "absolute",
+            top: 676,
+            left: 90,
+            right: 90,
+            padding: "0 28px",
+            display: "flex",
+            color: COLORS.blue,
+            fontSize: 22,
+            fontWeight: 600,
+            letterSpacing: 4,
+            textTransform: "uppercase",
+            opacity: headersIn,
+          }}
+        >
+          <div style={{ flex: 1.3 }} />
+          <div style={{ flex: 1, textAlign: "right" }}>Mattina</div>
+          <div style={{ flex: 1, textAlign: "right" }}>Pomeriggio</div>
         </div>
         <div
           style={{
-            color: COLORS.slate,
-            fontSize: 50,
-            fontWeight: 500,
-            marginTop: 10,
-            opacity: slogan2,
-            transform: `translateY(${(1 - slogan2) * 24}px)`,
+            position: "absolute",
+            top: 718,
+            left: 90,
+            right: 90,
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
           }}
         >
-          per voi solo il pesce migliore
-        </div>
-      </div>
-
-      {/* Divisore */}
-      <div
-        style={{
-          position: "absolute",
-          top: 600,
-          left: width / 2 - 260 * divider,
-          width: 520 * divider,
-          height: 3,
-          borderRadius: 2,
-          backgroundColor: COLORS.blue,
-          opacity: 0.6,
-        }}
-      />
-
-      {/* Orari */}
-      <div
-        style={{
-          position: "absolute",
-          top: 630,
-          width: "100%",
-          textAlign: "center",
-          color: COLORS.blue,
-          fontSize: 26,
-          fontWeight: 600,
-          letterSpacing: 8,
-          opacity: orariLabel,
-        }}
-      >
-        ORARI
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 690,
-          left: 90,
-          right: 90,
-          display: "flex",
-          flexDirection: "column",
-          gap: 18,
-        }}
-      >
-        {HOURS.map((row, i) => {
-          const p = spring({
-            frame: frame - 235 - i * 12,
-            fps,
-            config: { damping: 16 },
-          });
-          return (
-            <div
-              key={row.day}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                padding: "16px 28px",
-                borderRadius: 18,
-                backgroundColor: "rgba(58,150,191,0.09)",
-                opacity: Math.min(1, p * 1.4),
-                transform: `translateX(${(1 - p) * -60}px)`,
-              }}
-            >
+          {HOURS.map((row, i) => {
+            const p = spring({
+              frame: frame - 235 - i * 12,
+              fps,
+              config: { damping: 16 },
+            });
+            return (
               <div
+                key={row.day}
                 style={{
-                  flex: 1.3,
-                  color: COLORS.slate,
-                  fontSize: 32,
-                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "14px 28px",
+                  borderRadius: 18,
+                  backgroundColor: "rgba(58,150,191,0.09)",
+                  opacity: Math.min(1, p * 1.4),
+                  transform: `translateX(${(1 - p) * -60}px)`,
                 }}
               >
-                {row.day}
+                <div
+                  style={{
+                    flex: 1.3,
+                    color: COLORS.slate,
+                    fontSize: 32,
+                    fontWeight: 600,
+                  }}
+                >
+                  {row.day}
+                </div>
+                <Slot value={row.morning} />
+                <Slot value={row.afternoon} />
               </div>
-              <Slot value={row.morning} />
-              <Slot value={row.afternoon} />
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+
+      <WebsiteCta start={410} />
     </AbsoluteFill>
   );
 };
@@ -378,3 +432,147 @@ const Slot: React.FC<{ value: string | null }> = ({ value }) => (
     {value ?? "—"}
   </div>
 );
+
+const SITE = "saporedimareraffadali.it";
+
+// Pulsante del sito con cursore che clicca
+const WebsiteCta: React.FC<{ start: number }> = ({ start }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const f = frame - start;
+  if (f < 0) return null;
+
+  const labelIn = interpolate(f, [0, 20], [0, 1], {
+    ...clamp,
+    easing: Easing.out(Easing.cubic),
+  });
+  const pillIn = spring({ frame: f - 8, fps, config: { damping: 13 } });
+
+  // il cursore entra dal basso a destra e si ferma sul pulsante
+  const clickAt = 62;
+  const cursorMove = interpolate(f, [24, 56], [0, 1], {
+    ...clamp,
+    easing: Easing.inOut(Easing.cubic),
+  });
+  const cursorX = interpolate(cursorMove, [0, 1], [1000, 610]);
+  const cursorY = interpolate(cursorMove, [0, 1], [1120, 712]);
+  const cursorOpacity = interpolate(f, [24, 32], [0, 1], clamp);
+  const press = interpolate(
+    f,
+    [clickAt - 4, clickAt, clickAt + 6],
+    [1, 0.82, 1],
+    clamp,
+  );
+  const pillPress = interpolate(
+    f,
+    [clickAt - 4, clickAt, clickAt + 8],
+    [1, 0.95, 1],
+    clamp,
+  );
+  const filled = interpolate(f, [clickAt, clickAt + 10], [0, 1], clamp);
+  const ripple = interpolate(f, [clickAt, clickAt + 28], [0, 1], {
+    ...clamp,
+    easing: Easing.out(Easing.cubic),
+  });
+  const hintIn = interpolate(f, [clickAt + 14, clickAt + 34], [0, 1], clamp);
+
+  return (
+    <AbsoluteFill>
+      <div
+        style={{
+          position: "absolute",
+          top: 560,
+          width: "100%",
+          textAlign: "center",
+          color: COLORS.slate,
+          fontSize: 44,
+          fontWeight: 500,
+          opacity: labelIn,
+          transform: `translateY(${(1 - labelIn) * 24}px)`,
+        }}
+      >
+        Visita il nostro sito
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          top: 655,
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            padding: "26px 54px",
+            borderRadius: 999,
+            border: `4px solid ${COLORS.blue}`,
+            backgroundColor: `rgba(58,150,191,${filled})`,
+            color: filled > 0.5 ? COLORS.cream : COLORS.deepBlue,
+            fontSize: 46,
+            fontWeight: 600,
+            opacity: Math.min(1, pillIn * 1.5),
+            transform: `scale(${pillIn * pillPress})`,
+            boxShadow: `0 ${12 * filled}px ${30 * filled}px rgba(31,120,168,0.25)`,
+          }}
+        >
+          {SITE}
+          {/* onda del click */}
+          <div
+            style={{
+              position: "absolute",
+              inset: -4,
+              borderRadius: 999,
+              border: `4px solid ${COLORS.blue}`,
+              opacity: ripple > 0 ? 1 - ripple : 0,
+              transform: `scale(${1 + ripple * 0.25}, ${1 + ripple * 0.9})`,
+            }}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          top: 815,
+          width: "100%",
+          textAlign: "center",
+          color: COLORS.blue,
+          fontSize: 28,
+          fontWeight: 500,
+          letterSpacing: 3,
+          opacity: hintIn,
+          transform: `translateY(${(1 - hintIn) * 16}px)`,
+        }}
+      >
+        Ti aspettiamo!
+      </div>
+
+      {/* cursore */}
+      <svg
+        width={54}
+        height={64}
+        viewBox="0 0 27 32"
+        style={{
+          position: "absolute",
+          left: cursorX,
+          top: cursorY,
+          opacity: cursorOpacity,
+          transform: `scale(${press})`,
+          transformOrigin: "0 0",
+          filter: "drop-shadow(0 4px 6px rgba(47,72,88,0.3))",
+        }}
+      >
+        <path
+          d="M2 2 L2 25 L8 19.5 L12.5 29 L16.5 27.2 L12 18 L20 18 Z"
+          fill="#ffffff"
+          stroke={COLORS.slate}
+          strokeWidth={2}
+          strokeLinejoin="round"
+        />
+      </svg>
+    </AbsoluteFill>
+  );
+};
