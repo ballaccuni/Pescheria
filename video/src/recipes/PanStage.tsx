@@ -37,13 +37,13 @@ export const panHandleEnd = (() => {
 export const GROUPS: Partial<
   Record<AddKind, { count: number; minDist: number; stagger: number; seed: number; bed?: boolean }>
 > = {
-  garlic: { count: 6, minDist: 38, stagger: 4, seed: 3, bed: true },
+  garlic: { count: 8, minDist: 38, stagger: 4, seed: 3, bed: true },
   zucchini: { count: 12, minDist: 46, stagger: 3, seed: 5 },
   zucchiniSticks: { count: 36, minDist: 26, stagger: 1.3, seed: 5, bed: true },
   tomato: { count: 10, minDist: 44, stagger: 3, seed: 7 },
   shrimp: { count: 8, minDist: 50, stagger: 4, seed: 11 },
   mussels: { count: 14, minDist: 62, stagger: 3, seed: 13 },
-  paccheri: { count: 20, minDist: 46, stagger: 1.5, seed: 17 },
+  paccheri: { count: 35, minDist: 46, stagger: 1, seed: 17 },
 };
 
 /** Cozze che restano intere (le altre vengono sgusciate). */
@@ -51,7 +51,7 @@ export const MUSSELS_KEPT = 4;
 const MUSSEL_OPEN_DELAY = 42;
 
 /** Quando si apre la cozza i (per i suoni). */
-export const musselOpenAt = (addAt: number, i: number) => addAt + i * 3 + MUSSEL_OPEN_DELAY + i * 2;
+export const musselOpenAt = (addAt: number, i: number) => addAt + i * 3 + MUSSEL_OPEN_DELAY + i;
 const CREAM = "#EBD39C";
 
 type Placed = { x: number; y: number; rot: number; phase: number };
@@ -78,6 +78,30 @@ const placeItems = (kinds: AddKind[]) => {
     if (!g) continue;
     if (kind === "mussels") {
       out[kind] = musselRings(196, 92);
+      continue;
+    }
+    if (kind === "garlic") {
+      // fettine d'aglio in cerchio, tra le cozze
+      out[kind] = Array.from({ length: g.count }, (_, k) => {
+        const a = (k / g.count) * Math.PI * 2 + Math.PI / g.count;
+        return { x: Math.cos(a) * 146, y: Math.sin(a) * 146, rot: (a * 180) / Math.PI + 90, phase: k * 1.3 };
+      });
+      continue;
+    }
+    if (kind === "paccheri") {
+      // paccheri in cerchi ordinati sulla crema: nessuno sopra l'altro
+      const pts: Placed[] = [{ x: 0, y: 0, rot: 20, phase: 0 }];
+      [
+        [6, 70],
+        [12, 140],
+        [16, 206],
+      ].forEach(([n, r], ri) => {
+        for (let k = 0; k < n; k++) {
+          const a = (k / n) * Math.PI * 2 + ri * 0.3;
+          pts.push({ x: Math.cos(a) * r, y: Math.sin(a) * r, rot: (a * 180) / Math.PI + 90, phase: k + ri * 7 });
+        }
+      });
+      out[kind] = pts;
       continue;
     }
     const rnd = mulberry32(g.seed);
@@ -181,7 +205,16 @@ export const PanStage: React.FC<{
       const rot = p.rot + tossAmt * 20 * Math.cos(p.phase);
       let node: React.ReactNode = null;
       if (kind === "garlic") {
-        node = <GarlicSlice golden={interpolate(frame, [s + 10, s + 140], [0, 0.85], clamp)} />;
+        const golden = interpolate(frame, [s + 10, s + 120], [0, 0.85], clamp);
+        const fizz = ((frame + i * 7) % 18) / 18;
+        node = (
+          <g transform="scale(1.35)">
+            {frame > s + 10 && (
+              <ellipse rx={22 + fizz * 6} ry={17 + fizz * 5} fill="none" stroke="#FBE7A1" strokeWidth={2} opacity={(1 - fizz) * 0.8} />
+            )}
+            <GarlicSlice golden={golden} />
+          </g>
+        );
       } else if (kind === "zucchini") {
         node = <ZucchiniSlice />;
       } else if (kind === "zucchiniSticks") {
@@ -196,7 +229,7 @@ export const PanStage: React.FC<{
       } else if (kind === "shrimp") {
         node = <Shrimp cooked={interpolate(frame, [s + 15, s + 85], [0, 1], clamp)} />;
       } else if (kind === "paccheri") {
-        node = <Pacchero coated={interpolate(frame, [s + 30, s + 90], [0, 1], clamp)} />;
+        node = <Pacchero coated={interpolate(frame, [s + 30, s + 90], [0, 1], clamp)} shadow />;
       } else if (kind === "mussels") {
         // le cozze si aprono con il calore, una dopo l'altra
         const openAt = musselOpenAt(at, i);

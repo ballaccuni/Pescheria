@@ -242,7 +242,7 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
         )}
         {PACCHERI_SPOTS.map((p, i) => (
           <Drop key={`pc${i}`} local={local} start={46 + i * 2} fps={fps} x={p.x} y={p.y} rot={p.rot} scale={1.1}>
-            <Pacchero coated={1} />
+            <Pacchero coated={1} shadow />
           </Drop>
         ))}
         {MUSSEL_SPOTS.map((p, i) => (

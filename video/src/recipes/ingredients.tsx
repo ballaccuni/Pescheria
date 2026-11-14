@@ -170,14 +170,16 @@ export const TomatoWhole: React.FC = () => (
 /** Fettina d'aglio; golden 0..1 = doratura. */
 export const GarlicSlice: React.FC<{ golden?: number }> = ({ golden = 0 }) => (
   <g>
-    <ellipse
-      rx={12}
-      ry={8.5}
-      fill={mix(FOOD.garlic, FOOD.garlicGolden, golden)}
-      stroke={FOOD.garlicEdge}
-      strokeWidth={2}
+    {/* fettina a mezzaluna, con il bordo che si dora */}
+    <path
+      d="M -18 3 C -18 -11 -5 -16 6 -14 C 18 -12 21 -2 18 7 C 14 15 -2 16 -11 13 C -17 10 -18 7 -18 3 Z"
+      fill={mix("#FBF5E6", "#F0D08A", golden)}
+      stroke={mix("#D4C39A", "#B27A30", golden)}
+      strokeWidth={3}
+      strokeLinejoin="round"
     />
-    <ellipse rx={4} ry={2.5} fill={mix(FOOD.garlicEdge, "#C9A060", golden)} opacity={0.6} />
+    <path d="M -9 3 Q 2 -4 11 1" stroke={mix("#E6D9B4", "#D29A4E", golden)} strokeWidth={3.2} fill="none" strokeLinecap="round" />
+    <ellipse cx={-6} cy={-7} rx={5} ry={2.2} fill="#FFFFFF" opacity={0.7 - golden * 0.4} />
   </g>
 );
 
@@ -601,8 +603,9 @@ export const PotatoCube: React.FC<{ cooked?: number; size?: number }> = ({ cooke
 );
 
 /** Mezzo pacchero visto dall'alto (tubo corto, con l'apertura). coated: velato di crema. */
-export const Pacchero: React.FC<{ coated?: number }> = ({ coated = 0 }) => (
+export const Pacchero: React.FC<{ coated?: number; shadow?: boolean }> = ({ coated = 0, shadow = false }) => (
   <g>
+    {shadow && <rect x={-23} y={-12} width={54} height={36} rx={10} fill="rgba(120,85,30,0.28)" />}
     <rect x={-26} y={-17} width={52} height={34} rx={9} fill={mix("#F2D68C", "#EBCB8B", coated)} stroke="#C9A24A" strokeWidth={2.5} />
     <path d="M -14 -15 L -14 15 M 0 -15 L 0 15 M 14 -15 L 14 15" stroke="#E3C277" strokeWidth={2} opacity={0.7} />
     <ellipse cx={24} cy={0} rx={7} ry={15} fill="#B98F3E" stroke="#C9A24A" strokeWidth={2} />
