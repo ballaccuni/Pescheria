@@ -9,15 +9,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { loadFont } from "@remotion/fonts";
+import { fontFamily } from "./font";
 import { SoundEffects } from "./SoundEffects";
-
-const fontFamily = "Lexend";
-loadFont({
-  family: fontFamily,
-  url: staticFile("fonts/Lexend.woff2"),
-  weight: "300 600",
-});
 
 // Colori presi dal logo originale
 export const COLORS = {
@@ -107,7 +100,7 @@ const Bubbles: React.FC<{ start: number }> = ({ start }) => {
 };
 
 // Onde animate in basso
-const Waves: React.FC = () => {
+export const Waves: React.FC = () => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
   const rise = interpolate(frame, [0, 40], [80, 0], {

@@ -1,6 +1,6 @@
 """Sintetizza gli effetti sonori del video in public/sfx/ (solo numpy, nessun file esterno).
 
-Uso: python3 scripts/make-sfx.py
+Uso: python3 scripts/make-sfx.py  (crea solo i file mancanti; --force rigenera tutto)
 """
 
 import os
@@ -17,7 +17,14 @@ def t(dur):
     return np.arange(int(SR * dur)) / SR
 
 
+FORCE = "--force" in __import__("sys").argv
+
+
 def save(name, x, peak=0.9):
+    path = os.path.join(OUT, name + ".wav")
+    if os.path.exists(path) and not FORCE:
+        # non sovrascrivere i suoni già approvati (usa --force per rigenerarli)
+        return
     x = np.asarray(x, dtype=np.float64)
     if x.ndim == 1:
         x = np.stack([x, x], axis=1)
@@ -201,6 +208,104 @@ def splash(dur=1.8):
     return out
 
 
+# ---- Suoni di cucina (generatore separato: non cambia i suoni sopra) ----
+krng = np.random.default_rng(21)
+
+
+def highpass(x, cutoff):
+    spec = np.fft.rfft(x, axis=0)
+    freqs = np.fft.rfftfreq(len(x), 1 / SR)
+    g = 1 / (1 + (cutoff / np.maximum(freqs, 1e-3)) ** 4)
+    if x.ndim == 2:
+        g = g[:, None]
+    return np.fft.irfft(spec * g, n=len(x), axis=0)
+
+
+def crackle(n, rate, decay_ms=1.6):
+    """Scoppiettii dell'olio: impulsi casuali brevi e brillanti."""
+    imp = np.zeros(n)
+    count = int(rate * n / SR)
+    pos = krng.integers(0, n, count)
+    imp[pos] = krng.uniform(0.2, 1.0, count) ** 2 * krng.choice([-1, 1], count)
+    k = int(SR * decay_ms / 1000 * 5)
+    kt = np.arange(k) / SR
+    kernel = krng.standard_normal(k) * np.exp(-kt / (decay_ms / 1000))
+    return np.convolve(imp, kernel, mode="same")
+
+
+def sizzle(dur):
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    chans = []
+    for _ in range(2):
+        c = crackle(n, 420)
+        hiss = highpass(krng.standard_normal(n), 2500)
+        hiss = lowpass(hiss, 9000) * 0.18
+        mod = 0.8 + 0.2 * np.sin(2 * np.pi * tt * krng.uniform(0.3, 0.6))
+        chans.append(highpass(c + hiss, 1200) * mod)
+    x = np.stack(chans, axis=1)
+    f = int(SR * 0.3)
+    x[:f] *= np.linspace(0, 1, f)[:, None]
+    x[-f:] *= np.linspace(1, 0, f)[:, None]
+    return x
+
+
+def sizzle_burst(dur=1.4):
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    env = np.minimum(1, tt / 0.02) * np.exp(-tt * 3.2)
+    chans = []
+    for _ in range(2):
+        c = crackle(n, 1800, 1.2)
+        hiss = lowpass(highpass(krng.standard_normal(n), 2000), 10000) * 0.5
+        chans.append(highpass(c + hiss, 1200) * env)
+    return np.stack(chans, axis=1)
+
+
+def plop():
+    """Ingrediente che cade in padella: tonfo morbido."""
+    tt = t(0.25)
+    f = 170 * (1 + 0.8 * np.exp(-tt * 35))
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-tt * 22)
+    tap = lowpass(krng.standard_normal(len(tt)), 2500) * np.exp(-tt * 90) * 0.35
+    return body + tap
+
+
+def sprinkle(dur=1.1):
+    """Sale/prezzemolo che piovono: tanti tocchi minuscoli."""
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    imp = np.zeros(n)
+    count = 140
+    pos = (krng.beta(1.2, 2.2, count) * n).astype(int)
+    imp[pos] = krng.uniform(0.3, 1, count)
+    k = int(SR * 0.004)
+    kernel = krng.standard_normal(k) * np.exp(-np.arange(k) / (SR * 0.0008))
+    x = highpass(np.convolve(imp, kernel, mode="same"), 3000)
+    f = int(SR * 0.2)
+    x[-f:] *= np.linspace(1, 0, f)
+    d = int(SR * 0.006)
+    return np.stack([x, np.roll(x, d)], axis=1)
+
+
+def squeeze():
+    """Limone spremuto: schiocco succoso e qualche goccia."""
+    n = int(SR * 1.2)
+    out = np.zeros(n)
+    sq = int(SR * 0.35)
+    st = np.arange(sq) / SR
+    noise = krng.standard_normal(sq)
+    # risonanza che sale, filtrata a blocchi
+    juicy = bandpass_sweep(noise, 500, 1400, q=3.0)
+    juicy *= np.clip(np.sin(np.pi * st / st[-1]), 0, 1) ** 1.5
+    out[:sq] += juicy / np.max(np.abs(juicy))
+    for start, f0 in [(0.32, 900), (0.5, 1200), (0.7, 1000), (0.86, 1350)]:
+        b = bubble(f0, f0 * 2.1, dur=0.06) * 0.5
+        s0 = int(SR * start)
+        out[s0 : s0 + len(b)] += b
+    return out
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save("ocean", ocean(19.5), peak=0.5)
@@ -216,4 +321,10 @@ if __name__ == "__main__":
         save(name, marimba(f), peak=0.8)
     save("click", mouse_click(), peak=0.9)
     save("success", chime([D5, Fs5, A5, D6], dur=2.6, spread=0.08), peak=0.8)
+    # cucina
+    save("sizzle", sizzle(22), peak=0.6)
+    save("sizzle-burst", sizzle_burst(), peak=0.8)
+    save("plop", plop(), peak=0.8)
+    save("sprinkle", sprinkle(), peak=0.7)
+    save("squeeze", squeeze(), peak=0.8)
     print("ok")
