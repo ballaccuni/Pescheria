@@ -13,6 +13,14 @@ export type AddKind =
   | "parsley"
   | "lemon"
   | "lemonZest"
+  | "mussels"
+  | "shell"
+  | "cream"
+  | "paccheri"
+  // pentola
+  | "potatoes"
+  // mixer
+  | "blend"
   // teglia
   | "drizzle"
   | "fish"
@@ -31,7 +39,13 @@ export type IconKind =
   | "saltPepper"
   | "orata"
   | "fillet"
-  | "breadcrumbs";
+  | "breadcrumbs"
+  | "potato"
+  | "mussel"
+  | "paccheri";
+
+/** Dove si svolge un passo. Il piatto è a parte (plate: true). */
+export type StageKind = "pan" | "tray" | "pot" | "mixer";
 
 export type Step = {
   title: string;
@@ -39,8 +53,12 @@ export type Step = {
   duration: number;
   /** ingredienti che entrano in questo passo */
   add?: AddKind[];
+  /** dove si svolge (se manca: recipe.vessel) */
+  stage?: StageKind;
   /** salto in padella */
   toss?: boolean;
+  /** fotogrammi dall'inizio del passo al salto in padella */
+  tossDelay?: number;
   /** cottura in forno */
   oven?: { temp: number; minutes: number };
   /** impiattamento */
@@ -49,14 +67,26 @@ export type Step = {
 
 export type Recipe = {
   /** dove si cucina */
-  vessel: "pan" | "tray";
+  vessel: StageKind;
   /** cosa va nel piatto all'impiattamento */
-  dish: "pasta" | "fish";
+  dish: "pasta" | "fish" | "cozze";
   title: string[];
   servings: string;
   ingredients: { name: string; qty: string; icon: IconKind }[];
   steps: Step[];
   outro: string;
+};
+
+export type Segment = {
+  kind: StageKind | "plate";
+  start: number;
+  end: number;
+  /** indici dei passi */
+  steps: number[];
+  /** quando entra in scena */
+  enterAt: number;
+  /** ultima scena: non esce */
+  last: boolean;
 };
 
 export const ROW_GAP = 14;
@@ -74,8 +104,21 @@ export const recipeTimeline = (recipe: Recipe) => {
     const start = t;
     t += s.duration;
     const adds = (s.add ?? []).map((kind, i) => ({ kind, at: start + 8 + i * 40 }));
-    return { ...s, start, end: t, adds, tossAt: s.toss ? start + TOSS_DELAY : null };
+    return { ...s, start, end: t, adds, tossAt: s.toss ? start + (s.tossDelay ?? TOSS_DELAY) : null };
   });
+  // passi consecutivi nello stesso posto formano una "scena"
+  const segments: Segment[] = [];
+  steps.forEach((s, i) => {
+    const kind: Segment["kind"] = s.plate ? "plate" : (s.stage ?? recipe.vessel);
+    const last = segments[segments.length - 1];
+    if (last && last.kind === kind) {
+      last.end = s.end;
+      last.steps.push(i);
+    } else {
+      segments.push({ kind, start: s.start, end: s.end, steps: [i], enterAt: segments.length ? s.start + 8 : stageIn, last: false });
+    }
+  });
+  if (segments.length) segments[segments.length - 1].last = true;
   const outro = t;
   const plateStep = steps.find((s) => s.plate) ?? null;
   const ovenStep = steps.find((s) => s.oven) ?? null;
@@ -88,6 +131,7 @@ export const recipeTimeline = (recipe: Recipe) => {
     outro,
     plateAt: plateStep ? plateStep.start : null,
     ovenStep,
+    segments,
     total: outro + OUTRO_LEN,
   };
 };
@@ -99,3 +143,7 @@ export const addTimes = (tl: Timeline, kind: AddKind) =>
   tl.steps.flatMap((s) => s.adds.filter((a) => a.kind === kind).map((a) => a.at));
 
 export const firstAdd = (tl: Timeline, kind: AddKind): number | null => addTimes(tl, kind)[0] ?? null;
+
+/** Primo momento in cui entra un ingrediente, dentro un intervallo di tempo. */
+export const firstAddIn = (tl: Timeline, kind: AddKind, from: number, to: number): number | null =>
+  addTimes(tl, kind).find((t) => t >= from && t < to) ?? null;

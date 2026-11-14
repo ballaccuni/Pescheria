@@ -366,6 +366,37 @@ def grate(dur=1.6):
     return out
 
 
+def boil(dur=6.0):
+    """Acqua che bolle: tante bolle basse e un brontolio di fondo, ripetibile senza stacchi."""
+    brng = np.random.default_rng(55)
+    n = int(SR * dur)
+    out = lowpass(brng.standard_normal(n), 380) * 0.5
+    for _ in range(160):
+        start = brng.uniform(0, dur - 0.1)
+        f0 = brng.uniform(140, 420)
+        b = bubble(f0, f0 * brng.uniform(1.6, 2.4), dur=brng.uniform(0.05, 0.1)) * brng.uniform(0.2, 0.7)
+        s0 = int(SR * start)
+        out[s0 : s0 + len(b)] += b
+    out = lowpass(out, 2200)
+    f = int(SR * 0.5)
+    ramp = np.linspace(0, 1, f)
+    out[:f] = out[:f] * ramp + out[-f:] * (1 - ramp)
+    return out[:-f]
+
+
+def blender(dur=2.3):
+    """Motore del frullatore: parte, gira e si spegne. Filtrato per non essere stridulo."""
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    spin = np.clip(tt / 0.35, 0, 1) * np.clip((dur - tt) / 0.35, 0, 1)
+    f = 90 + 150 * spin + 6 * np.sin(2 * np.pi * 5 * tt)
+    phase = 2 * np.pi * np.cumsum(f) / SR
+    x = sum(np.sin(k * phase) / k for k in range(1, 9))
+    x += lowpass(np.random.default_rng(66).standard_normal(n), 1500) * 0.35
+    x = lowpass(x, 1300) * (0.25 + 0.75 * spin)
+    return x
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save("ocean", ocean(19.5), peak=0.5)
@@ -392,4 +423,6 @@ if __name__ == "__main__":
     save("tick", tick(), peak=0.6)
     save("pour", pour(), peak=0.5)
     save("grate", grate(), peak=0.6)
+    save("boil", boil(), peak=0.5)
+    save("blender", blender(), peak=0.6)
     print("ok")

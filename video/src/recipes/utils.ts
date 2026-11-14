@@ -1,5 +1,5 @@
 import { Easing, interpolate, spring } from "remotion";
-import type { Timeline } from "./types";
+import type { Segment, Timeline } from "./types";
 
 export const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -19,13 +19,14 @@ export const mulberry32 = (seed: number) => () => {
 /** Centro della "scena": padella, teglia e piatto stanno qui. */
 export const STAGE = { cx: 690, cy: 810 };
 
-/** Movimento di padella/teglia: entrata dal basso, salti, uscita per far posto al piatto. */
-export const stageMotion = (frame: number, fps: number, tl: Timeline) => {
-  const enter = spring({ frame: frame - tl.stageIn, fps, config: { damping: 15 } });
+/** Movimento di una scena (padella, teglia, pentola, mixer): entra dal basso, salta, esce a destra. */
+export const segmentMotion = (frame: number, fps: number, tl: Timeline, seg: Segment) => {
+  const enter = spring({ frame: frame - seg.enterAt, fps, config: { damping: 15 } });
   let tossX = 0;
   let tossY = 0;
   let tossAmt = 0;
-  for (const s of tl.steps) {
+  for (const i of seg.steps) {
+    const s = tl.steps[i];
     if (s.tossAt === null) continue;
     const tt = frame - s.tossAt;
     if (tt >= 0 && tt < 36) {
@@ -35,19 +36,19 @@ export const stageMotion = (frame: number, fps: number, tl: Timeline) => {
       tossAmt += a;
     }
   }
-  const exit =
-    tl.plateAt === null
-      ? 0
-      : interpolate(frame, [tl.plateAt, tl.plateAt + 24], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+  const exit = seg.last
+    ? 0
+    : interpolate(frame, [seg.end, seg.end + 24], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
   return {
     enter,
     exit,
     tossAmt,
+    visible: frame >= seg.enterAt && exit < 1,
     offset: { x: tossX + exit * 1050, y: (1 - enter) * 1100 + tossY - exit * 140 },
   };
 };
 
-export type StageMotion = ReturnType<typeof stageMotion>;
+export type StageMotion = ReturnType<typeof segmentMotion>;
 
 export const roundedRect = (x: number, y: number, w: number, h: number, r: number) =>
   `M ${x + r} ${y} H ${x + w - r} A ${r} ${r} 0 0 1 ${x + w} ${y + r} V ${y + h - r} A ${r} ${r} 0 0 1 ${x + w - r} ${y + h} H ${x + r} A ${r} ${r} 0 0 1 ${x} ${y + h - r} V ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} Z`;

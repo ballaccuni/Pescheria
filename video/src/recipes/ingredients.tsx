@@ -515,3 +515,137 @@ export const ZestGrater: React.FC<{ lemonX: number }> = ({ lemonX }) => (
     </g>
   </g>
 );
+
+// ---------------------------------------------------------------- cozze, patate, paccheri
+
+export const MUSSEL = { shell: "#27324A", shellLine: "#46557A", pearl: "#D7DEEA", meat: "#F29A4A", meatDark: "#D9772E" };
+
+// mezza valva vista dall'alto, cerniera a sinistra (x=-34)
+const VALVE = "M -34 0 C -24 -24 18 -27 34 -8 C 41 2 32 15 14 13 C -6 11 -24 7 -34 0 Z";
+
+/** Cozza vista dall'alto. open: 0 = chiusa, 1 = aperta a farfalla. */
+export const Mussel: React.FC<{ open?: number; meat?: boolean }> = ({ open = 0, meat = true }) => {
+  const ang = open * 42;
+  if (open < 0.3) {
+    return (
+      <g>
+        <path d={VALVE} transform="scale(1 1.3)" fill={MUSSEL.shell} stroke={COLORS.slate} strokeWidth={2.5} />
+        {[0.45, 0.7].map((k) => (
+          <path
+            key={k}
+            d={VALVE}
+            transform={`translate(${-34 * (1 - k)} 0) scale(${k} ${1.3 * k})`}
+            fill="none"
+            stroke={MUSSEL.shellLine}
+            strokeWidth={2.5 / k}
+          />
+        ))}
+        <ellipse cx={-6} cy={-12} rx={14} ry={4} fill="#FFFFFF" opacity={0.18} transform="rotate(-10 -6 -12)" />
+      </g>
+    );
+  }
+  return (
+    <g>
+      {[-1, 1].map((sx) => (
+        <g key={sx} transform={`rotate(${sx * ang} -34 0) scale(1 ${sx})`}>
+          <path d={VALVE} fill={MUSSEL.shell} stroke={COLORS.slate} strokeWidth={2.5} />
+          <path d={VALVE} transform="translate(-4 0) scale(0.84)" fill={MUSSEL.pearl} />
+          {meat && (
+            <path
+              d="M -20 2 C -10 -14 16 -16 24 -4 C 28 4 20 9 8 8 C -6 7 -16 6 -20 2 Z"
+              fill={MUSSEL.meat}
+              stroke={MUSSEL.meatDark}
+              strokeWidth={2}
+            />
+          )}
+        </g>
+      ))}
+    </g>
+  );
+};
+
+/** Frutto della cozza sgusciato. */
+export const MusselMeat: React.FC = () => (
+  <g>
+    <path
+      d="M -22 2 C -12 -15 16 -17 25 -4 C 29 5 20 11 6 10 C -8 9 -18 7 -22 2 Z"
+      fill={MUSSEL.meat}
+      stroke={MUSSEL.meatDark}
+      strokeWidth={2.5}
+    />
+    <path d="M -12 2 C -2 -6 10 -7 18 -2" stroke="#F7C08A" strokeWidth={3} fill="none" strokeLinecap="round" />
+  </g>
+);
+
+/** Cubetto di patata. cooked: più chiaro e morbido. */
+export const PotatoCube: React.FC<{ cooked?: number; size?: number }> = ({ cooked = 0, size = 34 }) => (
+  <g>
+    <rect
+      x={-size / 2}
+      y={-size / 2}
+      width={size}
+      height={size}
+      rx={size * 0.24}
+      fill={mix("#F1D493", "#F6E3B4", cooked)}
+      stroke="#C9A35C"
+      strokeWidth={2.5}
+    />
+    <path
+      d={`M ${-size / 2 + 5} ${-size / 2 + 8} L ${size / 2 - 8} ${-size / 2 + 5}`}
+      stroke="#FFFFFF"
+      strokeWidth={3}
+      opacity={0.5}
+      strokeLinecap="round"
+    />
+  </g>
+);
+
+/** Mezzo pacchero visto dall'alto (tubo corto, con l'apertura). coated: velato di crema. */
+export const Pacchero: React.FC<{ coated?: number }> = ({ coated = 0 }) => (
+  <g>
+    <rect x={-26} y={-17} width={52} height={34} rx={9} fill={mix("#F2D68C", "#EBCB8B", coated)} stroke="#C9A24A" strokeWidth={2.5} />
+    <path d="M -14 -15 L -14 15 M 0 -15 L 0 15 M 14 -15 L 14 15" stroke="#E3C277" strokeWidth={2} opacity={0.7} />
+    <ellipse cx={24} cy={0} rx={7} ry={15} fill="#B98F3E" stroke="#C9A24A" strokeWidth={2} />
+    <ellipse cx={24} cy={0} rx={3.5} ry={10} fill="#8E6A28" />
+    {coated > 0 && <path d="M -22 -6 C -8 -14 6 2 20 -8" stroke="#F6E7C3" strokeWidth={6} fill="none" strokeLinecap="round" opacity={coated * 0.9} />}
+  </g>
+);
+
+/** Patata (icona). */
+export const PotatoIcon: React.FC = () => (
+  <g>
+    <path
+      d="M -34 4 C -36 -18 -10 -30 12 -26 C 34 -22 40 -2 32 14 C 24 30 -6 32 -22 24 C -30 20 -34 14 -34 4 Z"
+      fill="#E2B76A"
+      stroke={COLORS.slate}
+      strokeWidth={2.5}
+    />
+    {[
+      [-14, -10],
+      [10, -12],
+      [18, 8],
+      [-8, 12],
+    ].map(([x, y], i) => (
+      <circle key={i} cx={x} cy={y} r={2.4} fill="#B98A3E" />
+    ))}
+  </g>
+);
+
+/** Cozza chiusa (icona). */
+export const MusselIcon: React.FC = () => (
+  <g transform="rotate(-30) scale(1.1)">
+    <Mussel open={0} />
+  </g>
+);
+
+/** Paccheri (icona). */
+export const PaccheriIcon: React.FC = () => (
+  <g>
+    <g transform="translate(-10 -10) rotate(-20)">
+      <Pacchero />
+    </g>
+    <g transform="translate(12 14) rotate(15)">
+      <Pacchero />
+    </g>
+  </g>
+);

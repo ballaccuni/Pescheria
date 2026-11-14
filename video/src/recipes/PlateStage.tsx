@@ -6,6 +6,8 @@ import { Steam } from "./Steam";
 import {
   LemonWedge,
   LinguineNest,
+  Mussel,
+  Pacchero,
   ParsleyFleck,
   ParsleySprig,
   Shrimp,
@@ -60,6 +62,12 @@ const FISH_PARSLEY = scatter(16, 1, 0, 25).map((s, i) => {
   return { x: 2 + Math.cos(a) * rr * 116, y: Math.sin(a) * rr * 32, rot: s.rot };
 });
 const GARNISH_SPOTS = scatter(14, 190, 26, 26);
+const PACCHERI_SPOTS = scatter(13, 112, 44, 27);
+const MUSSEL_SPOTS = [0, 1, 2, 3].map((i) => {
+  const a = -Math.PI / 2 + i * (Math.PI / 2) + 0.4;
+  return { x: Math.cos(a) * 128, y: Math.sin(a) * 128, rot: (a * 180) / Math.PI + 90 };
+});
+const ZEST_SPOTS = scatter(34, 150, 12, 28);
 
 const Plate: React.FC = () => (
   <g>
@@ -99,7 +107,7 @@ const Drop: React.FC<{
   );
 };
 
-export const PlateStage: React.FC<{ dish: "pasta" | "fish"; frame: number; fps: number; at: number }> = ({
+export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: number; fps: number; at: number }> = ({
   dish,
   frame,
   fps,
@@ -161,6 +169,65 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish"; frame: number; fps: 
     );
   };
 
+  // pasta con crema di patate e cozze
+  const cozze = () => {
+    const pool = interpolate(local, [30, 52], [0, 168], clamp);
+    return (
+      <>
+        {pool > 0 && (
+          <g>
+            <circle r={pool} fill="#EBD39C" />
+            <circle r={pool} fill="none" stroke="#D9B978" strokeWidth={3} />
+            <path
+              d={`M ${-pool * 0.55} ${-pool * 0.5} Q ${-pool * 0.1} ${-pool * 0.68} ${pool * 0.3} ${-pool * 0.56}`}
+              stroke="#FFFFFF"
+              strokeWidth={9}
+              opacity={0.35}
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+        )}
+        {PACCHERI_SPOTS.map((p, i) => (
+          <Drop key={`pc${i}`} local={local} start={46 + i * 2} fps={fps} x={p.x} y={p.y} rot={p.rot} scale={1.25}>
+            <Pacchero coated={1} />
+          </Drop>
+        ))}
+        {MUSSEL_SPOTS.map((p, i) => (
+          <Drop key={`mu${i}`} local={local} start={72 + i * 5} fps={fps} x={p.x} y={p.y} rot={p.rot} scale={1.2}>
+            <Mussel open={1} />
+          </Drop>
+        ))}
+        {PARSLEY_SPOTS.map((p, i) => (
+          <Drop
+            key={`pa${i}`}
+            local={local}
+            start={94 + (i % 7) * 2}
+            fps={fps}
+            x={p.x}
+            y={p.y}
+            rot={p.rot}
+            scale={1.4}
+            from={{ x: 0, y: -260 }}
+          >
+            <ParsleyFleck />
+          </Drop>
+        ))}
+        {/* scorza di limone grattugiata */}
+        {ZEST_SPOTS.map((p, i) => {
+          const len = 12 + ((i * 7) % 9);
+          const d = `M ${-len / 2} 0 Q 0 ${(i % 3) * 3 - 3} ${len / 2} 0`;
+          return (
+            <Drop key={`ze${i}`} local={local} start={108 + (i % 9) * 1.5} fps={fps} x={p.x} y={p.y} rot={p.rot} from={{ x: 0, y: -240 }}>
+              <path d={d} stroke="#B98A0E" strokeWidth={8} strokeLinecap="round" fill="none" />
+              <path d={d} stroke={i % 3 ? "#FFD23F" : "#FFE680"} strokeWidth={4.5} strokeLinecap="round" fill="none" />
+            </Drop>
+          );
+        })}
+      </>
+    );
+  };
+
   const fish = () => (
     <>
       {[
@@ -212,7 +279,7 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish"; frame: number; fps: 
       transform={`translate(${PLATE.cx} ${PLATE.cy}) scale(${0.55 + enter * 0.45})`}
     >
       <Plate />
-      {dish === "pasta" ? pasta() : fish()}
+      {dish === "pasta" ? pasta() : dish === "fish" ? fish() : cozze()}
       <Steam frame={frame} strength={steam} xs={[-110, -20, 80]} rise={200} />
     </g>
   );

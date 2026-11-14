@@ -3,6 +3,7 @@ import { LogoAnimation } from "./LogoAnimation";
 import { RecipeVideo } from "./recipes/RecipeVideo";
 import { gamberiZucchine } from "./recipes/gamberiZucchine";
 import { orataForno } from "./recipes/orataForno";
+import { pastaCozzePatate } from "./recipes/pastaCozzePatate";
 import { recipeTimeline } from "./recipes/types";
 
 export const MyComposition = () => {
@@ -33,6 +34,15 @@ export const MyComposition = () => {
         width={1080}
         height={1920}
         defaultProps={{ recipe: orataForno }}
+      />
+      <Composition
+        id="RicettaPastaCozzePatate"
+        component={RecipeVideo}
+        durationInFrames={recipeTimeline(pastaCozzePatate).total}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{ recipe: pastaCozzePatate }}
       />
     </>
   );

@@ -1,0 +1,67 @@
+import type { Recipe } from "./types";
+
+export const pastaCozzePatate: Recipe = {
+  vessel: "pan",
+  dish: "cozze",
+  title: ["Pasta con cozze", "e patate"],
+  servings: "per 2 persone",
+  ingredients: [
+    { name: "Mezzi paccheri", qty: "200 g", icon: "paccheri" },
+    { name: "Cozze", qty: "1 kg", icon: "mussel" },
+    { name: "Patate", qty: "2 medie", icon: "potato" },
+    { name: "Aglio", qty: "1 spicchio", icon: "garlicClove" },
+    { name: "Olio extravergine", qty: "4 cucchiai", icon: "oilBottle" },
+    { name: "Prezzemolo", qty: "1 ciuffo", icon: "parsleySprig" },
+    { name: "Scorza di limone", qty: "½ limone", icon: "lemon" },
+    { name: "Sale e pepe", qty: "q.b.", icon: "saltPepper" },
+  ],
+  steps: [
+    {
+      title: "Le patate",
+      text: "Taglia le patate a cubetti e falle bollire in acqua salata per 15 minuti",
+      stage: "pot",
+      add: ["potatoes"],
+      duration: 110,
+    },
+    {
+      title: "Olio e aglio",
+      text: "In una padella scalda l'olio con l'aglio",
+      add: ["oil", "garlic"],
+      duration: 90,
+    },
+    {
+      title: "Le cozze",
+      text: "Aggiungi le cozze, copri e falle aprire a fuoco vivo",
+      add: ["mussels"],
+      duration: 130,
+    },
+    {
+      title: "Sguscia le cozze",
+      text: "Sguscia quasi tutte le cozze e tienine qualcuna intera",
+      add: ["shell"],
+      duration: 85,
+    },
+    {
+      title: "Nel mixer",
+      text: "Frulla le patate con le cozze sgusciate e un po' della loro acqua filtrata",
+      stage: "mixer",
+      add: ["blend"],
+      duration: 140,
+    },
+    {
+      title: "La pasta",
+      text: "Cuoci la pasta al dente e saltala in padella con la crema",
+      add: ["cream", "paccheri"],
+      toss: true,
+      tossDelay: 92,
+      duration: 130,
+    },
+    {
+      title: "Impiattamento",
+      text: "Servi con le cozze intere, prezzemolo e scorza di limone",
+      plate: true,
+      duration: 150,
+    },
+  ],
+  outro: "Le cozze fresche le trovi da noi",
+};

@@ -14,8 +14,10 @@ import {
 import { COLORS, Waves } from "../LogoAnimation";
 import { fontFamily } from "../font";
 import { Chef, type ChefMood, type HandPose } from "./Chef";
-import { GROUPS, PanStage, panHandleEnd } from "./PanStage";
+import { BLEND, MixerStage } from "./MixerStage";
+import { GROUPS, MUSSELS_KEPT, PanStage, musselOpenAt, panHandleEnd } from "./PanStage";
 import { PlateStage } from "./PlateStage";
+import { PotStage } from "./PotStage";
 import { TrayStage } from "./TrayStage";
 import {
   BreadcrumbsIcon,
@@ -25,15 +27,18 @@ import {
   IngredientIcon,
   LemonHalf,
   LinguineBundle,
+  MusselIcon,
   OilBottle,
+  PaccheriIcon,
   ParsleySprig,
+  PotatoIcon,
   SaltPepper,
   Shrimp,
   TomatoWhole,
   ZucchiniWhole,
 } from "./ingredients";
-import { ROW_GAP, recipeTimeline, type IconKind, type Recipe } from "./types";
-import { clamp, lerpPt, stageMotion, type Pt } from "./utils";
+import { ROW_GAP, recipeTimeline, type IconKind, type Recipe, type Segment } from "./types";
+import { clamp, lerpPt, segmentMotion, type Pt } from "./utils";
 
 // Video-ricetta: logo, lista ingredienti, preparazione animata con il cuoco,
 // impiattamento e saluto finale. La ricetta arriva come dati (vedi types.ts).
@@ -62,16 +67,30 @@ const ICONS: Record<IconKind, React.ReactNode> = {
     </g>
   ),
   breadcrumbs: <BreadcrumbsIcon />,
+  potato: <PotatoIcon />,
+  mussel: <MusselIcon />,
+  paccheri: <PaccheriIcon />,
 };
 
 export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const tl = useMemo(() => recipeTimeline(recipe), [recipe]);
-  const motion = stageMotion(frame, fps, tl);
   const plateAt = tl.plateAt ?? Infinity;
   const oven = tl.ovenStep;
-  const isPan = recipe.vessel === "pan";
+  // scene (padella, pentola, mixer, teglia) con il loro movimento
+  const scenes = tl.segments
+    .filter((g) => g.kind !== "plate")
+    .map((g) => ({ seg: g, m: segmentMotion(frame, fps, tl, g) }));
+  // la padella che il cuoco tiene in mano in questo momento
+  const panScene =
+    scenes.find((x) => x.seg.kind === "pan" && frame >= x.seg.enterAt && frame < x.seg.end + 12) ?? null;
+  const tossAmt = panScene?.m.tossAmt ?? 0;
+  const gripW = panScene
+    ? Math.min(1, panScene.m.enter * 1.2) *
+      (panScene.seg.last ? 1 : interpolate(frame, [panScene.seg.end, panScene.seg.end + 10], [1, 0], clamp))
+    : 0;
+  const isPan = gripW > 0.5;
 
   // --- scena 1: titolo e ingredienti
   const titleIn = interpolate(frame, [12, 40], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
@@ -107,28 +126,39 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   let rightHand: Pt;
   let rightPose: HandPose = "open";
   let rightAnchored = false;
-  if (isPan) {
-    const grip = {
-      x: (panHandleEnd.x + motion.offset.x - 6 - (CHEF.x - chefSlide)) / CHEF.s,
-      y: (panHandleEnd.y + motion.offset.y - 4 - CHEF.y) / CHEF.s,
-    };
-    const release = interpolate(frame, [plateAt + 2, plateAt + 14], [0, 1], clamp);
-    rightHand = lerpPt(grip, present, release);
-    rightPose = frame < plateAt + 5 ? "grip" : "open";
-    rightAnchored = frame < plateAt + 8;
-  } else {
+  {
     const restR = { x: 62, y: 236 };
     const throwUp = { x: 188, y: -176 };
-    // mentre il forno lavora aspetta con le mani sulla pancia
-    const waiting = oven
+    // mentre forno o frullatore lavorano aspetta con le mani sulla pancia
+    let waiting = oven
       ? interpolate(frame, [oven.start, oven.start + 14, oven.end - 24, oven.end - 10], [0, 1, 1, 0], clamp)
       : 0;
-    rightHand = lerpPt(lerpPt(present, restR, waiting), throwUp, gesture);
+    for (const st of tl.steps) {
+      const b = st.adds.find((a) => a.kind === "blend");
+      if (b) {
+        waiting = Math.max(
+          waiting,
+          interpolate(frame, [b.at + BLEND.start - 6, b.at + BLEND.start + 6, b.at + BLEND.end, b.at + BLEND.end + 12], [0, 1, 1, 0], clamp),
+        );
+      }
+    }
+    const free = lerpPt(lerpPt(present, restR, waiting), throwUp, isPan ? 0 : gesture);
+    if (panScene && gripW > 0) {
+      const grip = {
+        x: (panHandleEnd.x + panScene.m.offset.x - 6 - (CHEF.x - chefSlide)) / CHEF.s,
+        y: (panHandleEnd.y + panScene.m.offset.y - 4 - CHEF.y) / CHEF.s,
+      };
+      rightHand = lerpPt(free, grip, gripW);
+    } else {
+      rightHand = free;
+    }
+    rightPose = gripW > 0.5 ? "grip" : "open";
+    rightAnchored = gripW > 0.9;
   }
 
   const blinkPhase = frame % 96;
   const blink = blinkPhase < 6 ? Math.sin((blinkPhase / 6) * Math.PI) : 0;
-  const wow = Math.abs(motion.tossAmt) > 0.15;
+  const wow = Math.abs(tossAmt) > 0.15;
   // guarda la padella, ogni tanto dà un'occhiata a chi guarda il video
   const atPan = inOutro ? 0 : interpolate(frame % 150, [112, 117, 140, 145], [1, 0, 0, 1], clamp);
   const look = { x: 0.95 * atPan, y: -0.75 * atPan };
@@ -144,7 +174,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const brow = gesture * 5 + (wow ? 8 : 0);
   const bob = Math.sin(frame / 12) * 4;
   const headTilt =
-    motion.tossAmt * 5 +
+    tossAmt * 5 +
     Math.sin(frame / 40) * 1.2 +
     (inOutro ? Math.sin((frame - tl.outro) / 9) * 3 : 0) +
     (savoring ? -4 : 0);
@@ -272,19 +302,17 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             </filter>
           </defs>
 
-          {motion.exit < 1 &&
-            (isPan ? (
-              <PanStage
-                recipe={recipe}
-                tl={tl}
-                frame={frame}
-                fps={fps}
-                offset={motion.offset}
-                tossAmt={motion.tossAmt}
-              />
-            ) : (
-              <TrayStage tl={tl} frame={frame} fps={fps} offset={motion.offset} />
-            ))}
+          {scenes.map(({ seg, m }, i) => {
+            if (!m.visible) return null;
+            const range: [number, number] = [seg.start, seg.end];
+            const common = { tl, frame, fps, offset: m.offset, range };
+            if (seg.kind === "pan") {
+              return <PanStage key={i} recipe={recipe} tossAmt={m.tossAmt} {...common} />;
+            }
+            if (seg.kind === "pot") return <PotStage key={i} {...common} />;
+            if (seg.kind === "mixer") return <MixerStage key={i} {...common} />;
+            return <TrayStage key={i} tl={tl} frame={frame} fps={fps} offset={m.offset} />;
+          })}
 
           {tl.plateAt !== null && <PlateStage dish={recipe.dish} frame={frame} fps={fps} at={tl.plateAt} />}
 
@@ -304,8 +332,8 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
               brow={brow}
               tilt={headTilt}
               bob={bob / CHEF.s}
-              squash={motion.tossAmt * 0.025}
-              hatDy={-Math.abs(motion.tossAmt) * 9}
+              squash={tossAmt * 0.025}
+              hatDy={-Math.abs(tossAmt) * 9}
               wiggle={wiggle}
             />
           </g>
@@ -420,14 +448,27 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   recipe.ingredients.forEach((_, i) => add(tl.rowsStart + i * ROW_GAP + 2, NOTES[i % NOTES.length], 0.28));
   add(tl.stageIn + 10, "plop", 0.6);
 
-  let sizzleFrom: number | null = null;
-  const sizzleTo = tl.plateAt ?? tl.outro + 20;
+  // sfrigolio: uno per ogni scena in padella
+  const sizzles: { from: number; to: number }[] = [];
+  const loops: { from: number; to: number; file: string; volume: number }[] = [];
+  const segOf = (frame: number): Segment | undefined => tl.segments.find((g) => frame >= g.start && frame < g.end);
+  for (const g of tl.segments) {
+    if (g.kind === "pot") loops.push({ from: g.start + 6, to: g.end + 14, file: "boil", volume: 0.45 });
+  }
   for (const s of tl.steps) {
     for (const a of s.adds) {
       const g = GROUPS[a.kind];
+      const seg = segOf(a.at);
+      if (seg?.kind === "pan" && !sizzles.some((z) => z.to === seg.end)) {
+        sizzles.push({ from: a.at + 22, to: seg.last ? tl.outro + 20 : seg.end });
+      }
       if (a.kind === "oil") {
-        sizzleFrom = a.at + 22;
         add(a.at + 20, "sizzle-burst", 0.45);
+      } else if (a.kind === "mussels" && g) {
+        for (let i = 0; i < g.count; i += 3) add(a.at + i * g.stagger + 6, "plop", 0.3);
+        add(a.at + 6, "sizzle-burst", 0.5);
+        // le cozze che si aprono
+        for (let i = 0; i < g.count; i += 2) add(musselOpenAt(a.at, i), "pop", 0.22);
       } else if (g) {
         const every = Math.max(3, Math.ceil(g.count / 4));
         for (let i = 0; i < g.count; i += every) add(a.at + i * g.stagger + 6, "plop", 0.3);
@@ -443,6 +484,19 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       } else if (a.kind === "lemonZest") {
         add(a.at + 16, "grate", 0.5);
         add(a.at + 30, "sprinkle", 0.3);
+      } else if (a.kind === "shell") {
+        const n = (GROUPS.mussels?.count ?? 0) - MUSSELS_KEPT;
+        for (let i = 0; i < n; i += 3) add(a.at + i * 4 + 4, "plop", 0.18);
+      } else if (a.kind === "cream") {
+        add(a.at + 2, "pour", 0.6);
+        add(a.at + 16, "sizzle-burst", 0.35);
+      } else if (a.kind === "potatoes") {
+        for (let i = 0; i < 16; i += 4) add(a.at + i * 2.5 + 8, "plop", 0.4);
+        add(a.at + 10, "bubbles", 0.4);
+      } else if (a.kind === "blend") {
+        for (let i = 0; i < 22; i += 5) add(a.at + BLEND.dropFrom + i * 1.6 + 8, "plop", 0.3);
+        add(a.at + BLEND.lidAt + 6, "plop", 0.45);
+        add(a.at + BLEND.start, "blender", 0.22);
       } else if (a.kind === "drizzle") {
         add(a.at, "pour", 0.5);
       } else if (a.kind === "fish") {
@@ -487,22 +541,28 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 
   return (
     <>
-      {sizzleFrom !== null && (
-        <Sequence from={sizzleFrom} durationInFrames={sizzleTo - sizzleFrom + 16} name="SFX sizzle (padella)">
+      {sizzles.map((z, i) => (
+        <Sequence key={`sz${i}`} from={z.from} durationInFrames={z.to - z.from + 16} name="SFX sizzle (padella)">
           <Audio
             src={staticFile("sfx/sizzle.wav")}
             loop
             volume={(f) =>
-              interpolate(
-                f + sizzleFrom!,
-                [sizzleFrom!, sizzleFrom! + 20, sizzleTo - 4, sizzleTo + 14],
-                [0, 0.35 * MASTER, 0.35 * MASTER, 0],
-                clamp,
-              )
+              interpolate(f + z.from, [z.from, z.from + 20, z.to - 4, z.to + 14], [0, 0.35 * MASTER, 0.35 * MASTER, 0], clamp)
             }
           />
         </Sequence>
-      )}
+      ))}
+      {loops.map((z, i) => (
+        <Sequence key={`lp${i}`} from={z.from} durationInFrames={z.to - z.from} name={`SFX ${z.file}`}>
+          <Audio
+            src={staticFile(`sfx/${z.file}.wav`)}
+            loop
+            volume={(f) =>
+              interpolate(f, [0, 16, z.to - z.from - 16, z.to - z.from], [0, z.volume * MASTER, z.volume * MASTER, 0], clamp)
+            }
+          />
+        </Sequence>
+      ))}
       {/* in teglia non c'è lo sfrigolio: il mare in sottofondo evita i silenzi */}
       {recipe.vessel === "tray" && (
         <Audio
