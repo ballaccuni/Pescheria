@@ -10,6 +10,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { loadFont } from "@remotion/fonts";
+import { SoundEffects } from "./SoundEffects";
 
 const fontFamily = "Lexend";
 loadFont({
@@ -158,7 +159,7 @@ const HOURS: {
 
 export const LogoAnimation: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps, width } = useVideoConfig();
+  const { fps, width, durationInFrames } = useVideoConfig();
 
   // --- Scena 1: il logo si compone ---
   const fishReveal = interpolate(frame, [8, 58], [0, 100], {
@@ -414,6 +415,7 @@ export const LogoAnimation: React.FC = () => {
       </AbsoluteFill>
 
       <WebsiteCta start={410} />
+      <SoundEffects durationInFrames={durationInFrames} />
     </AbsoluteFill>
   );
 };
