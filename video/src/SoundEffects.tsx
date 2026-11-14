@@ -6,7 +6,6 @@ import { Audio, Sequence, interpolate, staticFile } from "remotion";
 const MASTER = 1.5; // volume generale
 const CUES: { from: number; file: string; volume: number }[] = [
   { from: 7, file: "splash-fish", volume: 0.5 }, // il pesce salta fuori dall'acqua
-  { from: 45, file: "shimmer", volume: 0.35 }, // PESCHERIA
   { from: 58, file: "pop", volume: 0.6 }, // Sapore di Mare
   { from: 62, file: "bubbles", volume: 0.3 }, // bollicine
   { from: 78, file: "note-a5", volume: 0.4 }, // Raffadali
