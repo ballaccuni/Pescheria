@@ -1,0 +1,45 @@
+<title>Porto Isometrico Storyboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=block">
+<style>
+  /* Layout: a pinned-up storyboard wall — panels in a two-column grid, notes under each frame. */
+  :root {
+    --bg: #efeaf3; --card: #fbfbf9; --fg: #1f2430; --muted: #5b616d; --line: #d3d6d0;
+    --red: #e85a4b; --blue: #3d7fa8; --green: #1b8a4b;
+    --display: 'Inter', system-ui, sans-serif; --hand: 'Inter', system-ui, sans-serif;
+    --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #1b1e24; --card: #252931; --fg: #e8eaee; --muted: #a3a9b4; --line: #3a3f49;
+    --red: #ff7a6e; --blue: #8fb0ff; --green: #6fd39a; color-scheme: dark } }
+  :root[data-theme="dark"] {
+    --bg: #1b1e24; --card: #252931; --fg: #e8eaee; --muted: #a3a9b4; --line: #3a3f49;
+    --red: #ff7a6e; --blue: #8fb0ff; --green: #6fd39a; color-scheme: dark }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+  .wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 28px; }
+  header h1 { font: 800 clamp(30px, 5vw, 46px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+  header p { margin: 8px 0 0; color: var(--muted); max-width: 70ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .meta b { color: var(--fg); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 540px), 1fr)); gap: 22px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; display: grid; min-width: 0; }
+  .panel canvas { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; background: #e5e7e3; }
+  .notes { padding: 14px 16px 16px; display: grid; gap: 8px; min-width: 0; }
+  .beat { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .beat .n { font: 800 24px/1 var(--display); color: var(--red); }
+  .beat .name { font: 600 19px/1.2 var(--hand); }
+  .beat .time { margin-left: auto; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+  dl { margin: 0; display: grid; grid-template-columns: 92px 1fr; gap: 6px 12px; }
+  dt { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+  dd { margin: 0; min-width: 0; }
+  .onscreen { font: 600 15px/1.45 var(--hand); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 3px; margin-right: 6px; border: 1px solid currentColor; }
+  .tag.cont { color: var(--blue); } .tag.cut { color: var(--red); }
+  section.facts { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; }
+  section.facts h2 { font: 800 24px/1.2 var(--display); margin: 0 0 10px; }
+  section.facts ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80ch; }
+  .warn { border-left: 4px solid var(--red); }
+  @media (max-width: 560px) { dl { grid-template-columns: 1fr; } dt { padding-top: 0; } }
+</style>

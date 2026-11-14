@@ -1,0 +1,74 @@
+<div class="wrap">
+  <header>
+    <h1>Come si costruisce un porto · Isometric Pastel</h1>
+    <p>Storyboard for an explainer of about 26 seconds, with no voiceover. Every panel is drawn by the same code that will run the animation, at the beat's key frame. All timings come from one BEATS table, so a recorded take later only means editing that table. Approve it or tell me what to change, and I'll build the animation from it.</p>
+    <div class="meta"><span><b>Length</b> 26.5 s (takeaway held 1 s)</span><span><b>Frame</b> 1280×720</span><span><b>Beats</b> 7</span><span><b>Scene changes</b> 1, tile drop and rise</span><span><b>Text</b> Italian</span></div>
+  </header>
+  <div class="grid" id="grid"></div>
+  <section class="facts">
+    <h2>Facts and numbers I assumed</h2>
+    <ul>
+      <li>A generic Mediterranean-style harbour: a <b>rubble-mound breakwater</b> (stone core, armour blocks on the sea side, a concrete crown wall), a short opposite pier, and <b>quays built from reinforced-concrete cellular caissons</b>. Many real ports use piles or block walls instead.</li>
+      <li>Natural seabed at <b>-10 m</b>, basin dredged to <b>-16 m</b>, a typical depth for large container ships (draughts of about 14–16 m). Real ports range from about 10 to 18 m.</li>
+      <li>Caissons are towed out floating, sunk onto a stone bed by letting water into their cells, then <b>filled with sand</b> and capped. Here the tug and the sinking are shown in simplified form.</li>
+      <li>The dredger is a <b>cutter suction dredger</b> pumping spoil to shore through a floating pipeline.</li>
+      <li>Entrance lights follow <b>IALA Region A</b> (Europe): green on the breakwater head, which is on the right of a ship entering, and red on the pier head on the left.</li>
+      <li>The construction order is shown as survey → breakwater → dredging → caissons → quay equipment. Real projects overlap these phases.</li>
+      <li>The model is schematic, not to scale. Depths below the waterline are drawn at half scale so the cutaway fits the frame.</li>
+    </ul>
+  </section>
+  <section class="facts warn">
+    <h2>What's missing</h2>
+    <ul>
+      <li>The <b>Isometric Pastel reference source</b> wasn't in your message, so I built this look from the style card. It has a true 30° projection, flat three-tone faces, a pastel palette with one coral accent, a floating tile with long soft shadows, white pinned tags, and light grain. The H library is used unchanged.</li>
+      <li>The <b>SOUND kit</b> was cut off again. For the build I'll reuse the version from the whiteboard piece: your code up to where it stopped, plus a marked stand-in for the rest. It runs in <code>voiceover: true</code> mode, so if you add a narration later, the effects already sit under it.</li>
+    </ul>
+  </section>
+</div>
+<script>
+const NOTES = {
+  hook: { key: 2.2, text: 'Come si costruisce / un porto?',
+    flow: ['cut', 'Opening. A small floating tile rises into frame on a springy overshoot. It shows an empty coast, a cargo ship waiting at sea with nowhere to dock, and one tiny person on the shore. The question appears above it.'],
+    sound: 'A soft "whoomp" as the tile lands with overshoot. Two pops as each title line lands. The water lapping is minor.' },
+  studio: { key: 6.0, text: '1 Studio del mare — Rilievo del fondale · Onde · Fondale −10 m',
+    flow: ['cut', 'Scene change, done the medium\'s way: the question tile drops out of frame while the big site tile (40 × 26 m model of coast and sea, with a cutaway face) rises in its place. It moves the story from the question to the site. A coral survey boat runs a lawn-mower track with sonar rings, wave crests roll in to the beach, and a dashed coral connector traces the waves. A depth tag pins to the cutaway.'],
+    sound: 'A deeper tile-rise thump. The header pill pops. A small boat motor purr and minor sonar blips (about 2 per second). A dashed-line tick run for the connector. Minor tag pops.' },
+  diga: { key: 10.1, text: '2 La diga foranea — Diga foranea · Massi · Acqua calma',
+    flow: ['cont', 'Continuous. The camera glides out to sea along the same tile. The pier pops up, then armour blocks pop one by one from the root of the breakwater to its head, and the crown wall rises. The section also grows on the cutaway face. The lights blink on. From then on, waves stop at the breakwater and break into foam, and the basin behind it turns a calmer, lighter blue.'],
+    sound: 'A rapid run of soft stone clacks (minor), one per block, rising in pitch toward the head. A concrete thunk for the wall. Two light pings for the lights (green higher, red lower). A gentle low "settle" tone when the water calms.' },
+  fondale: { key: 14.3, text: '3 Scavare il fondale — Draga · PROFONDITÀ −10 → −16 m · −16 m',
+    flow: ['cont', 'Continuous. The camera glides to the cutaway corner. A dredger pops up in the basin and lays a floating pipeline to shore. A billboard on land counts the depth −10 → −16 m while the seabed on the cutaway face visibly drops, with coral arrows. As the count lands, a big "−16 m" tag pins to the new seabed.'],
+    sound: 'A low engine hum under the dredging. Billboard ticks (at most about 6 per second, minor), slowing as the count settles. The key hit is full volume on the big −16 m tag at 13.6 s, followed by a short silence.' },
+  cassoni: { key: 18.6, text: '4 Posare i cassoni — Cassone in c.a. · Sabbia',
+    flow: ['cont', 'Continuous. The camera slides along the quay line. Four caissons arrive one by one: each is towed in by a tug, slides into line and sinks onto the bed. The last one sits on the cutaway, where its cells show ballast water, then sand filling up. The ground behind is backfilled to make the quay.'],
+    sound: 'A short tug "toot" (minor) for each arrival. A water gurgle while each caisson sinks, then a soft heavy thud as it seats. A sand hiss during the fill. Tag pops.' },
+  porto: { key: 22.7, text: '5 Il porto al lavoro — Gru · Banchina · Imboccatura',
+    flow: ['cont', 'Continuous. The camera pulls back a little over the new quay. The depth billboard folds away, paving fades in, three coral cranes pop up, container stacks build, and a container ship sails in from the left through the entrance and is pushed alongside. Tiny workers in hard hats stroll the quay, and the lights keep blinking.'],
+    sound: 'Three springy crane pops. A run of container clunks (minor). A deep ship horn when the ship enters (at a pause, full volume). Soft footstep ticks (minor). Tag pops.' },
+  fine: { key: 25.4, text: 'Ecco il porto — Diga → acqua calma · −16 m · Banchine su cassoni',
+    flow: ['cont', 'Continuous. The camera pulls back to show the whole floating tile. The headline lands, and three tags pin to the breakwater, the dredged seabed and the quay, recapping the three ideas. The final state is held for about 1 s.'],
+    sound: 'Three rising tag pops. A warm resolving chime as the last tag lands. Ambience beds are off in voiceover mode, so the end is quiet.' },
+};
+const fmt = (s) => s.toFixed(1) + ' s';
+(async function () {
+  const grid = document.getElementById('grid');
+  const items = window.BEATS.map((b, i) => {
+    const n = NOTES[b.id], el = document.createElement('article'); el.className = 'panel';
+    const name = b.head || (b.id === 'hook' ? 'Hook' : 'Takeaway');
+    el.innerHTML = `<canvas width="1280" height="720" aria-label="Beat ${i + 1} key frame"></canvas>
+      <div class="notes">
+        <div class="beat"><span class="n">${i + 1}</span><span class="name">${name}</span><span class="time">${fmt(b.t0)} – ${fmt(i === window.BEATS.length - 1 ? window.DURATION : b.t1)} · key frame ${fmt(n.key)}</span></div>
+        <dl>
+          <dt>On screen</dt><dd class="onscreen">${n.text}</dd>
+          <dt>Flow in</dt><dd><span class="tag ${n.flow[0] === 'cut' ? 'cut' : 'cont'}">${n.flow[0] === 'cut' ? 'Scene change' : 'Continuous'}</span>${n.flow[1]}</dd>
+          <dt>Sound</dt><dd>${n.sound}</dd>
+        </dl>
+      </div>`;
+    grid.appendChild(el);
+    return [el.querySelector('canvas'), n.key];
+  });
+  try { await Promise.all(['800 56px Inter', '600 28px Inter', '400 20px Inter'].map((f) => document.fonts.load(f, 'AaZz09àè·→−'))); } catch (e) {}
+  for (const [cv, key] of items) { window.explainer(cv.getContext('2d', { willReadFrequently: true }), 1280, 720, key); await new Promise((r) => setTimeout(r, 0)); }
+  window.__done = true;
+})();
+</script>
