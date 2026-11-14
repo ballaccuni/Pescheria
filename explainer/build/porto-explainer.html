@@ -1,0 +1,1241 @@
+<title>Come si costruisce un porto</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Permanent+Marker&display=block">
+<style>
+  /* Layout: a letterboxed 16:9 stage filling the window, with a slim control bar underneath. Single dark look on purpose. */
+  :root { --bg: #15171c; --bar: #1f2229; --fg: #e9ebef; --muted: #9aa1ad; --accent: #ff6b5e; color-scheme: dark; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif; display: flex; flex-direction: column; }
+  #stage { flex: 1; min-height: 0; display: grid; place-items: center; position: relative; overflow: hidden; }
+  #cv { display: block; background: #e8eae6; box-shadow: 0 6px 30px rgba(0,0,0,.4); }
+  #big { position: absolute; inset: 0; margin: auto; width: 96px; height: 96px; border-radius: 50%; border: 0; background: rgba(21,23,28,.78); color: #fff; cursor: pointer; display: grid; place-items: center; }
+  #big svg { width: 40px; height: 40px; margin-left: 6px; }
+  .bar { display: flex; align-items: center; gap: 12px; background: var(--bar);
+    padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .bar button { background: none; border: 1px solid #3a3f4a; color: var(--fg); border-radius: 6px; height: 34px; min-width: 40px; padding: 0 10px; cursor: pointer; font: inherit; display: inline-flex; align-items: center; gap: 6px; }
+  .bar button:focus-visible, #seek:focus-visible, #big:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .bar button[aria-pressed="false"] { color: var(--muted); }
+  #seek { flex: 1; min-width: 60px; accent-color: var(--accent); }
+  #time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 92px; text-align: right; }
+  @media (max-width: 480px) { .lbl { display: none; } #time { min-width: 0; } }
+</style>
+<script>
+// Shared helpers + style registry for the style-frame explorations.
+// Every style is a pure function of time: draw(ctx, W, H, t). Same t => same pixels.
+(function () {
+  const STYLES = (window.STYLES = window.STYLES || []);
+  window.registerStyle = (s) => STYLES.push(s);
+
+  const H = (window.H = {});
+
+  // ---------- seeded randomness ----------
+  // H.rng(seed) -> r() in [0,1). Extras: r.range(a,b), r.int(a,b), r.pick(arr), r.gauss(), r.chance(p)
+  H.rng = function (seed = 1) {
+    let a = typeof seed === 'string' ? hashStr(seed) : (seed >>> 0) || 1;
+    const r = function () {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    r.range = (lo, hi) => lo + r() * (hi - lo);
+    r.int = (lo, hi) => Math.floor(lo + r() * (hi - lo + 1));
+    r.pick = (arr) => arr[Math.floor(r() * arr.length)];
+    r.chance = (p) => r() < p;
+    r.gauss = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    return r;
+  };
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  // ---------- gradient noise ----------
+  // H.makeNoise(seed) -> { n2(x,y), n3(x,y,z), fbm2(x,y,oct), fbm3(x,y,z,oct) }  (outputs roughly -1..1)
+  H.makeNoise = function (seed = 1) {
+    const r = H.rng(seed), p = new Uint8Array(512), perm = [...Array(256).keys()];
+    for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+    for (let i = 0; i < 512; i++) p[i] = perm[i & 255];
+    const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const g3 = (h, x, y, z) => { h &= 15; const u = h < 8 ? x : y, v = h < 4 ? y : h === 12 || h === 14 ? x : z; return ((h & 1) ? -u : u) + ((h & 2) ? -v : v); };
+    function n3(x, y, z) {
+      const X = Math.floor(x) & 255, Y = Math.floor(y) & 255, Z = Math.floor(z) & 255;
+      x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+      const u = fade(x), v = fade(y), w = fade(z);
+      const A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z, B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
+      return lerp(lerp(lerp(g3(p[AA], x, y, z), g3(p[BA], x - 1, y, z), u), lerp(g3(p[AB], x, y - 1, z), g3(p[BB], x - 1, y - 1, z), u), v),
+        lerp(lerp(g3(p[AA + 1], x, y, z - 1), g3(p[BA + 1], x - 1, y, z - 1), u), lerp(g3(p[AB + 1], x, y - 1, z - 1), g3(p[BB + 1], x - 1, y - 1, z - 1), u), v), w);
+    }
+    const n2 = (x, y) => n3(x, y, 0.5);
+    const fbm3 = (x, y, z, oct = 4) => { let s = 0, a = 0.5, f = 1, norm = 0; for (let i = 0; i < oct; i++) { s += a * n3(x * f, y * f, z * f); norm += a; a *= 0.5; f *= 2; } return s / norm; };
+    const fbm2 = (x, y, oct = 4) => fbm3(x, y, 0.5, oct);
+    return { n2, n3, fbm2, fbm3 };
+  };
+
+  // ---------- math ----------
+  H.lerp = (a, b, t) => a + (b - a) * t;
+  H.clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
+  H.map = (v, a, b, c, d) => c + ((v - a) / (b - a)) * (d - c);
+  H.smooth = (e0, e1, x) => { const t = H.clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+  H.ease = {
+    inOut: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+    out: (t) => 1 - Math.pow(1 - t, 3),
+    in: (t) => t * t * t,
+    back: (t) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+  };
+
+  // ---------- color ----------
+  H.hex = (h) => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map((c) => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  H.rgba = (hexOrArr, a = 1) => { const [r, g, b] = Array.isArray(hexOrArr) ? hexOrArr : H.hex(hexOrArr); return `rgba(${r | 0},${g | 0},${b | 0},${a})`; };
+  H.mix = (c1, c2, t) => { const a = Array.isArray(c1) ? c1 : H.hex(c1), b = Array.isArray(c2) ? c2 : H.hex(c2); return [0, 1, 2].map((i) => a[i] + (b[i] - a[i]) * t); };
+
+  // ---------- canvas utilities ----------
+  // Offscreen canvas of the same logical size (use for layers, masks, compositing).
+  H.layer = (W, H_, ) => { const c = document.createElement('canvas'); c.width = W; c.height = H_; return c; };
+  // Monochrome grain / film noise over the whole canvas. amount ~ 0.03-0.15
+  H.grain = function (ctx, W, Hh, amount = 0.08, seed = 7, mono = true) {
+    const img = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height), d = img.data, r = H.rng(seed), k = amount * 255;
+    for (let i = 0; i < d.length; i += 4) {
+      const n = (r() - 0.5) * k;
+      if (mono) { d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+      else { d[i] += (r() - 0.5) * k; d[i + 1] += (r() - 0.5) * k; d[i + 2] += (r() - 0.5) * k; }
+    }
+    ctx.putImageData(img, 0, 0);
+  };
+  // Paper-ish texture tile: fills with base color + fibrous noise (cheap; drawn into ctx).
+  H.paper = function (ctx, W, Hh, base = '#f3ecdc', seed = 3, strength = 0.06) {
+    ctx.save(); ctx.fillStyle = base; ctx.fillRect(0, 0, W, Hh);
+    const nz = H.makeNoise(seed), cell = 4, [br, bg, bb] = H.hex(base);
+    for (let y = 0; y < Hh; y += cell) for (let x = 0; x < W; x += cell) {
+      const v = nz.fbm2(x * 0.01, y * 0.01, 3) * 0.6 + nz.n2(x * 0.15, y * 0.04) * 0.4;
+      const s = 1 + v * strength * 2;
+      ctx.fillStyle = `rgb(${br * s | 0},${bg * s | 0},${bb * s | 0})`; ctx.fillRect(x, y, cell, cell);
+    }
+    ctx.restore();
+  };
+  // Vignette
+  H.vignette = function (ctx, W, Hh, strength = 0.5, color = '0,0,0') {
+    const g = ctx.createRadialGradient(W / 2, Hh / 2, Math.min(W, Hh) * 0.3, W / 2, Hh / 2, Math.hypot(W, Hh) * 0.6);
+    g.addColorStop(0, `rgba(${color},0)`); g.addColorStop(1, `rgba(${color},${strength})`);
+    ctx.save(); ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh); ctx.restore();
+  };
+
+  // ---------- rendering entry ----------
+  // Renders style into canvas at logical 1280x720 (canvas can be any pixel size; it is scaled).
+  H.W = 1280; H.H = 720;
+  H.loadFonts = async function (style) {
+    const specs = style.fonts || [];
+    try { const sample = 'AaZz09' + (window.FONT_SAMPLE || '');
+      await Promise.all(specs.map((f) => document.fonts.load(f, sample))); await document.fonts.ready; } catch (e) { /* render anyway */ }
+  };
+  H.render = function (style, canvas, t) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: !!style.readsPixels });
+    const sx = canvas.width / H.W, sy = canvas.height / H.H;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save(); ctx.scale(sx, sy);
+    style.draw(ctx, H.W, H.H, t == null ? style.frameT || 0 : t);
+    ctx.restore();
+  };
+})();
+// sound.js: a small synthesized sound kit for the style explainers. Plain Web Audio, no audio files.
+// Voiceover mode: SOUND.kit(ctx, { voiceover: true }) drops beds and music, plays anything marked minor
+// (play(..., { minor: true }), tone/noise { minor: true }, or scheduled inside k.withMinor(() => ...)) at about 60%
+// volume instead of full, and sits all effects a little lower, so the narration stays on top while the piece still
+// sounds alive. In the full mix, minor sounds play at full volume. Scores can read k.vo to branch further.
+// A style adds   explainerSound(k) { k.bed('room', 0, D); k.play('pop', 1.25); ... }   and the same
+// call schedules into a live AudioContext (the player) or an OfflineAudioContext (the video render).
+// Times are seconds on the explainer's own clock. Randomness is seeded, so every render is identical.
+//
+// NOTE: the copy of this kit pasted into the conversation was cut off after out(). Everything above the
+// "STAND-IN" marker below is the original, unchanged. Everything after it is a compatible stand-in
+// (tone, noise, play presets, bed, withMinor, SOUND.live, SOUND.renderOffline). Replace this file with the
+// complete original kit when available; scoreSound() only uses play/bed/tone names defined in the stand-in.
+(function () {
+  'use strict';
+  const SOUND = (window.SOUND = {});
+  const TINY = 1e-4;
+
+  // seeded random in [0,1), keyed by any string
+  function rand(key) {
+    let h = 2166136261;
+    for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
+    let a = h >>> 0 || 1;
+    return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+
+  // note names to Hz: 'A4' = 440, 'C#5', 'Eb3'
+  const STEP = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function hz(n) {
+    if (typeof n === 'number') return n;
+    const m = /^([A-G])([#b]?)(-?\d)$/.exec(n);
+    const semis = STEP[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0) + (Number(m[3]) - 4) * 12 - 9;
+    return 440 * Math.pow(2, semis / 12);
+  }
+  SOUND.hz = hz;
+
+  SOUND.kit = function (ctx, opts) {
+    const o = opts || {};
+    const VO = !!o.voiceover;
+    const MINOR = 0.6; // voiceover-mode volume for minor sounds
+    let inMinor = false;
+    const gainOf = (p, d) => (p.gain == null ? d : p.gain) * (VO && (p.minor || inMinor) ? MINOR : 1);
+    const T0 = (o.start || 0) - 0; // explainer time that maps to ctx time `base`
+    const base = ctx.currentTime + (o.delay || 0);
+    // Start times snap to the sample grid (+ a quarter sample): in Chrome a source started a hair off the grid can
+    // spike to about twice its set level.
+    const SR = ctx.sampleRate;
+    const at = (t) => (Math.round((base + (t - T0)) * SR) + 0.25) / SR;
+
+    // ---- buses: sfx, amb, music -> compressor -> master; one shared reverb send
+    const master = ctx.createGain(); master.gain.value = o.master == null ? 0.9 : o.master;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 8; comp.ratio.value = 3; comp.attack.value = 0.004; comp.release.value = 0.18;
+    comp.connect(master); master.connect(o.dest || ctx.destination);
+    const bus = {};
+    for (const [name, g] of Object.entries({ sfx: VO ? 0.7 : 0.85, amb: 0.5, music: 0.45 })) { bus[name] = ctx.createGain(); bus[name].gain.value = g; bus[name].connect(comp); }
+
+    // generated room reverb: decaying stereo noise, darker toward the tail
+    const verb = ctx.createConvolver();
+    {
+      const secs = 1.6, n = Math.floor(secs * ctx.sampleRate), ir = ctx.createBuffer(2, n, ctx.sampleRate);
+      for (let c = 0; c < 2; c++) {
+        const r = rand('verb' + c), d = ir.getChannelData(c); let lp = 0;
+        for (let i = 0; i < n; i++) { const u = i / n; lp += (0.6 - 0.45 * u) * ((r() * 2 - 1) - lp); d[i] = lp * Math.pow(1 - u, 3); }
+      }
+      verb.buffer = ir;
+    }
+    const verbIn = ctx.createGain(); verbIn.gain.value = 0.9; verbIn.connect(verb); verb.connect(comp);
+
+    // seeded noise buffers: white, pink-ish and brown
+    const noiseBuf = {};
+    {
+      const n = Math.floor(2.5 * ctx.sampleRate);
+      for (const kind of ['white', 'pink', 'brown']) {
+        const b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0), r = rand('noise-' + kind);
+        let p0 = 0, p1 = 0, p2 = 0, br = 0;
+        for (let i = 0; i < n; i++) {
+          const w = r() * 2 - 1;
+          if (kind === 'white') d[i] = w;
+          else if (kind === 'pink') { p0 = 0.997 * p0 + 0.029 * w; p1 = 0.985 * p1 + 0.032 * w; p2 = 0.95 * p2 + 0.048 * w; d[i] = (p0 + p1 + p2 + w * 0.05) * 2.2; }
+          else { br = (br + 0.02 * w) / 1.02; d[i] = br * 3.2; }
+        }
+        noiseBuf[kind] = b;
+      }
+    }
+
+    // ---- automation helpers
+    // a value or [[dt, value], ...] from the voice start; ramps are exponential (frequencies)
+    function sweep(param, v, t) {
+      if (!Array.isArray(v)) { param.setValueAtTime(v, t); return; }
+      param.setValueAtTime(v[0][1], t + v[0][0]);
+      for (let i = 1; i < v.length; i++) param.exponentialRampToValueAtTime(Math.max(v[i][1], 1), t + v[i][0]);
+    }
+    // amplitude: linear attack to `gain`, optional hold, exponential release to silence by `dur`
+    function shape(param, t, gain, dur, a, hold) {
+      a = Math.min(a == null ? 0.004 : a, dur * 0.9);
+      hold = Math.min(hold || 0, dur - a);
+      param.setValueAtTime(0, t);
+      param.linearRampToValueAtTime(gain, t + a);
+      if (hold > 0) param.setValueAtTime(gain, t + a + hold);
+      param.exponentialRampToValueAtTime(TINY, t + dur);
+      param.setValueAtTime(0, t + dur + 0.001);
+    }
+    function out(node, p) {
+      const pan = ctx.createStereoPanner(); pan.pan.value = Math.max(-1, Math.min(1, p.pan || 0));
+      node.connect(pan); pan.connect(bus[p.bus || 'sfx']);
+      if (p.verb) { const s = ctx.createGain(); s.gain.value = p.verb; pan.connect(s); s.connect(verbIn); }
+    }
+
+    // ======================= STAND-IN (not part of the original kit) =======================
+    const sources = [];
+    const isPast = (t) => t < T0 - 0.03; // live playback from mid-piece skips one-shots that already happened
+    const fhz = (v) => (Array.isArray(v) ? v.map(([dt, f]) => [dt, hz(f)]) : hz(v));
+
+    // flutter: seeded amplitude wobble (a marker tip skipping over the gloss)
+    function flutterNode(s, dur, depth, rate, key) {
+      const g = ctx.createGain(), r = rand('fl' + key), step = 1 / (rate || 30);
+      g.gain.setValueAtTime(1, s);
+      for (let x = step; x < dur; x += step) g.gain.linearRampToValueAtTime(1 - depth * r(), s + x);
+      return g;
+    }
+
+    function tone(t, p) {
+      p = p || {};
+      if (isPast(t)) return;
+      const dur = p.dur || 0.2, s = at(t), osc = ctx.createOscillator();
+      osc.type = p.type || 'sine';
+      sweep(osc.frequency, fhz(p.freq == null ? 440 : p.freq), s);
+      if (p.detune) osc.detune.value = p.detune;
+      const g = ctx.createGain(); shape(g.gain, s, gainOf(p, 0.3), dur, p.a, p.hold);
+      let n = osc;
+      if (p.lp) { const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = p.lp; n.connect(f); n = f; }
+      n.connect(g); out(g, p);
+      osc.start(s); osc.stop(s + dur + 0.05); sources.push(osc);
+    }
+
+    function noise(t, p) {
+      p = p || {};
+      if (isPast(t)) return;
+      const dur = p.dur || 0.2, s = at(t), b = ctx.createBufferSource();
+      b.buffer = noiseBuf[p.color || 'pink']; b.loop = true; b.playbackRate.value = p.rate || 1;
+      let n = b;
+      for (const fl of [].concat(p.f || [])) {
+        const f = ctx.createBiquadFilter(); f.type = fl.type || 'bandpass'; sweep(f.frequency, fl.freq, s); f.Q.value = fl.q == null ? 0.8 : fl.q;
+        n.connect(f); n = f;
+      }
+      if (p.flutter) { const fg = flutterNode(s, dur, p.flutter, p.flutterRate, t.toFixed(3) + (p.key || '')); n.connect(fg); n = fg; }
+      const g = ctx.createGain(); shape(g.gain, s, gainOf(p, 0.3), dur, p.a, p.hold);
+      n.connect(g); out(g, p);
+      b.start(s, rand('off' + t.toFixed(3) + (p.color || ''))() * 1.5); b.stop(s + dur + 0.05); sources.push(b);
+    }
+
+    // presets tuned for a dry-erase marker on a glossy whiteboard
+    const PRESETS = {
+      // a marker stroke; dur = how long the stroke draws on
+      marker(t, p) {
+        const d = p.dur || 0.3, g = p.gain == null ? 1 : p.gain, r = rand('mk' + t.toFixed(3));
+        noise(t, { ...p, color: 'pink', dur: d + 0.03, gain: 0.2 * g, a: 0.015, hold: d * 0.75, f: [{ type: 'bandpass', freq: 2600 + r() * 1400, q: 0.9 }, { type: 'highpass', freq: 1200, q: 0.5 }], flutter: 0.55, flutterRate: 28 });
+        tone(t + 0.01, { ...p, type: 'triangle', freq: [[0, 950 + r() * 600], [d, 850 + r() * 700]], dur: d, gain: 0.018 * g, a: 0.03, hold: d * 0.6, lp: 3000 });
+      },
+      squeak(t, p) {
+        const g = p.gain == null ? 1 : p.gain, r = rand('sq' + t.toFixed(3));
+        noise(t, { ...p, color: 'pink', dur: 0.1, gain: 0.18 * g, a: 0.006, f: [{ type: 'bandpass', freq: 3400, q: 1.2 }] });
+        tone(t, { ...p, type: 'triangle', freq: [[0, 1100 + r() * 500], [0.09, 1500 + r() * 600]], dur: 0.1, gain: 0.05 * g, a: 0.01, lp: 3500 });
+      },
+      tap(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'white', dur: 0.045, gain: 0.28 * g, f: [{ type: 'bandpass', freq: 2400, q: 1.6 }] });
+        tone(t, { ...p, freq: 1700, dur: 0.035, gain: 0.04 * g });
+      },
+      pop(t, p) {
+        const g = p.gain == null ? 1 : p.gain, lo = p.low ? 0.6 : 1;
+        tone(t, { ...p, freq: [[0, 480 * lo], [0.07, 1050 * lo]], dur: 0.1, gain: 0.24 * g, a: 0.003 });
+        noise(t, { ...p, color: 'white', dur: 0.03, gain: 0.06 * g, f: [{ type: 'highpass', freq: 3000 }] });
+      },
+      knock(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: [[0, 230], [0.09, 120]], dur: 0.13, gain: 0.3 * g, a: 0.002 });
+        noise(t, { ...p, color: 'brown', dur: 0.06, gain: 0.25 * g, f: [{ type: 'lowpass', freq: 1400 }] });
+      },
+      pebble(t, p) {
+        const g = p.gain == null ? 1 : p.gain, r = rand('pb' + t.toFixed(3));
+        noise(t, { ...p, color: 'white', dur: 0.03, gain: 0.12 * g, f: [{ type: 'bandpass', freq: 1800 + r() * 2200, q: 3 }] });
+      },
+      eraser(t, p) {
+        const d = p.dur || 0.75, g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'pink', dur: d, gain: 0.32 * g, a: 0.05, hold: d * 0.7, f: [{ type: 'bandpass', freq: 750, q: 0.6 }, { type: 'lowpass', freq: 2600, q: 0.3 }], flutter: 0.7, flutterRate: 14 });
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.18 * g, a: 0.05, hold: d * 0.7, f: [{ type: 'lowpass', freq: 300 }], verb: 0.05 });
+      },
+      splash(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'white', dur: 0.5, gain: 0.26 * g, a: 0.005, f: [{ type: 'bandpass', freq: [[0, 4200], [0.45, 900]], q: 0.7 }], verb: 0.25 });
+        tone(t, { ...p, freq: [[0, 140], [0.2, 60]], dur: 0.25, gain: 0.22 * g });
+      },
+      thud(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: [[0, 95], [0.3, 42]], dur: 0.42, gain: 0.5 * g, a: 0.003 });
+        noise(t, { ...p, color: 'brown', dur: 0.25, gain: 0.4 * g, f: [{ type: 'lowpass', freq: 420 }], verb: 0.15 });
+      },
+      gurgle(t, p) {
+        const d = p.dur || 0.6, g = p.gain == null ? 1 : p.gain, r = rand('gg' + t.toFixed(3));
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.2 * g, a: 0.08, hold: d * 0.6, f: [{ type: 'lowpass', freq: 700 }] });
+        for (let i = 0; i < Math.floor(d * 14); i++) { const tt = t + r() * d; tone(tt, { ...p, freq: [[0, 260 + r() * 200], [0.05, 600 + r() * 400]], dur: 0.06, gain: 0.07 * g }); }
+      },
+      hiss(t, p) {
+        const d = p.dur || 0.5, g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'white', dur: d, gain: 0.1 * g, a: 0.08, hold: d * 0.6, f: [{ type: 'highpass', freq: 4500 }], flutter: 0.4, flutterRate: 40 });
+      },
+      rumble(t, p) {
+        const d = p.dur || 1, g = p.gain == null ? 1 : p.gain;
+        noise(t, { ...p, color: 'brown', dur: d, gain: 0.3 * g, a: 0.2, hold: d * 0.6, f: [{ type: 'lowpass', freq: 170 }] });
+        tone(t, { ...p, type: 'sawtooth', freq: 48, dur: d, gain: 0.03 * g, a: 0.2, hold: d * 0.6, lp: 200 });
+      },
+      ping(t, p) {
+        const g = p.gain == null ? 1 : p.gain, f = hz(p.note || 'E6');
+        tone(t, { ...p, freq: f, dur: 0.6, gain: 0.14 * g, verb: 0.35 });
+        tone(t, { ...p, freq: f * 2.01, dur: 0.3, gain: 0.03 * g });
+      },
+      tick(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        PRESETS.squeak(t, { ...p, gain: 0.7 * g });
+        tone(t + 0.02, { ...p, type: 'triangle', freq: hz(p.note || 'C6'), dur: 0.18, gain: 0.08 * g, verb: 0.2 });
+      },
+      // the key-number hit: a slammed marker cap, low boom, bright accent
+      hit(t, p) {
+        const g = p.gain == null ? 1 : p.gain;
+        tone(t, { ...p, freq: [[0, 120], [0.5, 46]], dur: 0.7, gain: 0.55 * g, a: 0.002, verb: 0.2 });
+        noise(t, { ...p, color: 'white', dur: 0.09, gain: 0.3 * g, f: [{ type: 'bandpass', freq: 2000, q: 0.8 }], verb: 0.3 });
+        for (const n of ['C4', 'G4', 'C5']) tone(t, { ...p, type: 'triangle', freq: hz(n), dur: 0.9, gain: 0.06 * g, lp: 2600, verb: 0.35 });
+      },
+      chord(t, p) {
+        const g = p.gain == null ? 1 : p.gain, d = p.dur || 1.6;
+        (p.notes || ['C4', 'E4', 'G4', 'C5']).forEach((n, i) => tone(t + i * 0.025, { ...p, type: 'triangle', freq: hz(n), dur: d, gain: 0.07 * g, a: 0.02, hold: d * 0.25, lp: 2400, verb: 0.45 }));
+      },
+    };
+    function play(name, t, p) { p = p || {}; const f = PRESETS[name]; if (!f) return; if (p.minor) { const m = inMinor; inMinor = true; f(t, p); inMinor = m; } else f(t, p); }
+
+    // ambience bed: VO mode drops it; live playback from mid-piece joins it in progress
+    function bed(name, t0, t1, p) {
+      p = p || {};
+      if (VO) return;
+      const s0 = Math.max(t0, T0), dur = t1 - s0;
+      if (dur <= 0.05) return;
+      const s = at(s0), b = ctx.createBufferSource(); b.buffer = noiseBuf[name === 'room' ? 'pink' : 'brown']; b.loop = true;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 70;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = name === 'room' ? 520 : 300;
+      const g = ctx.createGain(), lvl = p.gain == null ? 0.07 : p.gain, fi = s0 > t0 ? 0.05 : (p.fadeIn || 0.6), fo = p.fadeOut || 0.8;
+      g.gain.setValueAtTime(0, s); g.gain.linearRampToValueAtTime(lvl, s + fi);
+      g.gain.setValueAtTime(lvl, s + Math.max(fi, dur - fo)); g.gain.linearRampToValueAtTime(0, s + dur);
+      b.connect(hp); hp.connect(lp); lp.connect(g); out(g, { ...p, bus: 'amb' });
+      b.start(s, rand('bed' + name)() * 2); b.stop(s + dur + 0.05); sources.push(b);
+    }
+    function music() { /* this style uses no music */ }
+    function withMinor(fn) { const m = inMinor; inMinor = true; try { fn(); } finally { inMinor = m; } }
+    function stop() {
+      const now = ctx.currentTime;
+      try { master.gain.cancelScheduledValues(now); master.gain.setValueAtTime(master.gain.value, now); master.gain.linearRampToValueAtTime(0, now + 0.04); } catch (e) {}
+      for (const s of sources) { try { s.stop(now + 0.05); } catch (e) {} }
+      setTimeout(() => { try { master.disconnect(); } catch (e) {} }, 120);
+    }
+    return { vo: VO, ctx, hz, play, tone, noise, bed, music, withMinor, stop };
+  };
+
+  let LIVE = null;
+  // Start the score playing in sync from explainer time `fromT`; returns stop().
+  SOUND.live = function (score, fromT, opts) {
+    if (!LIVE) LIVE = new (window.AudioContext || window.webkitAudioContext)();
+    if (LIVE.state === 'suspended') LIVE.resume();
+    const k = SOUND.kit(LIVE, { ...(opts || {}), start: fromT || 0, delay: 0.03 });
+    try { score(k); } catch (e) { console.error(e); }
+    return () => k.stop();
+  };
+  // Render the score offline; resolves to interleaved stereo Float32Array.
+  SOUND.renderOffline = async function (score, dur, sr, opts) {
+    sr = sr || 48000;
+    const n = Math.ceil(dur * sr), ctx = new OfflineAudioContext(2, n, sr);
+    const k = SOUND.kit(ctx, { ...(opts || {}), start: 0 });
+    score(k);
+    const buf = await ctx.startRendering(), L = buf.getChannelData(0), R = buf.getChannelData(1), out = new Float32Array(n * 2);
+    for (let i = 0; i < n; i++) { out[2 * i] = L[i]; out[2 * i + 1] = R[i]; }
+    return out;
+  };
+})();
+// "Come si costruisce un porto" — Whiteboard Explainer (Hand-Drawn).
+// Every frame is a pure function of t. All randomness comes from H.rng / H.makeNoise.
+(function () {
+  'use strict';
+  const W = 1280, HH = 720;
+  const DURATION = 24;
+  const INK = { k: '#1f2430', b: '#1d4fb6', r: '#cc3229', g: '#1b8a4b', gray: '#6d727c' };
+  const FK = 'Kalam', FM = "'Permanent Marker'";
+  const P = (t, a, b) => H.clamp((t - a) / (b - a));
+  const E = H.ease;
+  const L = H.lerp;
+
+  function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  const NZ = new Map();
+  const nzf = (seed) => { const k = (seed >>> 0) % 4093 + 1; if (!NZ.has(k)) NZ.set(k, H.makeNoise(k)); return NZ.get(k); };
+
+  // ---------------- polyline helpers ----------------
+  function cum(q) { const o = [0]; for (let i = 1; i < q.length; i++) o.push(o[i - 1] + Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1])); return o; }
+  function resample(pts, step) {
+    const o = [pts[0].slice()];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step));
+      for (let k = 1; k <= n; k++) o.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]);
+    }
+    return o;
+  }
+  function normals(q) {
+    return q.map((p, i) => {
+      const a = q[Math.max(0, i - 1)], b = q[Math.min(q.length - 1, i + 1)];
+      const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+      return [-dy / l, dx / l];
+    });
+  }
+  function wobble(pts, seed, amp) {
+    const q = resample(pts, 6), nz = nzf(seed), Lc = cum(q), N = normals(q);
+    return q.map((p, i) => {
+      const s = Lc[i];
+      const o = (nz.n2(s * 0.011, 1.3) * 2 + nz.n2(s * 0.05, 7.7) * 0.6) * amp;
+      return [p[0] + N[i][0] * o, p[1] + N[i][1] * o];
+    });
+  }
+  function cut(q, p) {
+    if (p >= 1) return q;
+    const Lc = cum(q), lim = Lc[Lc.length - 1] * p, o = [q[0]];
+    for (let i = 1; i < q.length; i++) {
+      if (Lc[i] <= lim) o.push(q[i]);
+      else { const f = (lim - Lc[i - 1]) / ((Lc[i] - Lc[i - 1]) || 1); o.push([q[i - 1][0] + (q[i][0] - q[i - 1][0]) * f, q[i - 1][1] + (q[i][1] - q[i - 1][1]) * f]); break; }
+    }
+    return o;
+  }
+  const offs = (q, d, N) => q.map((p, i) => [p[0] + N[i][0] * d, p[1] + N[i][1] * d]);
+  function trace(ctx, q) { ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < q.length; i++) ctx.lineTo(q[i][0], q[i][1]); }
+  const seq = (p, i, n) => H.clamp(p * n - i);
+
+  // ---------------- dry-erase marker stroke ----------------
+  // Streaky chisel-tip body, darker pooled edges, ink pools at both ends, optional second (double-trace) pass.
+  function marker(ctx, pts, o = {}) {
+    const p = o.p == null ? 1 : o.p;
+    if (p <= 0.001 || pts.length < 2) return;
+    const seed = o.seed || 1, w = o.w || 5, col = H.hex(o.color || INK.k), passes = o.dbl ? 2 : 1, A = o.alpha == null ? 1 : o.alpha;
+    for (let ps = 0; ps < passes; ps++) {
+      const r = H.rng(seed * 31 + ps * 977);
+      let q = wobble(pts, seed + ps * 53, o.amp == null ? 1.3 : o.amp);
+      if (ps) { const dx = r.range(-2.2, 2.2), dy = r.range(-2.2, 2.2); q = q.map((v) => [v[0] + dx, v[1] + dy]); }
+      q = cut(q, ps ? H.clamp(p * 1.15 - 0.15) : p);
+      if (q.length < 2) continue;
+      const N = normals(q);
+      ctx.save();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.globalAlpha = A * (ps ? 0.75 : 1);
+      ctx.globalCompositeOperation = 'multiply';
+      if (o.dash) ctx.setLineDash(o.dash);
+      ctx.strokeStyle = H.rgba(col, 0.82); ctx.lineWidth = w; trace(ctx, q); ctx.stroke();
+      // pooled edges: the ink gathers along both sides of a dry-erase stroke
+      ctx.strokeStyle = H.rgba(col, 0.42); ctx.lineWidth = Math.max(0.8, w * 0.16);
+      trace(ctx, offs(q, w * 0.42, N)); ctx.stroke();
+      trace(ctx, offs(q, -w * 0.42, N)); ctx.stroke();
+      ctx.setLineDash([]);
+      if (!o.dash) {
+        // ink pools where the tip lands and lifts
+        ctx.fillStyle = H.rgba(col, 0.32);
+        for (const e of [q[0], q[q.length - 1]]) { ctx.beginPath(); ctx.arc(e[0], e[1], w * 0.56, 0, 7); ctx.fill(); }
+        // dry streaks of the chisel tip
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = 'rgba(244,246,243,0.4)';
+        for (let k = 0; k < 2; k++) {
+          const d = (k ? -1 : 1) * w * r.range(0.06, 0.22);
+          ctx.lineWidth = Math.max(0.6, w * r.range(0.07, 0.13));
+          ctx.setLineDash([r.range(24, 70), r.range(8, 30)]); ctx.lineDashOffset = r.range(0, 60);
+          trace(ctx, offs(q, d, N)); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+    }
+  }
+
+  // ---------------- shapes ----------------
+  function ellipsePts(cx, cy, rx, ry, seed) {
+    const r = H.rng(seed), a0 = r.range(-2.4, -1.6), sweep = Math.PI * 2 + r.range(0.25, 0.5), o = [];
+    for (let i = 0; i <= 48; i++) { const s = i / 48, a = a0 + sweep * s, g = 1 + 0.06 * s; o.push([cx + Math.cos(a) * rx * g, cy + Math.sin(a) * ry * g]); }
+    return o;
+  }
+  function rectPts(x, y, w, h) { return [[x + 4, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y - 3]]; }
+  function polyClosed(pts) { return pts.concat([pts[0]]); }
+  function quadPts(a, c, b, n = 24) { const o = []; for (let i = 0; i <= n; i++) { const s = i / n; o.push([(1 - s) * (1 - s) * a[0] + 2 * (1 - s) * s * c[0] + s * s * b[0], (1 - s) * (1 - s) * a[1] + 2 * (1 - s) * s * c[1] + s * s * b[1]]); } return o; }
+  function wavyLine(x1, x2, y, amp, freq, ph = 0, step = 10) { const o = []; for (let x = x1; x <= x2 + 0.1; x += step) o.push([x, y + Math.sin(x * freq + ph) * amp]); return o; }
+  function pathOf(poly) { const p = new Path2D(); p.moveTo(poly[0][0], poly[0][1]); for (let i = 1; i < poly.length; i++) p.lineTo(poly[i][0], poly[i][1]); p.closePath(); return p; }
+
+  function arrow(ctx, x1, y1, x2, y2, o = {}) {
+    const p = o.p == null ? 1 : o.p;
+    if (p <= 0) return;
+    const bend = o.bend || 0, mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, l = Math.hypot(dx, dy) || 1;
+    const cx = mx - dy / l * bend, cy = my + dx / l * bend;
+    marker(ctx, quadPts([x1, y1], [cx, cy], [x2, y2]), { ...o, p: H.clamp(p / 0.78) });
+    const hp = H.clamp((p - 0.78) / 0.22);
+    if (hp <= 0) return;
+    const ang = Math.atan2(y2 - cy, x2 - cx), hl = o.head || 22;
+    for (const s of [-1, 1]) {
+      const a = ang + Math.PI - s * 0.5;
+      marker(ctx, [[x2, y2], [x2 + Math.cos(a) * hl, y2 + Math.sin(a) * hl]], { ...o, p: hp, dbl: false, seed: (o.seed || 1) + s * 11 + 3 });
+    }
+  }
+
+  // ---------------- handwriting ----------------
+  // Letter-by-letter lettering: per-glyph jitter, a faint second trace (ink pooling) and dry-tip streaks.
+  function write(ctx, str, x, y, o = {}) {
+    const size = o.size || 30, isM = o.font === 'M', p = o.p == null ? 1 : o.p, col = H.hex(o.color || INK.k), A = o.alpha == null ? 1 : o.alpha;
+    ctx.save();
+    ctx.font = `${isM ? 400 : 700} ${size}px ${isM ? FM : FK}`;
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
+    const chars = [...str], ws = chars.map((c) => ctx.measureText(c).width), tw = ws.reduce((a, b) => a + b, 0);
+    let cx = o.align === 'center' ? x - tw / 2 : o.align === 'right' ? x - tw : x;
+    const n = chars.length * p, r = H.rng(o.seed || hashStr(str));
+    for (let i = 0; i < chars.length; i++) {
+      const rot = r.range(-0.05, 0.05) * (o.wild == null ? 1 : o.wild), jy = r.gauss() * size * 0.022, sc = 1 + r.range(-0.035, 0.035), dx2 = r.range(0.6, 1.2), dy2 = r.range(0.3, 0.9);
+      if (i >= n) break;
+      const al = H.clamp(n - i) * A;
+      if (chars[i] !== ' ') {
+        ctx.save();
+        ctx.translate(cx + ws[i] / 2, y + jy); ctx.rotate(rot); ctx.scale(sc, sc);
+        ctx.globalAlpha = al;
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.fillStyle = H.rgba(col, 0.86); ctx.fillText(chars[i], 0, 0);
+        ctx.fillStyle = H.rgba(col, 0.2); ctx.fillText(chars[i], dx2, dy2);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = 'rgba(244,246,243,0.32)'; ctx.lineWidth = Math.max(0.6, size * 0.016);
+        ctx.strokeText(chars[i], -0.6, 0.5);
+        ctx.restore();
+      }
+      cx += ws[i];
+    }
+    ctx.restore();
+    return tw;
+  }
+
+  function header(ctx, num, text, p, seed, alpha = 1) {
+    if (p <= 0) return;
+    marker(ctx, ellipsePts(62, 58, 26, 25, seed), { color: INK.r, w: 4, p: P(p, 0, 0.3), seed, alpha });
+    write(ctx, String(num), 62, 71, { font: 'M', size: 34, color: INK.r, align: 'center', p: P(p, 0.15, 0.35), alpha, seed: seed + 1 });
+    write(ctx, text, 102, 72, { font: 'M', size: 36, p: P(p, 0.3, 1), alpha, seed: seed + 2 });
+  }
+  function headerSwap(ctx, t, list) {
+    for (let i = 0; i < list.length; i++) {
+      const [s, n, txt] = list[i];
+      if (t < s) continue;
+      const a = i + 1 < list.length ? 1 - P(t, list[i + 1][0] - 0.3, list[i + 1][0]) : 1;
+      if (a <= 0) continue;
+      header(ctx, n, txt, P(t, s, s + 0.6), 400 + i * 10, a);
+    }
+  }
+
+  // labels with a leader line that lands on the thing it names
+  function label(ctx, txt, x, y, tx, ty, p, o = {}) {
+    if (p <= 0) return;
+    const tw = write(ctx, txt, x, y, { size: o.size || 30, color: o.color || INK.k, p: P(p, 0, 0.7), align: o.align, seed: o.seed });
+    if (tx == null) return;
+    const sx = o.from ? o.from[0] : (o.align === 'right' ? x + 8 : o.align === 'center' ? x : x + tw + 8), sy = o.from ? o.from[1] : y - 10;
+    arrow(ctx, sx, sy, tx, ty, { p: P(p, 0.55, 1), w: 3, head: 14, color: o.lineColor || INK.k, seed: (o.seed || 7) + 5, bend: o.bend || 10 });
+  }
+
+  // ---------------- materials ----------------
+  function pebble(ctx, x, y, rad, seed, col, fillA = 0.1) {
+    const r = H.rng(seed), n = 7, pts = [];
+    for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + r.range(-0.25, 0.25), rr = rad * r.range(0.7, 1.15); pts.push([x + Math.cos(a) * rr, y + Math.sin(a) * rr * 0.8]); }
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < n; i++) ctx.lineTo(pts[i][0], pts[i][1]); ctx.closePath();
+    ctx.fillStyle = H.rgba(col, fillA); ctx.fill(); ctx.stroke();
+  }
+  const SCATTER = new Map();
+  function scatter(key, poly, n, seed) {
+    if (SCATTER.has(key)) return SCATTER.get(key);
+    const r = H.rng(seed), path = pathOf(poly), c = H.layer(2, 2).getContext('2d');
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const [x, y] of poly) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const out = []; let guard = 0;
+    while (out.length < n && guard++ < n * 30) { const x = r.range(x0, x1), y = r.range(y0, y1); if (c.isPointInPath(path, x, y)) out.push([x, y, r(), hashStr(key) + out.length]); }
+    out.sort((a, b) => b[1] - a[1]); // fills from the bottom up, like dumped rock
+    SCATTER.set(key, out);
+    return out;
+  }
+  function rubble(ctx, key, poly, n, rmin, rmax, p, col = INK.k) {
+    if (p <= 0) return;
+    const pts = scatter(key, poly, n, hashStr(key));
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = H.rgba(col, 0.75); ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    const m = Math.floor(pts.length * p);
+    for (let i = 0; i < m; i++) pebble(ctx, pts[i][0], pts[i][1], L(rmin, rmax, pts[i][2]), pts[i][3], col);
+    ctx.restore();
+  }
+  function hatch(ctx, poly, gap, ang, p, o = {}) {
+    if (p <= 0) return;
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const [x, y] of poly) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R = Math.hypot(x1 - x0, y1 - y0) / 2 + 4, ca = Math.cos(ang), sa = Math.sin(ang);
+    const r = H.rng(o.seed || 5), lines = Math.floor((2 * R) / gap), m = Math.floor(lines * p);
+    ctx.save(); ctx.clip(pathOf(poly)); ctx.globalCompositeOperation = 'multiply';
+    ctx.strokeStyle = H.rgba(o.color || INK.gray, o.alpha || 0.55); ctx.lineWidth = o.w || 1.8; ctx.lineCap = 'round';
+    for (let i = 0; i < m; i++) {
+      const d = -R + i * gap + r.range(-1.5, 1.5), px = cx - sa * d, py = cy + ca * d;
+      ctx.beginPath(); ctx.moveTo(px - ca * R, py - sa * R + r.range(-2, 2)); ctx.lineTo(px + ca * R, py + sa * R + r.range(-2, 2)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // standard drawing symbol for concrete: scattered dots and small triangles
+  function concrete(ctx, key, poly, n, p) {
+    if (p <= 0) return;
+    const pts = scatter(key, poly, n, hashStr(key) + 3), m = Math.floor(pts.length * p);
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = H.rgba(INK.gray, 0.8); ctx.fillStyle = H.rgba(INK.gray, 0.7); ctx.lineWidth = 1.6;
+    for (let i = 0; i < m; i++) {
+      const [x, y, k, s] = pts[i];
+      if (k < 0.4) { const a = s % 7; ctx.beginPath(); for (let j = 0; j < 3; j++) { const aa = a + j * 2.1; ctx.lineTo(x + Math.cos(aa) * 5, y + Math.sin(aa) * 5); } ctx.closePath(); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.arc(x, y, 1.6, 0, 7); ctx.fill(); }
+    }
+    ctx.restore();
+  }
+  function stipple(ctx, key, poly, n, p, col, rad = 1.7, minY = -1e9) {
+    if (p <= 0) return;
+    const pts = scatter(key, poly, n, hashStr(key) + 9), m = Math.floor(pts.length * p);
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = H.rgba(col, 0.7);
+    for (let i = 0; i < m; i++) { const [x, y, k] = pts[i]; if (y < minY) continue; ctx.beginPath(); ctx.arc(x, y, rad * (0.6 + k * 0.8), 0, 7); ctx.fill(); }
+    ctx.restore();
+  }
+
+  // ---------------- board, ghosts, eraser, finishing ----------------
+  let BOARD = null;
+  function boardBase() {
+    if (BOARD) return BOARD;
+    const c = H.layer(W, HH), g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, HH); gr.addColorStop(0, '#f3f4f1'); gr.addColorStop(1, '#e5e7e3');
+    g.fillStyle = gr; g.fillRect(0, 0, W, HH);
+    // glossy melamine micro-texture
+    const nz = H.makeNoise(11), cell = 4;
+    for (let y = 0; y < HH; y += cell) for (let x = 0; x < W; x += cell) {
+      const v = nz.fbm2(x * 0.006, y * 0.006, 3) * 0.6 + nz.n2(x * 0.08, y * 0.02) * 0.4;
+      g.fillStyle = v > 0 ? `rgba(110,116,124,${v * 0.05})` : `rgba(255,255,255,${-v * 0.09})`;
+      g.fillRect(x, y, cell, cell);
+    }
+    // old eraser swipes: broad, faint grey arcs
+    const r = H.rng(77);
+    g.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      g.strokeStyle = `rgba(120,126,134,${r.range(0.018, 0.035)})`; g.lineWidth = r.range(50, 90);
+      const x = r.range(0, W), y = r.range(0, HH);
+      g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + r.range(-200, 200), y + r.range(-120, 120), x + r.range(-300, 300), y + r.range(-160, 160)); g.stroke();
+    }
+    // ghost of the last lesson that was erased from this board
+    g.save(); g.filter = 'blur(1.3px)'; g.globalAlpha = 0.075; g.fillStyle = '#2a3140'; g.strokeStyle = '#2a3140'; g.lineWidth = 5;
+    g.font = `700 46px ${FK}`; g.fillText('a² + b² = c²', 860, 650);
+    g.font = `700 38px ${FK}`; g.fillText('x = (−b ± √Δ) / 2a', 150, 170);
+    g.beginPath(); g.moveTo(980, 520); g.lineTo(1160, 520); g.lineTo(980, 380); g.closePath(); g.stroke();
+    g.font = `700 30px ${FK}`; g.fillText('ipotenusa', 1080, 430);
+    g.strokeStyle = '#1d4fb6'; g.globalAlpha = 0.06; g.beginPath(); g.ellipse(300, 560, 120, 60, 0.1, 0, 7); g.stroke();
+    g.restore();
+    BOARD = c;
+    return c;
+  }
+
+  // final frames of each erased scene, kept as layers; their ghosts are what the eraser leaves behind
+  const LAYERS = {};
+  function finalLayer(key, fn) { if (LAYERS[key]) return LAYERS[key]; const c = H.layer(W, HH), g = c.getContext('2d'); fn(g); LAYERS[key] = c; return c; }
+  const FINAL = {
+    A: () => finalLayer('A', (g) => sceneA(g, 2.0)),
+    B: () => finalLayer('B', (g) => sceneB(g, 5.2)),
+    C: () => finalLayer('C', (g) => sceneC(g, 16.4)),
+  };
+  function ghostLayer(key) {
+    return finalLayer('ghost' + key, (g) => {
+      g.filter = 'blur(1.6px) grayscale(0.7)'; g.globalAlpha = 0.085; g.drawImage(FINAL[key](), 0, 0); g.filter = 'none'; g.globalAlpha = 1;
+      const r = H.rng(hashStr(key)); g.lineCap = 'round';
+      for (let i = 0; i < 6; i++) {
+        g.strokeStyle = `rgba(120,126,134,${r.range(0.02, 0.04)})`; g.lineWidth = r.range(50, 80);
+        const x = 100 + i * 200 + r.range(-40, 40);
+        g.beginPath(); g.moveTo(x, -20); g.bezierCurveTo(x + 120, 200, x - 120, 450, x + 60, 740); g.stroke();
+      }
+    });
+  }
+  function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function drawEraser(ctx, x, y, a) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+    ctx.save(); ctx.filter = 'blur(6px)'; ctx.fillStyle = 'rgba(30,34,44,0.22)'; roundRect(ctx, -74, -28, 164, 80, 14); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#4f535c'; roundRect(ctx, -80, 6, 160, 30, 6); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 14; i++) { ctx.beginPath(); ctx.moveTo(-76 + i * 11, 10); ctx.lineTo(-74 + i * 11, 34); ctx.stroke(); }
+    const g = ctx.createLinearGradient(0, -40, 0, 14); g.addColorStop(0, '#3a5a8e'); g.addColorStop(1, '#1d3257');
+    ctx.fillStyle = g; roundRect(ctx, -82, -40, 164, 52, 14); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.22)'; roundRect(ctx, -70, -34, 140, 10, 5); ctx.fill();
+    ctx.restore();
+  }
+  // felt eraser zig-zags across the board: what it passes leaves only a ghost
+  function wipe(ctx, t, t0, dur, key) {
+    const u = H.clamp((t - t0) / dur), e = E.inOut(u), ex = -140 + (W + 280) * e;
+    const front = (y) => ex - 50 + Math.sin(y * 0.018 + u * 7) * 22;
+    const edge = []; for (let y = -20; y <= HH + 20; y += 20) edge.push([front(y), y]);
+    ctx.save(); ctx.beginPath(); ctx.moveTo(W + 60, -20); for (const [x, y] of edge) ctx.lineTo(x, y); ctx.lineTo(W + 60, HH + 20); ctx.closePath(); ctx.clip(); ctx.drawImage(FINAL[key](), 0, 0); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.moveTo(-60, -20); for (const [x, y] of edge) ctx.lineTo(x, y); ctx.lineTo(-60, HH + 20); ctx.closePath(); ctx.clip(); ctx.drawImage(ghostLayer(key), 0, 0); ctx.restore();
+    const ph = u * Math.PI * 7, ey = 360 + Math.sin(ph) * 250;
+    drawEraser(ctx, ex, ey, Math.cos(ph) * 0.22);
+  }
+
+  function finish(ctx, t) {
+    ctx.save();
+    // ceiling-light sheen drifting slightly as the camera breathes
+    const sx = 880 + Math.sin(t * 0.33) * 36, sy = -60 + Math.cos(t * 0.27) * 10;
+    let g = ctx.createRadialGradient(sx, sy, 10, sx, sy, 560);
+    g.addColorStop(0, 'rgba(255,255,255,0.5)'); g.addColorStop(0.45, 'rgba(255,255,255,0.16)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, HH);
+    ctx.save(); ctx.translate(sx - 240, 64); ctx.rotate(-0.05); ctx.scale(1, 0.1);
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, 330); g.addColorStop(0, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(-340, -340, 680, 680); ctx.restore();
+    const o = Math.sin(t * 0.2) * 0.02;
+    g = ctx.createLinearGradient(0, 0, W, HH);
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.36 + o, 'rgba(255,255,255,0)'); g.addColorStop(0.44 + o, 'rgba(255,255,255,0.11)'); g.addColorStop(0.5 + o, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, HH);
+    ctx.restore();
+    H.vignette(ctx, W, HH, 0.12, '60,64,72');
+    H.grain(ctx, W, HH, 0.035, 1000 + Math.floor(t * 24));
+  }
+
+  // ---------------- drawings for this topic ----------------
+  function anchor(ctx, cx, cy, s, p, seed, col = INK.k) {
+    const st = [
+      ellipsePts(cx, cy - 66 * s, 13 * s, 13 * s, seed),
+      [[cx, cy - 52 * s], [cx, cy + 62 * s]],
+      [[cx - 32 * s, cy - 32 * s], [cx + 32 * s, cy - 32 * s]],
+      quadPts([cx - 52 * s, cy + 14 * s], [cx, cy + 92 * s], [cx + 52 * s, cy + 14 * s]),
+      [[cx - 52 * s, cy + 14 * s], [cx - 62 * s, cy + 30 * s]], [[cx - 52 * s, cy + 14 * s], [cx - 36 * s, cy + 24 * s]],
+      [[cx + 52 * s, cy + 14 * s], [cx + 62 * s, cy + 30 * s]], [[cx + 52 * s, cy + 14 * s], [cx + 36 * s, cy + 24 * s]],
+    ];
+    st.forEach((pts, i) => marker(ctx, pts, { p: seq(p, i, st.length), w: 6, seed: seed + i * 7, color: col }));
+  }
+
+  const COAST = [[-20, 562], [160, 548], [330, 556], [520, 566], [700, 560], [880, 552], [1060, 560], [1300, 548]];
+  const LAND = COAST.concat([[1300, 740], [-20, 740]]);
+  function coast(ctx, p, seed) {
+    marker(ctx, COAST, { w: 6, p: P(p, 0, 0.55), seed, dbl: true });
+    ctx.save(); ctx.beginPath(); ctx.rect(-20, 0, 1320, 618); ctx.clip();
+    hatch(ctx, LAND, 14, -0.9, P(p, 0.4, 1), { seed: seed + 2, alpha: 0.5 });
+    ctx.restore();
+  }
+  function shipPlan(ctx, x, y, len, beam, ang, p, seed) {
+    if (p <= 0) return;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    const hull = [[-len / 2, -beam / 2], [len * 0.3, -beam / 2], [len / 2, 0], [len * 0.3, beam / 2], [-len / 2, beam / 2], [-len / 2, -beam / 2 - 2]];
+    marker(ctx, hull, { w: 4, p: P(p, 0, 0.6), seed, dbl: true });
+    marker(ctx, rectPts(-len / 2 + 6, -beam / 2 + 5, 12, beam - 10), { w: 3, p: P(p, 0.5, 0.75), seed: seed + 3 });
+    for (let i = 0; i < 4; i++) marker(ctx, rectPts(-len / 2 + 26 + i * (len * 0.16), -beam / 2 + 6, len * 0.13, beam - 12), { w: 2.5, p: P(p, 0.6 + i * 0.08, 0.72 + i * 0.08), seed: seed + 10 + i, color: INK.b });
+    ctx.restore();
+  }
+  function navLight(ctx, x, y, col, p, seed) {
+    if (p <= 0) return;
+    ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = H.rgba(col, 0.85 * Math.min(1, p * 2));
+    ctx.beginPath(); ctx.arc(x, y, 9 * E.back(Math.min(1, p * 1.6)), 0, 7); ctx.fill(); ctx.restore();
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i - 2) * 0.55, r1 = 16, r2 = 30;
+      marker(ctx, [[x + Math.cos(a) * r1, y + Math.sin(a) * r1], [x + Math.cos(a) * r2, y + Math.sin(a) * r2]], { w: 3, color: col, p: P(p, 0.3 + i * 0.1, 0.6 + i * 0.1), seed: seed + i });
+    }
+  }
+
+  // ---------------- scenes ----------------
+  // A — hook: the question
+  function sceneA(ctx, t) {
+    write(ctx, 'Come si costruisce', 640, 300, { font: 'M', size: 74, p: E.out(P(t, 0.1, 0.85)), align: 'center', seed: 21 });
+    write(ctx, 'un porto?', 640, 425, { font: 'M', size: 112, color: INK.b, p: P(t, 0.8, 1.3), align: 'center', seed: 22 });
+    marker(ctx, wavyLine(410, 880, 462, 5, 0.035), { color: INK.r, w: 8, p: P(t, 1.3, 1.6), seed: 23 });
+    anchor(ctx, 170, 330, 1.25, P(t, 0.3, 1.3), 24);
+    marker(ctx, wavyLine(330, 950, 560, 9, 0.05), { color: INK.b, w: 5, p: P(t, 1.45, 1.85), seed: 25 });
+    marker(ctx, wavyLine(400, 880, 600, 9, 0.05, 1.7), { color: INK.b, w: 5, p: P(t, 1.55, 1.95), seed: 26 });
+  }
+
+  const ISO = [[470, '-5 m'], [370, '-10 m'], [265, '-15 m']];
+  // B — 1. study the sea: map view
+  function sceneB(ctx, t) {
+    const T = t - 2.75;
+    if (T <= 0) return;
+    header(ctx, 1, 'Studiare il mare', P(T, 0, 0.6), 31);
+    coast(ctx, P(T, 0.1, 0.9), 32);
+    write(ctx, 'TERRA', 640, 680, { font: 'M', size: 40, p: P(T, 0.7, 1.0), align: 'center', color: INK.k, seed: 33 });
+    ISO.forEach(([y, txt], i) => {
+      const a = P(T, 0.8 + i * 0.2, 1.2 + i * 0.2);
+      marker(ctx, wavyLine(0, 1110, y, 10, 0.006 + i * 0.001, i * 1.3, 20), { w: 3.5, color: INK.b, p: a, seed: 40 + i, dash: [18, 12] });
+      write(ctx, txt, 1250, y + 10, { size: 30, color: INK.b, align: 'right', p: P(T, 1.15 + i * 0.2, 1.35 + i * 0.2), seed: 45 + i });
+    });
+    [[120, 140, 250, 240], [300, 125, 430, 228], [480, 110, 610, 212]].forEach(([x1, y1, x2, y2], i) => {
+      const a = P(T, 1.3 + i * 0.12, 1.65 + i * 0.12);
+      const nx = (y2 - y1), ny = -(x2 - x1), l = Math.hypot(nx, ny);
+      marker(ctx, quadPts([x1 - nx / l * 34, y1 - ny / l * 34], [x1 + 10, y1 - 8], [x1 + nx / l * 34, y1 + ny / l * 34]), { w: 4, color: INK.b, p: P(a, 0, 0.35), seed: 50 + i });
+      arrow(ctx, x1, y1, x2, y2, { p: P(a, 0.3, 1), w: 5, seed: 53 + i, bend: 8 });
+    });
+    write(ctx, 'onde dominanti', 650, 150, { size: 34, p: P(T, 1.75, 2.05), seed: 57 });
+    const rows = [290, 320, 350], trk = [];
+    rows.forEach((y, i) => { const a = i % 2 ? 1010 : 650, b = i % 2 ? 650 : 1010; trk.push([a, y], [b, y]); });
+    marker(ctx, trk, { w: 2.5, p: P(T, 1.75, 2.1), seed: 60, dash: [6, 8] });
+    shipPlan(ctx, 1030, 350, 70, 24, 0, P(T, 1.9, 2.15), 61);
+    write(ctx, 'misura dei fondali →', 620, 332, { size: 30, align: 'right', p: P(T, 1.95, 2.3), seed: 62 });
+  }
+
+  // C — one long cross-section the camera travels along: breakwater → dredged basin → caisson quay
+  const WL = 300;                                    // still-water level
+  const CORE = [[330, 620], [575, 262], [690, 262], [880, 620]];
+  const FIL = [[285, 620], [560, 242], [705, 242], [925, 620]];
+  const CROWN = [[560, 242], [560, 168], [605, 168], [605, 205], [722, 205], [722, 242]];
+  const NAT = [[960, 618], [1050, 560], [1400, 522], [2000, 508], [2600, 500], [3400, 495]];
+  const natY = (x) => { for (let i = 1; i < NAT.length; i++) if (x <= NAT[i][0]) return L(NAT[i - 1][1], NAT[i][1], (x - NAT[i - 1][0]) / (NAT[i][0] - NAT[i - 1][0])); return 495; };
+  const camC = (t) => 1280 * E.inOut(P(t, 9.0, 9.8)) + 1280 * E.inOut(P(t, 12.6, 13.3));
+  const zoomC = (t) => 1 + 0.12 * E.out(P(t, 11.8, 12.15)) * (1 - E.inOut(P(t, 12.3, 12.7)));
+  const cutterX = (t) => t < 10.4 ? 1750 : L(1750, 2300, E.inOut(P(t, 10.4, 11.3)));
+  const frontX = (t) => t < 10.4 ? L(1050, 1750, P(t, 10.0, 10.4)) : t < 12.6 ? cutterX(t) : L(2300, 3380, E.inOut(P(t, 12.6, 13.3)));
+  const natExt = (t) => t < 9.0 ? L(960, 1320, P(t, 6.15, 6.5)) : t < 12.6 ? L(1320, 2600, E.inOut(P(t, 9.0, 9.8))) : L(2600, 3400, E.inOut(P(t, 12.6, 13.3)));
+
+  function slice(pts, x0, x1) {
+    const o = [];
+    for (let i = 0; i < pts.length; i++) {
+      const [x, y] = pts[i];
+      if (i > 0) {
+        const [px, py] = pts[i - 1];
+        for (const b of [x0, x1]) if ((px < b && x > b) || (px > b && x < b)) o.push([b, L(py, y, (b - px) / (x - px))]);
+      }
+      if (x >= x0 && x <= x1) o.push([x, y]);
+    }
+    return o.sort((a, b) => a[0] - b[0]);
+  }
+
+  function dredger(ctx, cx, p, seed) {
+    if (p <= 0) return;
+    const hull = [[cx - 400, 278], [cx - 388, 330], [cx - 142, 330], [cx - 122, 278], [cx - 400, 276]];
+    marker(ctx, hull, { w: 5, p: P(p, 0, 0.3), seed, dbl: true });
+    marker(ctx, rectPts(cx - 312, 222, 64, 56), { w: 4, p: P(p, 0.2, 0.4), seed: seed + 1 });
+    marker(ctx, [[cx - 296, 238], [cx - 266, 238]], { w: 3, color: INK.b, p: P(p, 0.35, 0.45), seed: seed + 2 });
+    marker(ctx, [[cx - 152, 278], [cx - 172, 210], [cx - 126, 262]], { w: 4, p: P(p, 0.35, 0.55), seed: seed + 3 });
+    marker(ctx, [[cx - 172, 212], [cx - 62, 478]], { w: 2, p: P(p, 0.5, 0.65), seed: seed + 4 });
+    marker(ctx, [[cx - 140, 298], [cx - 16, 632]], { w: 8, p: P(p, 0.45, 0.7), seed: seed + 5, dbl: true });
+    marker(ctx, ellipsePts(cx, 640, 22, 20, seed + 6), { w: 4, p: P(p, 0.65, 0.85), seed: seed + 6 });
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + cx * 0.02; marker(ctx, [[cx + Math.cos(a) * 20, 640 + Math.sin(a) * 18], [cx + Math.cos(a) * 32, 640 + Math.sin(a) * 29]], { w: 3, p: P(p, 0.8, 0.95), seed: seed + 7 + i }); }
+    marker(ctx, [[cx - 400, 296], [cx - 900, 300]], { w: 4, p: P(p, 0.7, 0.95), seed: seed + 14 });
+    for (let i = 0; i < 6; i++) { const fx = cx - 450 - i * 80; marker(ctx, ellipsePts(fx, 300, 14, 8, seed + 20 + i), { w: 3, p: P(p, 0.8 + i * 0.03, 0.9 + i * 0.03), seed: seed + 20 + i }); }
+  }
+
+  function sceneC(ctx, t) {
+    if (t < 5.95) return;
+    headerSwap(ctx, t, [[5.95, 2, 'La diga foranea'], [9.8, 3, 'Scavare il fondale'], [13.3, 4, 'Posare i cassoni']]);
+    const cam = camC(t), z = zoomC(t);
+    ctx.save();
+    ctx.translate(380, 480); ctx.scale(z, z); ctx.translate(-380, -480);
+    ctx.translate(-cam, 0);
+
+    // --- water surface: rough at sea, calm inside
+    marker(ctx, wavyLine(-80, 470, WL, 11, 0.045, 0, 8), { color: INK.b, w: 5, p: P(t, 5.95, 6.3), seed: 101 });
+    marker(ctx, wavyLine(745, 1600, WL, 1.5, 0.02), { color: INK.b, w: 4, p: P(t, 6.1, 6.45), seed: 102 });
+    marker(ctx, wavyLine(1600, 2950, WL, 1.5, 0.02), { color: INK.b, w: 4, p: E.inOut(P(t, 9.0, 9.8)), seed: 103 });
+
+    // --- seabed: natural line (dashed once dredged), new dredged line, sediment dots
+    const fx = frontX(t), ext = natExt(t);
+    marker(ctx, [[-80, 628], [330, 621]], { w: 5, p: P(t, 6.0, 6.3), seed: 110 });
+    if (ext > 960) {
+      const s0 = Math.max(960, Math.min(fx, ext)), s1 = Math.min(ext, 2900);
+      const solid = s1 > s0 + 2 ? slice(NAT, s0, s1) : [];
+      if (solid.length > 1) marker(ctx, solid, { w: 5, seed: 111 });
+      const dashed = slice(NAT, 1050, Math.min(fx, ext, 2900));
+      if (dashed.length > 1 && fx > 1060) marker(ctx, dashed, { w: 3.5, seed: 112, dash: [14, 12], color: INK.gray });
+    }
+    if (fx > 1052) {
+      const nb = [[1050, 560], [1110, 650]]; if (fx > 1110) nb.push([fx, 650]);
+      marker(ctx, slice(nb, 1050, fx), { w: 5, seed: 113, dbl: true });
+    }
+    {
+      const pts = scatter('sed', [[-80, 520], [3400, 520], [3400, 740], [-80, 740]], 1400, 9), vis0 = cam - 60, vis1 = cam + W + 60;
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = H.rgba(INK.gray, 0.55);
+      for (const [x, y, k] of pts) {
+        if (x < vis0 || x > vis1) continue;
+        const bed = x < 960 ? 625 : (x >= 1050 && x < fx ? 652 : natY(x));
+        const drawn = x < 960 ? t > 6.2 : x < ext;
+        if (!drawn || y < bed + 8 || (x > 2860 && x < 3400 && y < 660)) continue;
+        ctx.beginPath(); ctx.ellipse(x, y, 2.4 + k * 2, 1.2, 0, 0, 7); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // --- breakwater (rubble mound)
+    rubble(ctx, 'core', CORE, 150, 7, 12, P(t, 6.3, 6.9));
+    marker(ctx, polyClosed(CORE).slice(0, 4), { w: 3, p: P(t, 6.5, 6.9), seed: 120, color: INK.gray });
+    marker(ctx, polyClosed(FIL).slice(0, 4), { w: 3.5, p: P(t, 6.75, 7.1), seed: 121 });
+    rubble(ctx, 'filH', [[705, 242], [925, 620], [948, 620], [722, 238]], 26, 7, 10, P(t, 6.8, 7.15));
+    {
+      const a = [200, 622], b = [548, 232], n = 9, len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, nx = uy, ny = -ux;
+      for (let i = 0; i < n; i++) {
+        const s = (i + 0.5) / n, px = a[0] + (b[0] - a[0]) * s - nx * 4, py = a[1] + (b[1] - a[1]) * s - ny * 4;
+        const r = H.rng(130 + i), sz = r.range(40, 48), ang = Math.atan2(uy, ux) + r.range(-0.25, 0.25);
+        const c = [[-sz / 2, -sz / 2], [sz / 2, -sz / 2], [sz / 2, sz / 2], [-sz / 2, sz / 2]].map(([x, y]) => [px + x * Math.cos(ang) - y * Math.sin(ang) + nx * sz * 0.1, py + x * Math.sin(ang) + y * Math.cos(ang) + ny * sz * 0.1]);
+        // nx,ny points into the mound; push blocks outward (seaward)
+        const out = c.map(([x, y]) => [x - nx * sz * 0.6, y - ny * sz * 0.6]);
+        marker(ctx, polyClosed(out), { w: 4, p: P(t, 7.0 + i * 0.06, 7.12 + i * 0.06), seed: 131 + i, dbl: true });
+      }
+    }
+    marker(ctx, polyClosed(CROWN), { w: 5, p: P(t, 7.55, 7.9), seed: 140, dbl: true });
+    concrete(ctx, 'crown', CROWN, 26, P(t, 7.75, 7.95));
+    label(ctx, 'nucleo di pietrame', 985, 478, 790, 470, P(t, 6.9, 7.3), { seed: 150, from: [978, 468] });
+    label(ctx, 'mantellata in massi', 22, 430, 300, 488, P(t, 7.6, 8.0), { seed: 151, from: [150, 446], bend: -12 });
+    label(ctx, 'muro paraonde', 770, 150, 668, 196, P(t, 7.95, 8.3), { seed: 152, from: [762, 140] });
+    write(ctx, 'mare aperto', 30, 232, { size: 32, color: INK.r, p: P(t, 8.05, 8.3), seed: 153 });
+    arrow(ctx, 60, 266, 430, 292, { w: 6, color: INK.r, p: P(t, 8.1, 8.45), seed: 154, bend: -26, head: 26 });
+    for (let i = 0; i < 3; i++) { const a = -2.2 + i * 0.5; marker(ctx, [[446 + Math.cos(a) * 16, 278 + Math.sin(a) * 16], [446 + Math.cos(a) * 38, 278 + Math.sin(a) * 38]], { w: 4, color: INK.r, p: P(t, 8.42 + i * 0.03, 8.55 + i * 0.03), seed: 156 + i }); }
+    write(ctx, 'acqua calma', 960, 262, { size: 32, color: INK.b, p: P(t, 8.5, 8.8), seed: 160 });
+    arrow(ctx, 790, 336, 930, 336, { w: 3, color: INK.b, p: P(t, 8.55, 8.85), seed: 161, head: 14 });
+
+    // --- dredging
+    if (t >= 9.6) {
+      const cx = cutterX(t);
+      dredger(ctx, cx, P(t, 9.8, 10.4), 200);
+      write(ctx, 'draga', cx - 280, 200, { size: 32, align: 'center', p: P(t, 10.25, 10.5), seed: 220 });
+      for (let i = 0; i < 3; i++) arrow(ctx, 1300 + i * 170, 548, 1300 + i * 170, 618, { w: 4, color: INK.r, p: P(t, 10.9 + i * 0.08, 11.15 + i * 0.08), seed: 222 + i, head: 14 });
+      write(ctx, 'fondale naturale', 1880, 482, { size: 28, color: INK.gray, p: P(t, 10.6, 10.95), seed: 226 });
+      // dimension line from water level to the new bottom
+      const dp = P(t, 11.1, 11.4);
+      marker(ctx, [[1478, WL + 4], [1522, WL + 4]], { w: 3, color: INK.r, p: dp, seed: 230 });
+      marker(ctx, [[1478, 650], [1522, 650]], { w: 3, color: INK.r, p: dp, seed: 231 });
+      arrow(ctx, 1500, 475, 1500, WL + 8, { w: 4, color: INK.r, p: dp, seed: 232, head: 16 });
+      arrow(ctx, 1500, 475, 1500, 646, { w: 4, color: INK.r, p: dp, seed: 233, head: 16 });
+      const nw = write(ctx, '-16', 1550, 515, { font: 'M', size: 104, color: INK.r, p: P(t, 11.4, 11.65), seed: 234, wild: 1.5 });
+      write(ctx, 'm', 1550 + nw + 14, 515, { size: 96, color: INK.r, p: P(t, 11.62, 11.75), seed: 236 });
+      marker(ctx, ellipsePts(1680, 482, 168, 82, 235), { w: 6, color: INK.r, p: E.out(P(t, 11.8, 12.1)), seed: 235, dbl: true });
+    }
+
+    // --- caisson quay
+    if (t >= 12.6) {
+      const RB = [[2880, 652], [2930, 615], [3330, 615], [3380, 652]];
+      rubble(ctx, 'bed', RB, 70, 6, 9, P(t, 13.3, 13.7));
+      marker(ctx, RB, { w: 3.5, p: P(t, 13.3, 13.6), seed: 300 });
+      const sink = 150 * (1 - E.inOut(P(t, 14.2, 14.8))), top = 290 - sink, bot = 615 - sink;
+      const cp = P(t, 13.6, 14.0);
+      marker(ctx, rectPts(2950, top, 320, bot - top), { w: 5, p: cp, seed: 301, dbl: true });
+      marker(ctx, [[2962, bot - 16], [3258, bot - 16]], { w: 3, p: P(cp, 0.5, 1), seed: 302 });
+      [3030, 3110, 3190].forEach((x, i) => {
+        marker(ctx, [[x - 4, top + 10], [x - 4, bot - 16]], { w: 3, p: P(cp, 0.5 + i * 0.1, 0.8 + i * 0.1), seed: 303 + i });
+        marker(ctx, [[x + 4, top + 10], [x + 4, bot - 16]], { w: 3, p: P(cp, 0.55 + i * 0.1, 0.85 + i * 0.1), seed: 306 + i });
+      });
+      if (t >= 14.2 && t < 14.85) {
+        const lvl = bot - 18 - (bot - top - 40) * 0.75 * E.out(P(t, 14.2, 14.8));
+        [2990, 3070, 3150, 3230].forEach((x, i) => marker(ctx, wavyLine(x - 30, x + 30, lvl, 2, 0.3, i), { w: 3, color: INK.b, seed: 310 + i }));
+      }
+      for (let i = 0; i < 2; i++) arrow(ctx, 3040 + i * 140, top - 90, 3040 + i * 140, top - 20, { w: 5, color: INK.r, p: P(t, 14.15 + i * 0.06, 14.4 + i * 0.06) * (1 - P(t, 15.0, 15.3)), seed: 315 + i });
+      const lvl = 597 - 290 * P(t, 14.85, 15.4);
+      [[2962, 3026], [3034, 3106], [3114, 3186], [3194, 3258]].forEach(([a, b], i) => {
+        if (t >= 14.85) stipple(ctx, 'sand' + i, [[a, 300], [b, 300], [b, 597], [a, 597]], 90, 1, '#b07a2a', 2, lvl);
+      });
+      const CAP = [[2940, 240], [3290, 240], [3290, 290], [2940, 290]];
+      marker(ctx, polyClosed(CAP), { w: 5, p: P(t, 15.3, 15.6), seed: 320, dbl: true });
+      concrete(ctx, 'cap', CAP, 34, P(t, 15.45, 15.7));
+      const BF = [[3270, 290], [3290, 290], [3290, 240], [3900, 240], [3900, 652], [3380, 652], [3270, 615]];
+      hatch(ctx, BF, 16, -0.8, P(t, 15.4, 15.85), { seed: 321, alpha: 0.45 });
+      marker(ctx, [[3290, 240], [3900, 240]], { w: 5, p: P(t, 15.4, 15.7), seed: 322 });
+      marker(ctx, rectPts(2974, 214, 22, 26), { w: 4, p: P(t, 15.8, 15.95), seed: 323 });
+      marker(ctx, ellipsePts(2985, 212, 18, 6, 324), { w: 4, p: P(t, 15.85, 16.0), seed: 324 });
+      label(ctx, 'scanno di pietrame', 2585, 700, 2905, 640, P(t, 13.55, 13.9), { seed: 330, from: [2858, 690], bend: -8 });
+      label(ctx, 'cassone in c.a.', 2610, 390, 2944, 400, P(t, 13.95, 14.3), { seed: 331 });
+      label(ctx, 'sabbia', 2690, 500, 3000, 520, P(t, 15.0, 15.3), { seed: 332, color: '#8a5a14' });
+      label(ctx, 'banchina', 3360, 195, 3292, 232, P(t, 15.9, 16.2), { size: 36, seed: 333, from: [3352, 186], bend: 8 });
+    }
+    ctx.restore();
+  }
+
+  // D — 5. back to the map: the finished port, then the takeaway
+  const BW = [[200, 552], [214, 380], [258, 282], [380, 236], [600, 222], [900, 228]];
+  const PIER = [[1080, 556], [1076, 430], [1042, 352]];
+  function band(ctx, pts, half, p, seed) {
+    const q = resample(pts, 8), N = normals(q);
+    marker(ctx, offs(q, half, N), { w: 4.5, p, seed, dbl: true });
+    marker(ctx, offs(q, -half, N), { w: 4.5, p, seed: seed + 1, dbl: true });
+  }
+  function sceneD(ctx, t) {
+    if (t < 17.15) return;
+    header(ctx, 5, 'Il porto prende forma', P(t, 17.15, 17.75), 500);
+    const s = E.inOut(P(t, 20.6, 21.1));
+    ctx.save();
+    ctx.translate(L(0, 14, s), L(0, 150, s)); ctx.scale(L(1, 0.6, s), L(1, 0.6, s));
+    coast(ctx, P(t, 17.15, 17.6), 32);
+    // breakwater with armour blocks on the seaward face
+    band(ctx, BW, 15, P(t, 17.5, 18.05), 510);
+    {
+      const q = resample(BW, 30), N = normals(q), m = Math.floor(q.length * P(t, 17.7, 18.15));
+      ctx.save(); ctx.globalCompositeOperation = 'multiply'; ctx.strokeStyle = H.rgba(INK.k, 0.7); ctx.lineWidth = 2;
+      for (let i = 1; i < m; i++) pebble(ctx, q[i][0] + N[i][0] * 25, q[i][1] + N[i][1] * 25, 9, 520 + i, INK.k, 0.15);
+      ctx.restore();
+    }
+    band(ctx, PIER, 12, P(t, 18.1, 18.4), 530);
+    // quay and reclaimed yard
+    marker(ctx, [[262, 522], [1060, 522]], { w: 6, p: P(t, 18.1, 18.45), seed: 540, dbl: true });
+    hatch(ctx, [[262, 522], [1060, 522], [1062, 558], [262, 554]], 12, -0.9, P(t, 18.2, 18.5), { seed: 541, alpha: 0.4 });
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) marker(ctx, rectPts(300 + i * 58, 575 + j * 26, 48, 18), { w: 2.5, p: P(t, 18.55 + i * 0.03, 18.7 + i * 0.03), seed: 550 + i * 2 + j, color: j ? INK.r : INK.b });
+    shipPlan(ctx, 500, 494, 280, 36, 0, P(t, 18.4, 18.7), 560);
+    [420, 520, 610].forEach((x, i) => {
+      marker(ctx, rectPts(x - 14, 520, 28, 30), { w: 3.5, p: P(t, 18.5 + i * 0.08, 18.65 + i * 0.08), seed: 570 + i });
+      marker(ctx, [[x, 520], [x, 462]], { w: 4, p: P(t, 18.6 + i * 0.08, 18.75 + i * 0.08), seed: 575 + i, color: INK.r });
+    });
+    // entrance lights, IALA region A: green on the right entering (breakwater head), red on the left (pier head)
+    navLight(ctx, 900, 228, INK.g, P(t, 18.9, 19.15), 580);
+    navLight(ctx, 1042, 352, INK.r, P(t, 19.0, 19.25), 586);
+    // incoming waves stopped by the breakwater
+    arrow(ctx, 90, 120, 196, 262, { w: 5, color: INK.r, p: P(t, 18.0, 18.3), seed: 590, bend: 6 });
+    arrow(ctx, 470, 92, 492, 196, { w: 5, color: INK.r, p: P(t, 18.1, 18.4), seed: 591, bend: -6 });
+    // ship entering through the gap
+    const route = quadPts([1300, 110], [1000, 230], [760, 410], 30), sp = E.inOut(P(t, 19.2, 20.0));
+    marker(ctx, route, { w: 3, p: P(t, 19.2, 19.55), seed: 595, dash: [10, 10], color: INK.gray });
+    if (sp > 0) {
+      const k = Math.min(route.length - 2, Math.floor(sp * (route.length - 1))), a = route[k], b = route[k + 1];
+      shipPlan(ctx, a[0], a[1], 110, 22, Math.atan2(b[1] - a[1], b[0] - a[0]), 1, 597);
+    }
+    label(ctx, 'diga foranea', 360, 196, null, null, P(t, 18.0, 18.3), { size: 34, seed: 600 });
+    write(ctx, 'acque calme', 560, 380, { size: 34, color: INK.b, p: P(t, 19.5, 19.85), seed: 601, align: 'center' });
+    label(ctx, 'imboccatura', 1100, 318, 1000, 296, P(t, 19.85, 20.2), { seed: 602, from: [1094, 306], bend: 8 });
+    label(ctx, 'banchina', 700, 612, 690, 528, P(t, 20.1, 20.45), { seed: 603, from: [740, 584], bend: 10 });
+    ctx.restore();
+
+    // takeaway
+    if (t >= 21.0) {
+      write(ctx, 'Un porto ha:', 830, 215, { font: 'M', size: 50, p: P(t, 21.05, 21.4), seed: 610 });
+      [['una diga → mare calmo', 21.4], ['un fondale profondo', 21.85], ['banchine solide', 22.3]].forEach(([txt, s0], i) => {
+        const y = 300 + i * 78;
+        marker(ctx, [[836, y - 12], [848, y], [872, y - 30]], { w: 5, color: INK.g, p: P(t, s0, s0 + 0.15), seed: 620 + i });
+        write(ctx, txt, 888, y, { size: 34, p: P(t, s0 + 0.1, s0 + 0.45), seed: 625 + i });
+      });
+      write(ctx, 'Ripara, scava, attracca: ecco il porto.', 640, 655, { size: 46, p: P(t, 22.5, 23.0), align: 'center', seed: 630 });
+      marker(ctx, wavyLine(240, 1040, 676, 4, 0.03), { color: INK.r, w: 7, p: P(t, 23.0, 23.25), seed: 631 });
+    }
+  }
+
+  // ---------------- the explainer ----------------
+  function explainer(ctx, W_, H_, t) {
+    t = H.clamp(t, 0, DURATION);
+    ctx.save();
+    ctx.drawImage(boardBase(), 0, 0);
+    const br = 1 + 0.004 * Math.sin(t * 0.9);
+    ctx.translate(640, 360); ctx.scale(br, br); ctx.translate(-640 + Math.sin(t * 0.5) * 2, -360 + Math.cos(t * 0.4) * 1.5);
+    if (t < 2.0) sceneA(ctx, t);
+    else if (t < 2.75) wipe(ctx, t, 2.0, 0.75, 'A');
+    else if (t < 5.2) { ctx.drawImage(ghostLayer('A'), 0, 0); sceneB(ctx, t); }
+    else if (t < 5.95) { ctx.drawImage(ghostLayer('A'), 0, 0); wipe(ctx, t, 5.2, 0.75, 'B'); }
+    else if (t < 16.4) { ctx.drawImage(ghostLayer('B'), 0, 0); sceneC(ctx, t); }
+    else if (t < 17.15) { ctx.drawImage(ghostLayer('B'), 0, 0); wipe(ctx, t, 16.4, 0.75, 'C'); }
+    else { ctx.drawImage(ghostLayer('C'), 0, 0); sceneD(ctx, t); }
+    ctx.restore();
+    finish(ctx, t);
+  }
+
+  window.PORTO = { explainer, DURATION, INK, marker, write, arrow, finish, boardBase };
+  window.explainer = explainer;
+  window.DURATION = DURATION;
+})();
+// scoreSound(k): every time below is taken from the picture's own timeline in porto.js.
+function scoreSound(k) {
+  const D = 24;
+  k.bed('room', 0, D - 0.4, { gain: 0.06, fadeOut: 1.2 });
+  const mk = (t, dur, o) => k.play('marker', t, { dur, ...(o || {}) });
+  const patter = (t0, t1, n, name, o) => { for (let i = 0; i < n; i++) k.play(name, t0 + (t1 - t0) * (i / n), o); };
+
+  // 1 — hook
+  mk(0.12, 0.2); mk(0.4, 0.2); mk(0.62, 0.22);            // "Come si costruisce"
+  mk(0.45, 0.22, { pan: -0.5, gain: 0.5 }); mk(0.95, 0.25, { pan: -0.5, gain: 0.5 }); // anchor
+  mk(0.82, 0.2, { gain: 1.1 }); mk(1.05, 0.22, { gain: 1.1 }); // "un porto?"
+  mk(1.3, 0.28, { pan: 0.1 }); k.play('tap', 1.6);           // red underline
+  mk(1.47, 0.36, { pan: 0.2, gain: 0.6 }); mk(1.6, 0.34, { pan: -0.1, gain: 0.5 });
+
+  // 2 — studiare il mare
+  k.play('eraser', 2.0, { dur: 0.75 });
+  mk(2.75, 0.18, { pan: -0.7, gain: 0.7 }); mk(2.95, 0.4, { pan: -0.6, gain: 0.8 });
+  mk(2.86, 0.44, { gain: 0.9 });                               // coastline
+  patter(3.2, 3.7, 6, 'squeak', { gain: 0.35 });               // hatching
+  mk(3.47, 0.25);                                              // TERRA
+  [3.55, 3.75, 3.95].forEach((t, i) => { mk(t, 0.38, { gain: 0.5, pan: 0.2 * i }); k.play('pop', 4.1 + i * 0.2, { pan: 0.8, gain: 0.8 }); });
+  [4.05, 4.17, 4.29].forEach((t, i) => mk(t, 0.18, { pan: -0.6 + i * 0.3, gain: 0.8 }));
+  mk(4.5, 0.3, { pan: 0.1 });                                  // onde dominanti
+  patter(4.52, 4.85, 5, 'tap', { gain: 0.35, pan: 0.4 });      // survey track
+  mk(4.7, 0.32, { pan: -0.2 });                                // misura dei fondali
+
+  // 3 — la diga foranea
+  k.play('eraser', 5.2, { dur: 0.75 });
+  mk(5.95, 0.35, { pan: -0.4 }); mk(6.0, 0.3, { gain: 0.5 }); // water + seabed (header writes under)
+  patter(6.3, 6.9, 12, 'pebble', { gain: 0.9 });               // core stones, bottom up
+  mk(6.75, 0.35, { gain: 0.6 });
+  k.play('pop', 7.3, { pan: 0.6 });                            // nucleo di pietrame
+  for (let i = 0; i < 9; i++) k.play('knock', 7.02 + i * 0.06, { pan: -0.6 + i * 0.05, gain: 0.55 });
+  mk(7.55, 0.35); k.play('tap', 7.92);                         // crown wall
+  k.play('pop', 8.0, { pan: -0.7 });                           // mantellata
+  k.play('pop', 8.3, { pan: 0.3 });                            // muro paraonde
+  mk(8.1, 0.33, { pan: -0.6, gain: 1.1 }); k.play('splash', 8.45, { pan: -0.3 });
+  mk(8.52, 0.28, { pan: 0.6, gain: 0.6 }); k.play('pop', 8.86, { low: true, pan: 0.6, gain: 0.7 });
+
+  // 4 — scavare il fondale (camera slides; marker keeps drawing)
+  mk(9.0, 0.8, { gain: 0.7 });
+  k.play('eraser', 9.5, { dur: 0.3, gain: 0.4, pan: -0.7 });
+  mk(9.82, 0.4, { pan: -0.7, gain: 0.6 });                     // new header
+  mk(9.85, 0.2); mk(10.05, 0.2); mk(10.22, 0.2);               // dredger
+  k.play('rumble', 10.4, { dur: 0.95, gain: 0.8 });
+  mk(10.27, 0.2, { gain: 0.6 });                               // draga
+  mk(10.62, 0.3, { gain: 0.5, pan: 0.3 });                     // fondale naturale
+  [10.9, 10.98, 11.06].forEach((t, i) => mk(t, 0.12, { gain: 0.6, pan: -0.5 + i * 0.1 }));
+  mk(11.12, 0.28, { pan: -0.5 });                              // dimension line
+  k.play('squeak', 11.42, { gain: 1.2 }); k.play('squeak', 11.52, { gain: 1.2 }); k.play('squeak', 11.63, { gain: 1.1 }); // "-16 m"
+  mk(11.8, 0.3, { gain: 1.2 });                                // circle
+  k.play('hit', 12.1);                                         // the key number
+
+  // 5 — posare i cassoni
+  mk(12.65, 0.65, { gain: 0.7 });
+  k.play('eraser', 13.0, { dur: 0.3, gain: 0.4, pan: -0.7 });
+  mk(13.32, 0.4, { pan: -0.7, gain: 0.6 });
+  patter(13.3, 13.7, 7, 'pebble', { gain: 0.8 });              // stone bed
+  mk(13.6, 0.4);                                               // caisson outline
+  k.play('pop', 13.9, { pan: -0.6 });                          // scanno
+  k.play('pop', 14.3, { pan: -0.6 });                          // cassone in c.a.
+  mk(14.16, 0.22, { gain: 0.7 });
+  k.play('gurgle', 14.2, { dur: 0.6 });
+  k.play('thud', 14.8);
+  k.play('hiss', 14.85, { dur: 0.55 });                        // sand fill
+  k.play('pop', 15.3, { pan: -0.5 });                          // sabbia
+  mk(15.32, 0.3);                                              // capping beam
+  patter(15.45, 15.85, 6, 'squeak', { gain: 0.3, pan: 0.6 });  // backfill hatching
+  mk(15.8, 0.18, { gain: 0.7 }); k.play('tap', 16.0);          // bollard
+  k.play('pop', 16.2, { pan: 0.5 });                           // banchina
+
+  // 6 — il porto prende forma
+  k.play('eraser', 16.4, { dur: 0.75 });
+  mk(17.16, 0.42, { pan: -0.6, gain: 0.7 });
+  mk(17.2, 0.4, { gain: 0.7 });                                // coast
+  mk(17.5, 0.55, { gain: 1 });                                 // breakwater
+  patter(17.72, 18.12, 8, 'pebble', { gain: 0.6, pan: -0.3 });
+  mk(18.0, 0.28, { pan: -0.7, gain: 0.8 }); mk(18.1, 0.28, { pan: -0.2, gain: 0.8 }); // waves stop
+  mk(18.12, 0.32, { gain: 0.6, pan: 0.5 });                    // pier + quay
+  patter(18.55, 18.8, 6, 'tap', { gain: 0.3 });                // containers
+  mk(18.42, 0.26, { gain: 0.6 });                              // moored ship
+  k.play('ping', 18.92, { note: 'E6', pan: 0.3 });             // green light
+  k.play('ping', 19.02, { note: 'B5', pan: 0.6 });             // red light
+  patter(19.2, 19.55, 5, 'tap', { gain: 0.3, pan: 0.8 });      // dashed route
+  mk(19.5, 0.32);                                              // acque calme
+  k.play('pop', 20.2, { pan: 0.7 });                           // imboccatura
+  k.play('pop', 20.45, { pan: 0.1 });                          // banchina
+
+  // 7 — takeaway
+  mk(21.06, 0.34, { pan: 0.4 });                               // Un porto ha:
+  [['C6', 21.4], ['E6', 21.85], ['G6', 22.3]].forEach(([n, t]) => { k.play('tick', t, { note: n, pan: 0.4 }); mk(t + 0.1, 0.33, { pan: 0.45, gain: 0.7 }); });
+  mk(22.5, 0.5);                                               // closing line
+  mk(23.0, 0.25, { gain: 0.9 });
+  k.play('chord', 23.2, { dur: 1.6 });                         // resolves as the underline lands
+}
+window.scoreSound = scoreSound;
+</script>
+<div id="stage"><canvas id="cv" width="1280" height="720" aria-label="Animated whiteboard explainer: how a port is built"></canvas>
+  <button id="big" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button></div>
+<div class="bar">
+  <button id="play" aria-label="Play">▶</button>
+  <input id="seek" type="range" min="0" max="24" step="0.01" value="0" aria-label="Scrub">
+  <span id="time">0.0 / 24.0</span>
+  <button id="snd" aria-pressed="true" title="Sound on/off">♪ <span class="lbl">Sound</span></button>
+  <button id="loop" aria-pressed="true" title="Loop">⟲ <span class="lbl">Loop</span></button>
+</div>
+<script>
+(async function () {
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d', { willReadFrequently: true });
+  const stage = document.getElementById('stage'), seekEl = document.getElementById('seek'), timeEl = document.getElementById('time');
+  const playBtn = document.getElementById('play'), big = document.getElementById('big'), sndBtn = document.getElementById('snd'), loopBtn = document.getElementById('loop');
+  const D = window.DURATION;
+  seekEl.max = D;
+  let t = 0, playing = false, last = 0, soundOn = true, loop = true, stopSound = null;
+
+  function fit() { const s = Math.min(stage.clientWidth / 1280, stage.clientHeight / 720); cv.style.width = (1280 * s) + 'px'; cv.style.height = (720 * s) + 'px'; }
+  addEventListener('resize', fit); fit();
+
+  function draw(tt) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.filter = 'none';
+    window.explainer(ctx, 1280, 720, tt);
+  }
+  window.seek = (tt) => { t = Math.max(0, Math.min(D, tt)); draw(t); seekEl.value = t; timeEl.textContent = t.toFixed(1) + ' / ' + D.toFixed(1); };
+
+  const killSound = () => { if (stopSound) { stopSound(); stopSound = null; } };
+  const startSound = () => { killSound(); if (soundOn && playing) stopSound = SOUND.live(window.scoreSound, t, { voiceover: false }); };
+
+  function setPlaying(p) {
+    playing = p; playBtn.textContent = p ? '❚❚' : '▶'; playBtn.setAttribute('aria-label', p ? 'Pause' : 'Play'); big.hidden = p;
+    if (p) { if (t >= D) window.seek(0); last = performance.now(); startSound(); requestAnimationFrame(tick); }
+    else killSound();
+  }
+  function tick(now) {
+    if (!playing) return;
+    t += (now - last) / 1000; last = now;
+    if (t >= D) {
+      if (loop) { window.seek(0); startSound(); }
+      else { window.seek(D); setPlaying(false); return; }
+    } else window.seek(t);
+    requestAnimationFrame(tick);
+  }
+  playBtn.onclick = big.onclick = () => setPlaying(!playing);
+  seekEl.addEventListener('input', () => { killSound(); window.seek(+seekEl.value); last = performance.now(); });
+  seekEl.addEventListener('change', () => { if (playing) startSound(); });
+  sndBtn.onclick = () => { soundOn = !soundOn; sndBtn.setAttribute('aria-pressed', soundOn); if (soundOn) startSound(); else killSound(); };
+  loopBtn.onclick = () => { loop = !loop; loopBtn.setAttribute('aria-pressed', loop); };
+  addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); setPlaying(!playing); } });
+
+  try { await Promise.all(['400 74px "Permanent Marker"', '700 30px Kalam', '400 30px Kalam'].map((f) => document.fonts.load(f, 'AaZz09àè·→✓'))); await document.fonts.ready; } catch (e) {}
+  window.seek(0);
+  window.__ready = true;
+})();
+</script>

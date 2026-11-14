@@ -633,7 +633,8 @@
     const fx = frontX(t), ext = natExt(t);
     marker(ctx, [[-80, 628], [330, 621]], { w: 5, p: P(t, 6.0, 6.3), seed: 110 });
     if (ext > 960) {
-      const solid = slice(NAT, Math.max(960, Math.min(fx, ext)), ext);
+      const s0 = Math.max(960, Math.min(fx, ext)), s1 = Math.min(ext, 2900);
+      const solid = s1 > s0 + 2 ? slice(NAT, s0, s1) : [];
       if (solid.length > 1) marker(ctx, solid, { w: 5, seed: 111 });
       const dashed = slice(NAT, 1050, Math.min(fx, ext, 2900));
       if (dashed.length > 1 && fx > 1060) marker(ctx, dashed, { w: 3.5, seed: 112, dash: [14, 12], color: INK.gray });
