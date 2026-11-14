@@ -52,9 +52,21 @@ const scatter = (count: number, maxR: number, minDist: number, seed: number, tak
   return pts;
 };
 
-const SHRIMP_SPOTS = scatter(5, 112, 80, 21);
-const TOMATO_SPOTS = scatter(5, 128, 62, 22, SHRIMP_SPOTS);
-const STICK_SPOTS = scatter(14, 150, 34, 23).filter((s) => Math.hypot(s.x, s.y) > 55);
+// linguine: gamberi e pomodorini alternati in cerchio, zucchine a coppie tra l'uno e l'altro
+const ring = (n: number, r: number, offDeg: number, extraRot = 0): Spot[] =>
+  Array.from({ length: n }, (_, k) => {
+    const a = ((offDeg + (k * 360) / n) * Math.PI) / 180;
+    return { x: Math.cos(a) * r, y: Math.sin(a) * r, rot: (a * 180) / Math.PI + extraRot };
+  });
+const SHRIMP_SPOTS = ring(4, 92, 45);
+const TOMATO_SPOTS = ring(4, 92, 0, 20);
+const STICK_SPOTS: Spot[] = [
+  ...ring(8, 138, 22.5, 90).flatMap((p) => {
+    const a = Math.atan2(p.y, p.x);
+    return [-5, 5].map((o) => ({ x: p.x + Math.cos(a) * o, y: p.y + Math.sin(a) * o, rot: p.rot }));
+  }),
+  ...[-12, -4, 4, 12].map((o) => ({ x: o, y: 0, rot: 90 })),
+];
 const PARSLEY_SPOTS = scatter(24, 152, 14, 24);
 const FISH_PARSLEY = scatter(16, 1, 0, 25).map((s, i) => {
   const rnd = mulberry32(400 + i);
@@ -151,17 +163,17 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
           </g>
         )}
         {STICK_SPOTS.map((s, i) => (
-          <Drop key={`st${i}`} local={local} start={50 + i * 2} fps={fps} x={s.x} y={s.y} rot={s.rot} scale={1.2}>
+          <Drop key={`st${i}`} local={local} start={50 + i * 1.2} fps={fps} x={s.x} y={s.y} rot={s.rot} scale={0.95}>
             {stick(i)}
           </Drop>
         ))}
         {TOMATO_SPOTS.map((s, i) => (
-          <Drop key={`to${i}`} local={local} start={60 + i * 4} fps={fps} x={s.x} y={s.y} rot={s.rot} scale={1.2}>
+          <Drop key={`to${i}`} local={local} start={60 + i * 4} fps={fps} x={s.x} y={s.y} rot={s.rot} scale={1.1}>
             <TomatoHalf />
           </Drop>
         ))}
         {SHRIMP_SPOTS.map((s, i) => (
-          <Drop key={`sh${i}`} local={local} start={70 + i * 5} fps={fps} x={s.x} y={s.y} rot={s.rot} scale={1.3}>
+          <Drop key={`sh${i}`} local={local} start={70 + i * 5} fps={fps} x={s.x} y={s.y} rot={s.rot} scale={1.2}>
             <Shrimp cooked={1} />
           </Drop>
         ))}

@@ -40,7 +40,7 @@ export const GROUPS: Partial<
   garlic: { count: 8, minDist: 38, stagger: 4, seed: 3, bed: true },
   zucchini: { count: 12, minDist: 46, stagger: 3, seed: 5 },
   zucchiniSticks: { count: 36, minDist: 26, stagger: 1.3, seed: 5, bed: true },
-  tomato: { count: 10, minDist: 44, stagger: 3, seed: 7 },
+  tomato: { count: 9, minDist: 44, stagger: 3, seed: 7 },
   shrimp: { count: 8, minDist: 50, stagger: 4, seed: 11 },
   mussels: { count: 14, minDist: 62, stagger: 3, seed: 13 },
   paccheri: { count: 35, minDist: 46, stagger: 1, seed: 17 },
@@ -80,11 +80,41 @@ const placeItems = (kinds: AddKind[]) => {
       out[kind] = musselRings(196, 92);
       continue;
     }
+    if (kind === "zucchiniSticks") {
+      // julienne in 6 mazzetti ordinati intorno al centro
+      const pts: Placed[] = [];
+      for (let b = 0; b < 6; b++) {
+        const a = ((b * 60 + 30) * Math.PI) / 180;
+        for (let j = 0; j < 6; j++) {
+          const off = -22.5 + j * 9;
+          pts.push({
+            x: Math.cos(a) * (95 + off),
+            y: Math.sin(a) * (95 + off),
+            rot: (a * 180) / Math.PI + 90 + (j % 2 ? 3 : -3),
+            phase: b * 6 + j + 0.37,
+          });
+        }
+      }
+      out[kind] = pts.slice(0, g.count);
+      continue;
+    }
+    if (kind === "shrimp" || kind === "tomato") {
+      // sul bordo un giro alternato: gamberetto, pomodorino, gamberetto...
+      const isShrimp = kind === "shrimp";
+      const pts: Placed[] = [];
+      for (let k = 0; k < 8; k++) {
+        const a = ((k * 45 + (isShrimp ? 0 : 22.5)) * Math.PI) / 180;
+        pts.push({ x: Math.cos(a) * 212, y: Math.sin(a) * 212, rot: (a * 180) / Math.PI + (isShrimp ? 0 : 30), phase: k * 1.9 });
+      }
+      if (!isShrimp) pts.push({ x: 0, y: 0, rot: 10, phase: 3.3 }); // un pomodorino al centro
+      out[kind] = pts.slice(0, g.count);
+      continue;
+    }
     if (kind === "garlic") {
       // fettine d'aglio in cerchio, tra le cozze
       out[kind] = Array.from({ length: g.count }, (_, k) => {
         const a = (k / g.count) * Math.PI * 2 + Math.PI / g.count;
-        return { x: Math.cos(a) * 146, y: Math.sin(a) * 146, rot: (a * 180) / Math.PI + 90, phase: k * 1.3 };
+        return { x: Math.cos(a) * 152, y: Math.sin(a) * 152, rot: (a * 180) / Math.PI + 90, phase: k * 1.3 };
       });
       continue;
     }
