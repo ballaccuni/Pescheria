@@ -306,6 +306,47 @@ def squeeze():
     return out
 
 
+# ---- Forno e filo d'olio (generatore separato: non cambia i suoni sopra) ----
+orng = np.random.default_rng(33)
+
+
+def oven_hum(dur=6.0):
+    """Ventola del forno: soffio basso e continuo, fatto per ripetersi senza stacchi."""
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    noise = highpass(lowpass(orng.standard_normal(n), 900), 90)
+    noise = noise / np.max(np.abs(noise))
+    hum = (
+        0.30 * np.sin(2 * np.pi * 100 * tt)
+        + 0.18 * np.sin(2 * np.pi * 200 * tt)
+        + 0.08 * np.sin(2 * np.pi * 300 * tt)
+    )
+    x = noise * (0.8 + 0.2 * np.sin(2 * np.pi * 0.5 * tt)) + hum
+    f = int(SR * 0.5)
+    ramp = np.linspace(0, 1, f)
+    x[:f] = x[:f] * ramp + x[-f:] * (1 - ramp)
+    return x[:-f]
+
+
+def tick():
+    """Ticchettio del timer: un tocco secco e breve."""
+    tt = t(0.06)
+    x = np.sin(2 * np.pi * 1250 * tt) * np.exp(-tt * 140)
+    x += lowpass(orng.standard_normal(len(tt)), 4000) * np.exp(-tt * 260) * 0.5
+    return x
+
+
+def pour(dur=1.4):
+    """Filo d'olio versato: fruscio morbido che ondeggia."""
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    noise = lowpass(highpass(orng.standard_normal(n), 600), 3200)
+    noise = noise / np.max(np.abs(noise))
+    wobble = 0.7 + 0.3 * np.sin(2 * np.pi * 9 * tt + 2.5 * np.sin(2 * np.pi * 2.3 * tt))
+    env = np.sin(np.pi * np.clip(tt / dur, 0, 1)) ** 0.7
+    return noise * wobble * env
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save("ocean", ocean(19.5), peak=0.5)
@@ -327,4 +368,8 @@ if __name__ == "__main__":
     save("plop", plop(), peak=0.8)
     save("sprinkle", sprinkle(), peak=0.7)
     save("squeeze", squeeze(), peak=0.8)
+    # forno
+    save("oven-hum", oven_hum(), peak=0.5)
+    save("tick", tick(), peak=0.6)
+    save("pour", pour(), peak=0.5)
     print("ok")

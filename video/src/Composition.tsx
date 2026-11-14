@@ -1,7 +1,9 @@
 import { Composition } from "remotion";
 import { LogoAnimation } from "./LogoAnimation";
-import { RecipeVideo, recipeTimeline } from "./recipes/RecipeVideo";
+import { RecipeVideo } from "./recipes/RecipeVideo";
 import { gamberiZucchine } from "./recipes/gamberiZucchine";
+import { orataForno } from "./recipes/orataForno";
+import { recipeTimeline } from "./recipes/types";
 
 export const MyComposition = () => {
   return (
@@ -22,6 +24,15 @@ export const MyComposition = () => {
         width={1080}
         height={1920}
         defaultProps={{ recipe: gamberiZucchine }}
+      />
+      <Composition
+        id="RicettaOrataForno"
+        component={RecipeVideo}
+        durationInFrames={recipeTimeline(orataForno).total}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{ recipe: orataForno }}
       />
     </>
   );

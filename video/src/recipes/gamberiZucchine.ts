@@ -1,6 +1,8 @@
-import type { Recipe } from "./RecipeVideo";
+import type { Recipe } from "./types";
 
 export const gamberiZucchine: Recipe = {
+  vessel: "pan",
+  dish: "pasta",
   title: ["Linguine con gamberi,", "zucchine e pomodorini"],
   servings: "per 2 persone",
   ingredients: [
@@ -62,9 +64,15 @@ export const gamberiZucchine: Recipe = {
     },
     {
       title: "Limone",
-      text: "Una spruzzata di limone e si porta in tavola",
+      text: "Finisci con una spruzzata di limone",
       add: ["lemon"],
       duration: 95,
+    },
+    {
+      title: "Impiattamento",
+      text: "Fai un nido di linguine nel piatto e completa con gamberi e verdure",
+      plate: true,
+      duration: 135,
     },
   ],
   outro: "I gamberi freschi li trovi da noi",

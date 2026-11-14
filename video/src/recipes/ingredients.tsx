@@ -27,7 +27,7 @@ export const FOOD = {
   salt: "#FFFFFF",
 };
 
-const mix = (a: string, b: string, t: number) => {
+export const mix = (a: string, b: string, t: number) => {
   const pa = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
   const pb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
   const c = pa.map((v, i) => Math.round(v + (pb[i] - v) * t));
@@ -369,3 +369,101 @@ export const ZucchiniStick: React.FC<{ len?: number; curve?: number; skin?: bool
     </g>
   );
 };
+
+/** Spicchio di limone (per l'impiattamento). */
+export const LemonWedge: React.FC = () => (
+  <g>
+    <path d="M -46 8 Q 0 -54 46 8 Q 0 36 -46 8 Z" fill={FOOD.lemonRind} stroke="#D9B13A" strokeWidth={3} strokeLinejoin="round" />
+    <path d="M -34 8 Q 0 -38 34 8 Q 0 24 -34 8 Z" fill={FOOD.lemonFlesh} />
+    <path d="M 0 -14 L 0 18 M -16 -6 L -11 15 M 16 -6 L 11 15" stroke="#FFF6D6" strokeWidth={3} strokeLinecap="round" />
+  </g>
+);
+
+/** Nido di linguine arrotolate (per l'impiattamento). */
+export const makeNest = (radius: number, count = 28, seed = 7) => {
+  let s = seed;
+  const rnd = () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+  const paths: string[] = [];
+  for (let k = 0; k < count; k++) {
+    const r0 = radius * (0.16 + 0.84 * Math.sqrt(rnd()));
+    const a0 = rnd() * Math.PI * 2;
+    const sweep = Math.PI * (0.8 + rnd() * 1.1);
+    const drift = (rnd() - 0.5) * 0.3;
+    const ox = (rnd() - 0.5) * 14;
+    const oy = (rnd() - 0.5) * 14;
+    const n = Math.max(6, Math.round((sweep * r0) / 14));
+    const pts: [number, number][] = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const a = a0 + sweep * t;
+      const r = Math.min(radius, r0 * (1 + drift * t) + Math.sin(t * 9 + k) * 3);
+      pts.push([ox + Math.cos(a) * r, oy + Math.sin(a) * r]);
+    }
+    let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i][0] + pts[i + 1][0]) / 2;
+      const my = (pts[i][1] + pts[i + 1][1]) / 2;
+      d += ` Q ${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
+    }
+    paths.push(d);
+  }
+  return paths;
+};
+
+/** Orata (icona). */
+export const FishIcon: React.FC = () => (
+  <g>
+    <path d="M 22 0 L 42 -17 Q 36 0 42 17 Z" fill="#8FA2AD" stroke={COLORS.slate} strokeWidth={2.5} strokeLinejoin="round" />
+    <path
+      d="M -42 2 C -36 -22 -6 -30 26 -5 L 26 6 C -6 28 -36 24 -42 2 Z"
+      fill="#CBD5DB"
+      stroke={COLORS.slate}
+      strokeWidth={2.5}
+      strokeLinejoin="round"
+    />
+    <path d="M -14 -19 Q -7 0 -14 19" stroke="#8FA2AD" strokeWidth={2.5} fill="none" />
+    <path d="M -33 -9 Q -27 -17 -18 -20" stroke="#E9B93C" strokeWidth={4.5} strokeLinecap="round" fill="none" />
+    <circle cx={-27} cy={-3} r={3.4} fill={COLORS.slate} />
+  </g>
+);
+
+/** Ciotola di pangrattato (icona). */
+export const BreadcrumbsIcon: React.FC = () => (
+  <g>
+    <path d="M -30 0 Q -26 -24 0 -26 Q 26 -24 30 0 Z" fill="#E3C78E" />
+    {[
+      [-16, -10],
+      [-4, -18],
+      [10, -12],
+      [18, -4],
+      [-22, -2],
+      [2, -6],
+    ].map(([x, y], i) => (
+      <circle key={i} cx={x} cy={y} r={3.2} fill={i % 2 ? "#C9A050" : "#F3E0B5"} />
+    ))}
+    <path
+      d="M -38 0 L 38 0 Q 36 30 0 32 Q -36 30 -38 0 Z"
+      fill={COLORS.blue}
+      stroke={COLORS.slate}
+      strokeWidth={2.5}
+      strokeLinejoin="round"
+    />
+    <path d="M -28 8 Q -24 22 -10 26" stroke="rgba(255,255,255,0.35)" strokeWidth={4} fill="none" strokeLinecap="round" />
+  </g>
+);
+
+/** Nido di linguine: ogni filo è disegnato sopra i precedenti, così si distinguono. */
+export const LinguineNest: React.FC<{ paths: string[]; radius: number }> = ({ paths, radius }) => (
+  <g>
+    <circle r={radius - 6} fill="#E7C977" />
+    {paths.map((d, i) => (
+      <g key={i}>
+        <path d={d} stroke={PASTA.edge} strokeWidth={11.5} strokeLinecap="round" fill="none" />
+        <path d={d} stroke={i % 3 === 0 ? "#F7E3A3" : PASTA.fill} strokeWidth={7.5} strokeLinecap="round" fill="none" />
+      </g>
+    ))}
+  </g>
+);

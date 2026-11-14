@@ -21,7 +21,7 @@ export type HandPose = "open" | "grip" | "thumb";
 type Pt = { x: number; y: number };
 
 const TORSO =
-  "M -104 34 C -150 44 -174 120 -172 206 C -170 270 -150 316 -116 334 Q 0 352 116 334 C 150 316 170 270 172 206 C 174 120 150 44 104 34 Z";
+  "M -104 34 C -138 44 -146 120 -145 204 C -144 266 -132 314 -108 332 Q 0 348 108 332 C 132 314 144 266 145 204 C 146 120 138 44 104 34 Z";
 
 const sub = (a: Pt, b: Pt) => ({ x: a.x - b.x, y: a.y - b.y });
 const len = (a: Pt) => Math.hypot(a.x, a.y) || 1;
@@ -201,6 +201,9 @@ export const Chef: React.FC<{
   /** mano sinistra, in coordinate locali */
   leftHand: Pt;
   leftPose?: HandPose;
+  rightPose?: HandPose;
+  /** true = la mano destra è ferma su un oggetto (il manico) e non segue il respiro */
+  rightAnchored?: boolean;
   mood?: ChefMood;
   /** 0 = occhi aperti, 1 = chiusi */
   blink?: number;
@@ -222,6 +225,8 @@ export const Chef: React.FC<{
   rightHand,
   leftHand,
   leftPose = "open",
+  rightPose = "grip",
+  rightAnchored = true,
   mood = "neutral",
   blink = 0,
   look = { x: 0, y: 0 },
@@ -236,7 +241,9 @@ export const Chef: React.FC<{
   const leftEye = mood === "happy" ? "happy" : blinking && mood !== "wink" ? "closed" : "open";
   const rightEye = mood === "happy" || mood === "wink" ? "happy" : blinking ? "closed" : "open";
   // la mano sulla padella resta ferma mentre il busto respira
-  const grip = { x: rightHand.x, y: (rightHand.y - WAIST) / (1 - squash) + WAIST - bob };
+  const right = rightAnchored
+    ? { x: rightHand.x, y: (rightHand.y - WAIST) / (1 - squash) + WAIST - bob }
+    : rightHand;
 
   return (
     <g>
@@ -255,22 +262,22 @@ export const Chef: React.FC<{
       </defs>
 
       {/* ombra a terra */}
-      <ellipse cx={0} cy={494} rx={152} ry={14} fill="rgba(47,72,88,0.16)" />
+      <ellipse cx={0} cy={494} rx={142} ry={14} fill="rgba(47,72,88,0.16)" />
 
       {/* gambe: pantaloni a quadretti da cuoco */}
-      <path d="M -88 300 L -26 300 L -30 470 L -84 470 Z" fill="url(#chefCheck)" stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
-      <path d="M 88 300 L 26 300 L 30 470 L 84 470 Z" fill="url(#chefCheck)" stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
+      <path d="M -80 300 L -20 300 L -24 470 L -76 470 Z" fill="url(#chefCheck)" stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
+      <path d="M 80 300 L 20 300 L 24 470 L 76 470 Z" fill="url(#chefCheck)" stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
       {/* scarpe */}
       {[-1, 1].map((sx) => (
         <g key={`shoe${sx}`} transform={`scale(${sx} 1)`}>
           <path
-            d="M 24 456 Q 20 492 44 492 L 114 492 Q 132 492 128 476 Q 122 454 90 454 Z"
+            d="M 18 456 Q 14 492 38 492 L 106 492 Q 124 492 120 476 Q 114 454 82 454 Z"
             fill="#22323C"
             stroke={OUTLINE}
             strokeWidth={LINE}
             strokeLinejoin="round"
           />
-          <ellipse cx={100} cy={466} rx={14} ry={5} fill={WHITE} opacity={0.25} />
+          <ellipse cx={92} cy={466} rx={14} ry={5} fill={WHITE} opacity={0.25} />
         </g>
       ))}
 
@@ -278,39 +285,39 @@ export const Chef: React.FC<{
         {/* giacca con la pancia tonda */}
         <path d={TORSO} fill={WHITE} stroke={OUTLINE} strokeWidth={LINE + 1} />
         <g clipPath="url(#chefTorso)">
-          <rect x={104} y={0} width={120} height={400} fill={CLOTH_SHADE} />
-          <path d="M -142 120 C -160 170 -160 240 -138 290" stroke={CLOTH_SHADE} strokeWidth={14} fill="none" strokeLinecap="round" />
+          <rect x={92} y={0} width={120} height={400} fill={CLOTH_SHADE} />
+          <path d="M -124 120 C -134 170 -134 240 -122 290" stroke={CLOTH_SHADE} strokeWidth={12} fill="none" strokeLinecap="round" />
           {/* lembo del doppio petto */}
-          <path d="M -42 40 C 4 58 50 66 58 112 L 58 200" stroke={OUTLINE} strokeWidth={3.5} fill="none" />
+          <path d="M -40 40 C 2 58 42 66 50 112 L 50 200" stroke={OUTLINE} strokeWidth={3.5} fill="none" />
         </g>
         {/* bottoni */}
         {[84, 130, 174].map((y) => (
           <g key={y}>
-            <circle cx={-20} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
-            <circle cx={80} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
+            <circle cx={-22} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
+            <circle cx={70} cy={y} r={8.5} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={2} />
           </g>
         ))}
 
         {/* grembiule che segue la pancia, legato in vita */}
         <path
-          d="M -156 214 C -166 270 -152 330 -128 366 Q -118 380 -102 380 L 102 380 Q 118 380 128 366 C 152 330 166 270 156 214 Q 0 248 -156 214 Z"
+          d="M -132 214 C -140 270 -130 330 -112 366 Q -104 380 -90 380 L 90 380 Q 104 380 112 366 C 130 330 140 270 132 214 Q 0 244 -132 214 Z"
           fill={COLORS.blue}
           stroke={OUTLINE}
           strokeWidth={LINE}
           strokeLinejoin="round"
         />
-        <path d="M 136 236 C 146 280 136 330 116 360" stroke="rgba(255,255,255,0.16)" strokeWidth={10} fill="none" strokeLinecap="round" />
-        <path d="M -114 366 Q 0 372 114 366" stroke="rgba(255,255,255,0.25)" strokeWidth={3} fill="none" />
+        <path d="M 114 236 C 122 280 114 330 98 360" stroke="rgba(255,255,255,0.16)" strokeWidth={10} fill="none" strokeLinecap="round" />
+        <path d="M -98 366 Q 0 372 98 366" stroke="rgba(255,255,255,0.25)" strokeWidth={3} fill="none" />
         <path
-          d="M -164 200 Q 0 236 164 200 L 162 222 Q 0 258 -162 222 Z"
+          d="M -139 200 Q 0 232 139 200 L 137 222 Q 0 254 -137 222 Z"
           fill={COLORS.deepBlue}
           stroke={OUTLINE}
           strokeWidth={LINE}
           strokeLinejoin="round"
         />
-        <image href={staticFile("logo/fish.png")} x={-55} y={270} width={110} height={46.5} filter="url(#chefWhite)" />
+        <image href={staticFile("logo/fish.png")} x={-52} y={270} width={104} height={44} filter="url(#chefWhite)" />
         {/* fiocco */}
-        <g transform="translate(106 214)">
+        <g transform="translate(90 213)">
           <path d="M -4 6 L -16 44 M 4 6 L 14 42" stroke={COLORS.deepBlue} strokeWidth={9} strokeLinecap="round" />
           <ellipse cx={-17} cy={-4} rx={17} ry={10} transform="rotate(-20 -17 -4)" fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
           <ellipse cx={17} cy={-4} rx={17} ry={10} transform="rotate(20 17 -4)" fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
@@ -321,9 +328,7 @@ export const Chef: React.FC<{
         <rect x={-28} y={-30} width={56} height={46} rx={12} fill={SKIN_SHADE} stroke={OUTLINE} strokeWidth={LINE} />
         {/* colletto */}
         <path d="M -64 30 Q 0 60 64 30 L 58 4 Q 0 30 -58 4 Z" fill={WHITE} stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
-        {/* foulard */}
-        <path d="M -40 20 L 40 20 L 6 76 L -6 76 Z" fill={COLORS.blue} stroke={OUTLINE} strokeWidth={3} strokeLinejoin="round" />
-        <ellipse cx={0} cy={22} rx={21} ry={14} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
+        <path d="M 0 31 L 0 45" stroke={OUTLINE} strokeWidth={3.5} strokeLinecap="round" />
 
         {/* testa */}
         <g transform={`rotate(${tilt} 0 -20) translate(0 -10) scale(${HEAD_SCALE}) translate(0 10)`}>
@@ -436,8 +441,8 @@ export const Chef: React.FC<{
         </g>
 
         {/* braccia */}
-        <Arm shoulder={{ x: -120, y: 66 }} hand={leftHand} outward={-1} pose={leftPose} />
-        <Arm shoulder={{ x: 120, y: 66 }} hand={grip} outward={1} pose="grip" />
+        <Arm shoulder={{ x: -116, y: 66 }} hand={leftHand} outward={-1} pose={leftPose} />
+        <Arm shoulder={{ x: 116, y: 66 }} hand={right} outward={1} pose={rightPose} />
       </g>
     </g>
   );
