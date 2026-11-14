@@ -109,9 +109,9 @@ const mulberry32 = (seed: number) => () => {
 
 // Padella a destra, cuoco in basso a sinistra, testi a destra del cuoco
 const PAN = { cx: 600, cy: 840, R: 300, inner: 276, handleAngle: 130, handleLen: 170 };
-const CHEF = { x: 165, y: 1300, s: 1.15 };
+const CHEF = { x: 180, y: 1300, s: 1.05 };
 const ITEM_SCALE = 1.15;
-const TEXT_COL = { left: 395, right: 40, top: 1225 };
+const TEXT_COL = { left: 415, right: 30, top: 1225 };
 
 const handleEnd = (() => {
   const a = (PAN.handleAngle * Math.PI) / 180;
@@ -478,8 +478,8 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   };
   const rightHand = toLocal(handGlobal.x, handGlobal.y);
   // mano libera: lancia gli ingredienti, poi saluta nel finale
-  const restHand = { x: -150, y: 250 };
-  const upHand = { x: -190, y: -40 };
+  const restHand = { x: -150, y: 235 };
+  const upHand = { x: -125, y: -30 };
   let gesture = 0;
   for (const a of allAdds) {
     const tt = frame - a.at + 6;
@@ -487,7 +487,8 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   }
   const waveAmt = interpolate(frame, [tl.outro + 10, tl.outro + 25], [0, 1], clamp);
   gesture = Math.max(gesture, waveAmt);
-  const waveX = waveAmt * Math.sin((frame - tl.outro) * 0.35) * 26;
+  const thumbsUp = frame >= tl.outro + 62;
+  const waveX = thumbsUp ? 0 : waveAmt * Math.sin((frame - tl.outro) * 0.35) * 26;
   const leftHand = {
     x: restHand.x + (upHand.x - restHand.x) * gesture + waveX,
     y: restHand.y + (upHand.y - restHand.y) * gesture,
@@ -670,6 +671,8 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
               blink={blink}
               happy={happy}
               wow={wow}
+              thumbsUp={thumbsUp}
+              tilt={tossAmt * 5 + (happy ? Math.sin((frame - tl.outro) / 9) * 3 : 0)}
             />
           </g>
         </svg>
