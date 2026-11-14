@@ -5,7 +5,7 @@ import { Audio, Sequence, interpolate, staticFile } from "remotion";
 // I file sono generati da scripts/make-sfx.py.
 const MASTER = 1.5; // volume generale
 const CUES: { from: number; file: string; volume: number }[] = [
-  { from: 6, file: "whoosh-fish", volume: 0.55 }, // il pesce si disegna
+  { from: 7, file: "splash-fish", volume: 0.5 }, // il pesce salta fuori dall'acqua
   { from: 45, file: "shimmer", volume: 0.35 }, // PESCHERIA
   { from: 58, file: "pop", volume: 0.6 }, // Sapore di Mare
   { from: 62, file: "bubbles", volume: 0.3 }, // bollicine
@@ -32,25 +32,13 @@ export const SoundEffects: React.FC<{ durationInFrames: number }> = ({
 }) => {
   return (
     <>
-      {/* Musichetta di sottofondo (scripts/make-music.py) */}
-      <Audio
-        src={staticFile("sfx/music.wav")}
-        volume={(f) =>
-          interpolate(
-            f,
-            [0, 20, durationInFrames - 30, durationInFrames],
-            [0, 0.4 * MASTER, 0.4 * MASTER, 0],
-            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-          )
-        }
-      />
       <Audio
         src={staticFile("sfx/ocean.wav")}
         volume={(f) =>
           interpolate(
             f,
             [0, 30, durationInFrames - 45, durationInFrames],
-            [0, 0.2 * MASTER, 0.2 * MASTER, 0],
+            [0, 0.35 * MASTER, 0.35 * MASTER, 0],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           )
         }

@@ -175,10 +175,36 @@ def ocean(dur):
 D4, E4, Fs4, A4, B4 = 293.66, 329.63, 369.99, 440.0, 493.88
 D5, E5, Fs5, A5, B5, D6 = 587.33, 659.25, 739.99, 880.0, 987.77, 1174.66
 
+def splash(dur=1.8):
+    """Pesce che salta fuori dall'acqua: tuffo, schizzi e gocce che ricadono."""
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    out = np.zeros((n, 2))
+    # impatto: colpo sordo + rumore d'acqua che si apre
+    thump = np.sin(2 * np.pi * 90 * tt * (1 + 0.6 * np.exp(-tt * 30))) * np.exp(-tt * 18)
+    wash = bandpass_sweep(rng.standard_normal(n), 900, 2600, q=0.8)
+    wash *= np.minimum(1, tt / 0.012) * np.exp(-tt * 5.5)
+    body = 0.6 * thump + 1.4 * wash / np.max(np.abs(wash))
+    out[:, 0] += body
+    out[:, 1] += np.roll(body, int(SR * 0.008))
+    # gocce che ricadono (bollicine risonanti, sparse nello stereo)
+    for _ in range(26):
+        start = rng.uniform(0.04, 1.2) ** 1.3
+        f0 = rng.uniform(700, 1800)
+        d = bubble(f0, f0 * rng.uniform(1.6, 2.6), dur=rng.uniform(0.04, 0.09))
+        amp = rng.uniform(0.15, 0.45) * np.exp(-start * 1.6)
+        pan = rng.uniform(-0.8, 0.8)
+        s0 = int(SR * start)
+        e = min(n, s0 + len(d))
+        out[s0:e, 0] += d[: e - s0] * amp * np.sqrt(0.5 * (1 - pan))
+        out[s0:e, 1] += d[: e - s0] * amp * np.sqrt(0.5 * (1 + pan))
+    return out
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save("ocean", ocean(19.5), peak=0.5)
-    save("whoosh-fish", whoosh(1.7, 250, 2200), peak=0.8)
+    save("splash-fish", splash(), peak=0.8)
     save("whoosh-soft", whoosh(1.0, 400, 1800), peak=0.7)
     save("whoosh-out", whoosh(0.8, 2000, 500, reverse=True), peak=0.7)
     save("swipe", whoosh(0.5, 1500, 4500), peak=0.6)
