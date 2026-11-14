@@ -23,8 +23,8 @@ export const gamberiZucchine: Recipe = {
     },
     {
       title: "Zucchine",
-      text: "Aggiungi le zucchine a rondelle e cuoci per 5 minuti",
-      add: ["zucchini"],
+      text: "Aggiungi le zucchine tagliate alla julienne e cuoci per 3-4 minuti",
+      add: ["zucchiniSticks"],
       duration: 85,
       toss: true,
     },

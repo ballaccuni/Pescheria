@@ -13,7 +13,7 @@ import {
 } from "remotion";
 import { COLORS, Waves } from "../LogoAnimation";
 import { fontFamily } from "../font";
-import { Chef } from "./Chef";
+import { Chef, type ChefMood } from "./Chef";
 import {
   FOOD,
   GarlicClove,
@@ -30,6 +30,7 @@ import {
   TomatoHalf,
   TomatoWhole,
   ZucchiniSlice,
+  ZucchiniStick,
   ZucchiniWhole,
   makeLinguine,
 } from "./ingredients";
@@ -40,6 +41,7 @@ export type PanKind =
   | "oil"
   | "garlic"
   | "zucchini"
+  | "zucchiniSticks"
   | "tomato"
   | "shrimp"
   | "salt"
@@ -108,10 +110,10 @@ const mulberry32 = (seed: number) => () => {
 };
 
 // Padella a destra, cuoco in basso a sinistra, testi a destra del cuoco
-const PAN = { cx: 640, cy: 840, R: 300, inner: 276, handleAngle: 130, handleLen: 170 };
-const CHEF = { x: 235, y: 1300, s: 1.0 };
+const PAN = { cx: 690, cy: 810, R: 300, inner: 276, handleAngle: 130, handleLen: 150 };
+const CHEF = { x: 228, y: 1300, s: 1.0 };
 const ITEM_SCALE = 1.15;
-const TEXT_COL = { left: 450, right: 30, top: 1225 };
+const TEXT_COL = { left: 485, right: 30, top: 1230 };
 
 const handleEnd = (() => {
   const a = (PAN.handleAngle * Math.PI) / 180;
@@ -119,11 +121,13 @@ const handleEnd = (() => {
   return { x: PAN.cx + Math.cos(a) * d, y: PAN.cy + Math.sin(a) * d };
 })();
 
+// bed: ingredienti che fanno da "letto" (non tolgono spazio a quelli sopra)
 const GROUPS: Partial<
-  Record<PanKind, { count: number; minDist: number; stagger: number; seed: number }>
+  Record<PanKind, { count: number; minDist: number; stagger: number; seed: number; bed?: boolean }>
 > = {
-  garlic: { count: 6, minDist: 38, stagger: 4, seed: 3 },
+  garlic: { count: 6, minDist: 38, stagger: 4, seed: 3, bed: true },
   zucchini: { count: 12, minDist: 46, stagger: 3, seed: 5 },
+  zucchiniSticks: { count: 36, minDist: 26, stagger: 1.3, seed: 5, bed: true },
   tomato: { count: 10, minDist: 44, stagger: 3, seed: 7 },
   shrimp: { count: 8, minDist: 50, stagger: 4, seed: 11 },
 };
@@ -147,7 +151,7 @@ const placeItems = (kinds: PanKind[]) => {
         const th = rnd() * Math.PI * 2;
         const x = Math.cos(th) * r;
         const y = Math.sin(th) * r;
-        const pool = kind === "garlic" ? list.map((p) => ({ ...p, d: g.minDist })) : occupied;
+        const pool = g.bed ? list.map((p) => ({ ...p, d: g.minDist })) : occupied;
         let minRatio = Infinity;
         for (const o of pool) {
           minRatio = Math.min(minRatio, Math.hypot(o.x - x, o.y - y) / Math.max(o.d, g.minDist));
@@ -163,7 +167,7 @@ const placeItems = (kinds: PanKind[]) => {
       }
       const p = { ...best, rot: rnd() * 360, phase: rnd() * Math.PI * 2 };
       list.push(p);
-      if (kind !== "garlic") occupied.push({ x: p.x, y: p.y, d: g.minDist });
+      if (!g.bed) occupied.push({ x: p.x, y: p.y, d: g.minDist });
     }
     out[kind] = list;
   }
@@ -293,6 +297,13 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         node = <GarlicSlice golden={interpolate(frame, [s + 10, s + 140], [0, 0.85], clamp)} />;
       } else if (kind === "zucchini") {
         node = <ZucchiniSlice />;
+      } else if (kind === "zucchiniSticks") {
+        // ogni bastoncino è un po' diverso: lunghezza, curva, con o senza buccia
+        const r = (k: number) => {
+          const v = p.phase * k;
+          return v - Math.floor(v);
+        };
+        node = <ZucchiniStick len={46 + r(1.7) * 24} curve={(r(3.1) - 0.5) * 16} skin={r(5.3) > 0.25} />;
       } else if (kind === "tomato") {
         node = <TomatoHalf />;
       } else if (kind === "shrimp") {
@@ -435,7 +446,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     return out;
   };
 
-  const steamFrom = addAt("zucchini") ?? Infinity;
+  const steamFrom = tl.steps[1]?.start ?? Infinity;
   const renderSteam = () => {
     if (frame < steamFrom) return null;
     const strength = interpolate(frame, [steamFrom, steamFrom + 60], [0, 1], clamp);
@@ -477,14 +488,15 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     y: handleEnd.y + panShiftY + tossY - 4,
   };
   const rightHand = toLocal(handGlobal.x, handGlobal.y);
-  // mano libera: lancia gli ingredienti, poi saluta nel finale
-  const restHand = { x: -96, y: 236 }; // mano appoggiata sulla pancia
-  const upHand = { x: -140, y: -50 };
+  // mano libera: appoggiata sulla pancia, lancia gli ingredienti, poi saluta nel finale
+  const restHand = { x: -78, y: 238 };
+  const upHand = { x: -150, y: -70 };
   let gesture = 0;
   for (const a of allAdds) {
     const tt = frame - a.at + 6;
     if (tt >= 0 && tt < 24) gesture = Math.max(gesture, Math.sin((tt / 24) * Math.PI));
   }
+  const inOutro = frame >= tl.outro + 10;
   const waveAmt = interpolate(frame, [tl.outro + 10, tl.outro + 25], [0, 1], clamp);
   gesture = Math.max(gesture, waveAmt);
   const thumbsUp = frame >= tl.outro + 62;
@@ -495,9 +507,28 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   };
   const blinkPhase = frame % 96;
   const blink = blinkPhase < 6 ? Math.sin((blinkPhase / 6) * Math.PI) : 0;
-  const wow = Math.abs(tossAmt) > 0.15 ? 1 : 0;
-  const happy = frame >= tl.outro + 10 ? 1 : 0;
+  const wow = Math.abs(tossAmt) > 0.15;
+  // guarda la padella, ogni tanto dà un'occhiata a chi guarda il video
+  const glance = frame % 150;
+  const atPan = inOutro
+    ? 0
+    : interpolate(glance, [112, 117, 140, 145], [1, 0, 0, 1], clamp);
+  const look = { x: 0.95 * atPan, y: -0.75 * atPan };
+  // negli ultimi momenti del limone chiude gli occhi e si gode il profumo
+  const savoring = lemonAt !== null && frame > lemonAt + 52 && frame < tl.outro;
+  let mood: ChefMood = "neutral";
+  if (gesture > 0.25) mood = "smile";
+  if (savoring) mood = "happy";
+  if (wow) mood = "wow";
+  if (inOutro) mood = thumbsUp ? "wink" : "happy";
+  const brow = gesture * 5 + (wow ? 8 : 0);
   const bob = Math.sin(frame / 12) * 4;
+  const headTilt =
+    tossAmt * 5 +
+    Math.sin(frame / 40) * 1.2 +
+    (inOutro ? Math.sin((frame - tl.outro) / 9) * 3 : 0) +
+    (savoring ? -4 : 0);
+  const wiggle = mood === "happy" || mood === "wink" ? Math.sin(frame / 3) * 2.5 : 0;
   const chefSlide = (1 - chefIn) * 500;
 
   // --- didascalia
@@ -648,6 +679,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
               {pastaBelow && renderPasta()}
               {renderGroup("garlic")}
               {renderGroup("zucchini")}
+              {renderGroup("zucchiniSticks")}
               {renderGroup("tomato")}
               {renderGroup("shrimp")}
               {renderSprinkle("salt")}
@@ -668,12 +700,16 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             <Chef
               rightHand={{ x: rightHand.x + chefSlide / CHEF.s, y: rightHand.y }}
               leftHand={leftHand}
+              leftPose={thumbsUp ? "thumb" : "open"}
+              mood={mood}
               blink={blink}
-              happy={happy}
-              wow={wow}
-              thumbsUp={thumbsUp}
+              look={look}
+              brow={brow}
+              tilt={headTilt}
               bob={bob / CHEF.s}
-              tilt={tossAmt * 5 + (happy ? Math.sin((frame - tl.outro) / 9) * 3 : 0)}
+              squash={tossAmt * 0.025}
+              hatDy={-Math.abs(tossAmt) * 9}
+              wiggle={wiggle}
             />
           </g>
         </svg>
@@ -733,7 +769,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
           <div
             style={{
               color: COLORS.slate,
-              fontSize: 76,
+              fontSize: 70,
               fontWeight: 600,
               lineHeight: 1.05,
               opacity: outroText(14),
@@ -749,11 +785,11 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             style={{
               display: "inline-block",
               marginTop: 36,
-              padding: "22px 40px",
+              padding: "22px 36px",
               borderRadius: 999,
               backgroundColor: COLORS.blue,
               color: COLORS.cream,
-              fontSize: 36,
+              fontSize: 34,
               fontWeight: 600,
               opacity: Math.min(1, pill * 1.5),
               transform: `scale(${pill})`,
@@ -793,8 +829,9 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         sizzleFrom = a.at + 22;
         cues.push({ from: a.at + 20, file: "sizzle-burst", volume: 0.45 });
       } else if (g) {
-        for (let i = 0; i < g.count; i += 3) {
-          cues.push({ from: a.at + i * g.stagger + 6, file: "plop", volume: 0.3 });
+        const every = Math.max(3, Math.ceil(g.count / 4));
+        for (let i = 0; i < g.count; i += every) {
+          cues.push({ from: Math.round(a.at + i * g.stagger + 6), file: "plop", volume: 0.3 });
         }
         cues.push({ from: a.at + 6, file: "sizzle-burst", volume: 0.55 });
       } else if (a.kind === "pasta") {

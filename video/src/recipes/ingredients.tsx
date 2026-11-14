@@ -347,3 +347,25 @@ export const Linguine: React.FC<{ paths: string[] }> = ({ paths }) => (
     ))}
   </g>
 );
+
+/** Zucchina alla julienne: bastoncino sottile, con la buccia verde su un lato. */
+export const ZucchiniStick: React.FC<{ len?: number; curve?: number; skin?: boolean }> = ({
+  len = 56,
+  curve = 0,
+  skin = true,
+}) => {
+  const h = len / 2;
+  const d = `M ${-h} 0 Q 0 ${curve} ${h} 0`;
+  return (
+    <g>
+      <path d={d} stroke={skin ? FOOD.zucchiniSkin : "#BFCB86"} strokeWidth={11} fill="none" />
+      <path
+        d={d}
+        stroke={FOOD.zucchiniFlesh}
+        strokeWidth={skin ? 7 : 8}
+        fill="none"
+        transform={`translate(0 ${skin ? 2 : 0})`}
+      />
+    </g>
+  );
+};
