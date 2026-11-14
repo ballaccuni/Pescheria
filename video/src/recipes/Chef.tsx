@@ -23,6 +23,11 @@ type Pt = { x: number; y: number };
 const TORSO =
   "M -104 34 C -138 44 -146 120 -145 204 C -144 266 -132 314 -108 332 Q 0 348 108 332 C 132 314 144 266 145 204 C 146 120 138 44 104 34 Z";
 
+// grembiule: segue la pancia e arriva sopra il ginocchio
+const APRON =
+  "M -134 214 C -142 262 -136 318 -120 368 Q -114 388 -94 390 Q 0 398 94 390 Q 114 388 120 368 C 136 318 142 262 134 214 Q 0 246 -134 214 Z";
+const WAISTBAND = "M -141 200 Q 0 232 141 200 L 139 222 Q 0 254 -139 222 Z";
+
 const sub = (a: Pt, b: Pt) => ({ x: a.x - b.x, y: a.y - b.y });
 const len = (a: Pt) => Math.hypot(a.x, a.y) || 1;
 
@@ -298,30 +303,113 @@ export const Chef: React.FC<{
           </g>
         ))}
 
-        {/* grembiule che segue la pancia, legato in vita */}
+        {/* ---- grembiule (fallarino) ---- */}
+        <defs>
+          <clipPath id="chefApron">
+            <path d={APRON} />
+          </clipPath>
+        </defs>
+        {/* telo */}
+        <path d={APRON} fill={COLORS.blue} />
+        <g clipPath="url(#chefApron)">
+          {/* ombra sul lato destro e luce a sinistra, per dare volume */}
+          <path d="M 92 222 C 118 276 116 338 98 400 L 160 400 L 160 200 Z" fill={COLORS.deepBlue} opacity={0.45} />
+          <path d="M -118 238 C -126 286 -121 334 -106 382" stroke="#FFFFFF" strokeWidth={12} opacity={0.14} fill="none" strokeLinecap="round" />
+          {/* pieghe morbide della stoffa */}
+          {[-46, 42].map((x) => (
+            <g key={x}>
+              <path d={`M ${x} 250 C ${x - 4} 300 ${x + 3} 350 ${x - 4} 400`} stroke={COLORS.deepBlue} strokeWidth={6} opacity={0.35} fill="none" />
+              <path d={`M ${x + 9} 250 C ${x + 5} 300 ${x + 12} 350 ${x + 5} 400`} stroke="#FFFFFF" strokeWidth={7} opacity={0.12} fill="none" />
+            </g>
+          ))}
+        </g>
+        {/* cuciture lungo i bordi */}
         <path
-          d="M -132 214 C -140 270 -130 330 -112 366 Q -104 380 -90 380 L 90 380 Q 104 380 112 366 C 130 330 140 270 132 214 Q 0 244 -132 214 Z"
-          fill={COLORS.blue}
-          stroke={OUTLINE}
-          strokeWidth={LINE}
-          strokeLinejoin="round"
+          d="M -124 230 C -131 272 -126 322 -110 366 M 124 230 C 131 272 126 322 110 366 M -96 381 Q 0 389 96 381"
+          stroke="#FFFFFF"
+          strokeWidth={2.5}
+          strokeDasharray="7 6"
+          strokeLinecap="round"
+          opacity={0.6}
+          fill="none"
         />
-        <path d="M 114 236 C 122 280 114 330 98 360" stroke="rgba(255,255,255,0.16)" strokeWidth={10} fill="none" strokeLinecap="round" />
-        <path d="M -98 366 Q 0 372 98 366" stroke="rgba(255,255,255,0.25)" strokeWidth={3} fill="none" />
+        <path d={APRON} fill="none" stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
+
+        {/* pesce del logo, ricamato */}
+        <image href={staticFile("logo/fish.png")} x={-46} y={254} width={92} height={39} filter="url(#chefWhite)" />
+
+        {/* tasca doppia con cuciture */}
+        <g>
+          <rect x={-74} y={306} width={148} height={60} rx={10} fill={COLORS.blue} stroke={OUTLINE} strokeWidth={3} />
+          <rect x={-72} y={308} width={144} height={11} rx={5} fill={COLORS.deepBlue} opacity={0.6} />
+          <rect
+            x={-66}
+            y={324}
+            width={132}
+            height={35}
+            rx={6}
+            fill="none"
+            stroke="#FFFFFF"
+            strokeWidth={2.2}
+            strokeDasharray="6 5"
+            opacity={0.6}
+          />
+          <path d="M 0 319 L 0 366" stroke={OUTLINE} strokeWidth={2.5} />
+        </g>
+
+        {/* strofinaccio infilato in vita */}
+        <g>
+          <path
+            d="M -116 222 L -78 226 Q -72 270 -76 318 Q -95 326 -114 318 Q -120 270 -116 222 Z"
+            fill="#FFFFFF"
+            stroke={OUTLINE}
+            strokeWidth={3}
+            strokeLinejoin="round"
+          />
+          <path d="M -96 236 Q -92 276 -95 320" stroke={CLOTH_SHADE} strokeWidth={6} fill="none" />
+          <path d="M -117 286 Q -96 292 -75 288 M -117 296 Q -96 302 -75 298" stroke={COLORS.blue} strokeWidth={3.5} fill="none" />
+        </g>
+
+        {/* laccio in vita, con cucitura */}
+        <path d={WAISTBAND} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={LINE} strokeLinejoin="round" />
         <path
-          d="M -139 200 Q 0 232 139 200 L 137 222 Q 0 254 -137 222 Z"
-          fill={COLORS.deepBlue}
-          stroke={OUTLINE}
-          strokeWidth={LINE}
-          strokeLinejoin="round"
+          d="M -134 211 Q 0 243 134 211"
+          stroke="#FFFFFF"
+          strokeWidth={2.2}
+          strokeDasharray="6 5"
+          opacity={0.5}
+          fill="none"
         />
-        <image href={staticFile("logo/fish.png")} x={-52} y={270} width={104} height={44} filter="url(#chefWhite)" />
-        {/* fiocco */}
-        <g transform="translate(90 213)">
-          <path d="M -4 6 L -16 44 M 4 6 L 14 42" stroke={COLORS.deepBlue} strokeWidth={9} strokeLinecap="round" />
-          <ellipse cx={-17} cy={-4} rx={17} ry={10} transform="rotate(-20 -17 -4)" fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
-          <ellipse cx={17} cy={-4} rx={17} ry={10} transform="rotate(20 17 -4)" fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
-          <circle r={8} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
+
+        {/* fiocco sul fianco */}
+        <g transform="translate(98 222)">
+          <path
+            d="M -3 4 L -17 60 L -9 54 L -3 63 L 6 6 Z"
+            fill={COLORS.deepBlue}
+            stroke={OUTLINE}
+            strokeWidth={3}
+            strokeLinejoin="round"
+          />
+          <path
+            d="M 3 4 L 22 56 L 13 52 L 10 61 L -3 6 Z"
+            fill={COLORS.deepBlue}
+            stroke={OUTLINE}
+            strokeWidth={3}
+            strokeLinejoin="round"
+          />
+          {[-1, 1].map((sx) => (
+            <g key={sx} transform={`scale(${sx} 1)`}>
+              <path
+                d="M 0 0 C 8 -24 40 -28 42 -8 C 44 10 14 10 0 0 Z"
+                fill={COLORS.deepBlue}
+                stroke={OUTLINE}
+                strokeWidth={3}
+                strokeLinejoin="round"
+              />
+              <path d="M 8 -3 C 18 -12 30 -13 35 -8" stroke="#16557A" strokeWidth={3} fill="none" strokeLinecap="round" />
+            </g>
+          ))}
+          <rect x={-9} y={-10} width={18} height={19} rx={6} fill={COLORS.deepBlue} stroke={OUTLINE} strokeWidth={3} />
         </g>
 
         {/* collo */}
