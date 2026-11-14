@@ -1,9 +1,10 @@
 import type { Recipe } from "./RecipeVideo";
 
 export const gamberiZucchine: Recipe = {
-  title: ["Gamberi, zucchine", "e pomodorini"],
+  title: ["Linguine con gamberi,", "zucchine e pomodorini"],
   servings: "per 2 persone",
   ingredients: [
+    { name: "Linguine", qty: "200 g", icon: "linguine" },
     { name: "Gamberi", qty: "400 g", icon: "shrimp" },
     { name: "Zucchine", qty: "2 medie", icon: "zucchiniWhole" },
     { name: "Pomodorini ciliegino", qty: "200 g", icon: "tomatoWhole" },
@@ -45,6 +46,13 @@ export const gamberiZucchine: Recipe = {
       text: "Aggiusta di sale e pepe",
       add: ["salt"],
       duration: 60,
+    },
+    {
+      title: "Linguine",
+      text: "Cuoci le linguine in acqua salata, scolale al dente e saltale in padella",
+      add: ["pasta"],
+      duration: 110,
+      toss: true,
     },
     {
       title: "Prezzemolo",

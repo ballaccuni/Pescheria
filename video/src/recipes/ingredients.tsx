@@ -283,3 +283,67 @@ export const IngredientIcon: React.FC<{ children: React.ReactNode; size?: number
     {children}
   </svg>
 );
+
+export const PASTA = { fill: "#F3D98B", edge: "#D4B259" };
+
+/** Mazzetto di linguine crude (icona). */
+export const LinguineBundle: React.FC = () => (
+  <g transform="rotate(-35)">
+    {[-12, -8, -4, 0, 4, 8, 12].map((x, i) => (
+      <rect key={i} x={x - 1.6} y={-44} width={3.2} height={88} rx={1.6} fill={i % 2 ? "#E9C766" : "#F0D47E"} />
+    ))}
+    <rect x={-17} y={-6} width={34} height={12} rx={3} fill={COLORS.blue} />
+  </g>
+);
+
+/** Linguine cotte in padella: fili ondulati generati in modo ripetibile. */
+export const makeLinguine = (radius: number, count = 30, seed = 99) => {
+  let s = seed;
+  const rnd = () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+  const paths: string[] = [];
+  for (let k = 0; k < count; k++) {
+    const r0 = Math.sqrt(rnd()) * radius * 0.8;
+    const a0 = rnd() * Math.PI * 2;
+    let x = Math.cos(a0) * r0;
+    let y = Math.sin(a0) * r0;
+    let h = rnd() * Math.PI * 2;
+    const curl = (rnd() - 0.5) * 0.25;
+    const pts: [number, number][] = [[x, y]];
+    const steps = 18 + Math.floor(rnd() * 14);
+    for (let i = 0; i < steps; i++) {
+      h += curl + Math.sin(i * 0.7 + k) * 0.18;
+      x += Math.cos(h) * 16;
+      y += Math.sin(h) * 16;
+      const d = Math.hypot(x, y);
+      if (d > radius) {
+        // rientra verso il centro
+        h = Math.atan2(-y, -x) + (rnd() - 0.5) * 1.2;
+        x *= radius / d;
+        y *= radius / d;
+      }
+      pts.push([x, y]);
+    }
+    let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i][0] + pts[i + 1][0]) / 2;
+      const my = (pts[i][1] + pts[i + 1][1]) / 2;
+      d += ` Q ${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
+    }
+    paths.push(d);
+  }
+  return paths;
+};
+
+export const Linguine: React.FC<{ paths: string[] }> = ({ paths }) => (
+  <g>
+    {paths.map((d, i) => (
+      <path key={`e${i}`} d={d} stroke={PASTA.edge} strokeWidth={11} strokeLinecap="round" fill="none" />
+    ))}
+    {paths.map((d, i) => (
+      <path key={`f${i}`} d={d} stroke={PASTA.fill} strokeWidth={7.5} strokeLinecap="round" fill="none" />
+    ))}
+  </g>
+);

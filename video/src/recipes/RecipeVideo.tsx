@@ -13,12 +13,15 @@ import {
 } from "remotion";
 import { COLORS, Waves } from "../LogoAnimation";
 import { fontFamily } from "../font";
+import { Chef } from "./Chef";
 import {
   FOOD,
   GarlicClove,
   GarlicSlice,
   IngredientIcon,
   LemonHalf,
+  Linguine,
+  LinguineBundle,
   OilBottle,
   ParsleyFleck,
   ParsleySprig,
@@ -28,6 +31,7 @@ import {
   TomatoWhole,
   ZucchiniSlice,
   ZucchiniWhole,
+  makeLinguine,
 } from "./ingredients";
 
 // ---------------------------------------------------------------- tipi
@@ -39,10 +43,12 @@ export type PanKind =
   | "tomato"
   | "shrimp"
   | "salt"
+  | "pasta"
   | "parsley"
   | "lemon";
 
 export type IconKind =
+  | "linguine"
   | "shrimp"
   | "zucchiniWhole"
   | "tomatoWhole"
@@ -70,7 +76,8 @@ export type Recipe = {
 
 const ROW_GAP = 14;
 const LIST_HOLD = 120;
-const OUTRO_LEN = 140;
+const OUTRO_LEN = 150;
+const TOSS_DELAY = 55;
 
 export const recipeTimeline = (recipe: Recipe) => {
   const rowsStart = 60;
@@ -82,18 +89,10 @@ export const recipeTimeline = (recipe: Recipe) => {
     const start = t;
     t += s.duration;
     const adds = s.add.map((kind, i) => ({ kind, at: start + 8 + i * 40 }));
-    return { ...s, start, end: t, adds, tossAt: s.toss ? start + 55 : null };
+    return { ...s, start, end: t, adds, tossAt: s.toss ? start + TOSS_DELAY : null };
   });
   const outro = t;
-  return {
-    rowsStart,
-    listOut,
-    panIn,
-    stepsStart,
-    steps,
-    outro,
-    total: outro + OUTRO_LEN,
-  };
+  return { rowsStart, listOut, panIn, stepsStart, steps, outro, total: outro + OUTRO_LEN };
 };
 
 // ---------------------------------------------------------------- utilità
@@ -108,15 +107,25 @@ const mulberry32 = (seed: number) => () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 
-const PAN = { cx: 540, cy: 930, R: 340, inner: 314 };
+// Padella a destra, cuoco in basso a sinistra, testi a destra del cuoco
+const PAN = { cx: 600, cy: 840, R: 300, inner: 276, handleAngle: 130, handleLen: 170 };
+const CHEF = { x: 165, y: 1300, s: 1.15 };
+const ITEM_SCALE = 1.15;
+const TEXT_COL = { left: 395, right: 40, top: 1225 };
+
+const handleEnd = (() => {
+  const a = (PAN.handleAngle * Math.PI) / 180;
+  const d = PAN.R + PAN.handleLen;
+  return { x: PAN.cx + Math.cos(a) * d, y: PAN.cy + Math.sin(a) * d };
+})();
 
 const GROUPS: Partial<
   Record<PanKind, { count: number; minDist: number; stagger: number; seed: number }>
 > = {
-  garlic: { count: 6, minDist: 40, stagger: 4, seed: 3 },
-  zucchini: { count: 13, minDist: 50, stagger: 3, seed: 5 },
-  tomato: { count: 11, minDist: 48, stagger: 3, seed: 7 },
-  shrimp: { count: 9, minDist: 54, stagger: 4, seed: 11 },
+  garlic: { count: 6, minDist: 38, stagger: 4, seed: 3 },
+  zucchini: { count: 12, minDist: 46, stagger: 3, seed: 5 },
+  tomato: { count: 10, minDist: 44, stagger: 3, seed: 7 },
+  shrimp: { count: 8, minDist: 50, stagger: 4, seed: 11 },
 };
 
 type Placed = { x: number; y: number; rot: number; phase: number };
@@ -128,7 +137,7 @@ const placeItems = (kinds: PanKind[]) => {
     const g = GROUPS[kind];
     if (!g) continue;
     const rnd = mulberry32(g.seed);
-    const maxR = PAN.inner - 40;
+    const maxR = PAN.inner - 38;
     const list: Placed[] = [];
     for (let i = 0; i < g.count; i++) {
       let best = { x: 0, y: 0 };
@@ -141,12 +150,10 @@ const placeItems = (kinds: PanKind[]) => {
         const pool = kind === "garlic" ? list.map((p) => ({ ...p, d: g.minDist })) : occupied;
         let minRatio = Infinity;
         for (const o of pool) {
-          const ratio = Math.hypot(o.x - x, o.y - y) / Math.max(o.d, g.minDist);
-          minRatio = Math.min(minRatio, ratio);
+          minRatio = Math.min(minRatio, Math.hypot(o.x - x, o.y - y) / Math.max(o.d, g.minDist));
         }
         if (minRatio >= 1) {
           best = { x, y };
-          bestScore = 2;
           break;
         }
         if (minRatio > bestScore) {
@@ -164,6 +171,7 @@ const placeItems = (kinds: PanKind[]) => {
 };
 
 const ICONS: Record<IconKind, React.ReactNode> = {
+  linguine: <LinguineBundle />,
   shrimp: (
     <g transform="scale(1.25)">
       <Shrimp cooked={1} />
@@ -182,16 +190,15 @@ const ICONS: Record<IconKind, React.ReactNode> = {
 
 const Pan: React.FC = () => (
   <g>
-    <g transform={`rotate(40 ${PAN.cx} ${PAN.cy})`}>
+    <g transform={`rotate(${PAN.handleAngle} ${PAN.cx} ${PAN.cy})`}>
       <rect
         x={PAN.cx + PAN.R - 20}
-        y={PAN.cy - 30}
-        width={250}
-        height={60}
-        rx={30}
+        y={PAN.cy - 28}
+        width={PAN.handleLen + 40}
+        height={56}
+        rx={28}
         fill="#243B48"
       />
-      <circle cx={PAN.cx + PAN.R + 195} cy={PAN.cy} r={11} fill={COLORS.cream} />
     </g>
     <circle cx={PAN.cx} cy={PAN.cy} r={PAN.R} fill={COLORS.slate} />
     <circle cx={PAN.cx} cy={PAN.cy} r={PAN.inner} fill="#41606F" />
@@ -204,9 +211,9 @@ const Pan: React.FC = () => (
       strokeWidth={20}
     />
     <path
-      d={`M ${PAN.cx - 230} ${PAN.cy - 150} A 275 275 0 0 1 ${PAN.cx - 60} ${PAN.cy - 268}`}
+      d={`M ${PAN.cx - 200} ${PAN.cy - 135} A 245 245 0 0 1 ${PAN.cx - 50} ${PAN.cy - 240}`}
       stroke="rgba(255,255,255,0.10)"
-      strokeWidth={14}
+      strokeWidth={13}
       strokeLinecap="round"
       fill="none"
     />
@@ -219,38 +226,29 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const tl = useMemo(() => recipeTimeline(recipe), [recipe]);
-  const allKinds = useMemo(
-    () => recipe.steps.flatMap((s) => s.add),
-    [recipe],
-  );
+  const allKinds = useMemo(() => recipe.steps.flatMap((s) => s.add), [recipe]);
   const placed = useMemo(() => placeItems(allKinds), [allKinds]);
+  const pastaPaths = useMemo(() => makeLinguine(PAN.inner - 26, 30), []);
   const addAt = (kind: PanKind) => {
     for (const s of tl.steps) for (const a of s.adds) if (a.kind === kind) return a.at;
     return null;
   };
+  const allAdds = tl.steps.flatMap((s) => s.adds);
 
   // --- scena 1: titolo e ingredienti
-  const titleIn = interpolate(frame, [12, 40], [0, 1], {
-    ...clamp,
-    easing: Easing.out(Easing.cubic),
-  });
+  const titleIn = interpolate(frame, [12, 40], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const listOut = interpolate(frame, [tl.listOut, tl.listOut + 20], [0, 1], {
     ...clamp,
     easing: Easing.in(Easing.cubic),
   });
-  const cardIn = interpolate(frame, [36, 58], [0, 1], {
-    ...clamp,
-    easing: Easing.out(Easing.cubic),
-  });
+  const cardIn = interpolate(frame, [36, 58], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
 
-  // --- scena 2: padella
+  // --- scena 2: padella e cuoco
   const panIn = spring({ frame: frame - tl.panIn, fps, config: { damping: 15 } });
-  const outroP = interpolate(frame, [tl.outro, tl.outro + 30], [0, 1], {
-    ...clamp,
-    easing: Easing.inOut(Easing.cubic),
-  });
-  // scossone della padella
+  const chefIn = spring({ frame: frame - tl.panIn - 6, fps, config: { damping: 14 } });
+
   let tossX = 0;
+  let tossY = 0;
   let tossAmt = 0;
   for (const s of tl.steps) {
     if (s.tossAt === null) continue;
@@ -258,11 +256,13 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     if (tt >= 0 && tt < 36) {
       const a = Math.exp(-tt / 10) * Math.sin(tt * 0.55);
       tossX += 22 * a;
+      tossY += -10 * Math.abs(a);
       tossAmt += a;
     }
   }
-  const panScale = interpolate(outroP, [0, 1], [1, 0.8]);
-  const panShiftY = interpolate(outroP, [0, 1], [0, -90]) + (1 - panIn) * 1100;
+  const panShiftY = (1 - panIn) * 1100;
+  const panX = PAN.cx + tossX;
+  const panY = PAN.cy + panShiftY + tossY;
 
   const oilAt = addAt("oil");
   const oilR =
@@ -286,7 +286,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       const simmer = Math.sin(frame * 0.8 + p.phase) * 0.8;
       const tx = p.x + Math.cos(p.phase) * tossAmt * 14;
       const ty = p.y - (1 - fall) * 420 + Math.sin(p.phase) * tossAmt * 14 + simmer;
-      const sc = 1 + (1 - fall) * 0.5;
+      const sc = (1 + (1 - fall) * 0.5) * ITEM_SCALE;
       const rot = p.rot + tossAmt * 20 * Math.cos(p.phase);
       let node: React.ReactNode = null;
       if (kind === "garlic") {
@@ -299,18 +299,31 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         node = <Shrimp cooked={interpolate(frame, [s + 15, s + 85], [0, 1], clamp)} />;
       }
       return (
-        <g
-          key={`${kind}${i}`}
-          opacity={opacity}
-          transform={`translate(${tx} ${ty}) rotate(${rot}) scale(${sc * 1.25})`}
-        >
+        <g key={`${kind}${i}`} opacity={opacity} transform={`translate(${tx} ${ty}) rotate(${rot}) scale(${sc})`}>
           {node}
         </g>
       );
     });
   };
 
-  // spolverate: sale/pepe e prezzemolo
+  // linguine: cadono sopra, poi con il salto in padella si mescolano sotto il condimento
+  const pastaAt = addAt("pasta");
+  const pastaMixAt = pastaAt === null ? Infinity : pastaAt - 8 + TOSS_DELAY + 6;
+  const renderPasta = () => {
+    if (pastaAt === null || frame < pastaAt) return null;
+    const fall = spring({ frame: frame - pastaAt, fps, config: { damping: 12, mass: 0.8 } });
+    const op = interpolate(frame - pastaAt, [0, 6], [0, 1], clamp);
+    const rot = tossAmt * 6;
+    return (
+      <g
+        opacity={op}
+        transform={`translate(${tossAmt * 10} ${-(1 - fall) * 480}) scale(${1 + (1 - fall) * 0.3}) rotate(${rot})`}
+      >
+        <Linguine paths={pastaPaths} />
+      </g>
+    );
+  };
+
   const renderSprinkle = (kind: "salt" | "parsley") => {
     const at = addAt(kind);
     if (at === null || frame < at) return null;
@@ -327,10 +340,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       const isPepper = kind === "salt" && i % 2 === 1;
       const local = frame - at - delay;
       if (local < 0) continue;
-      const fall = interpolate(local, [0, 10], [0, 1], {
-        ...clamp,
-        easing: Easing.in(Easing.quad),
-      });
+      const fall = interpolate(local, [0, 10], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
       const yy = y - (1 - fall) * 260;
       const op = interpolate(local, [0, 3], [0, 1], clamp);
       out.push(
@@ -348,32 +358,25 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     return out;
   };
 
-  // limone che si spreme
   const lemonAt = addAt("lemon");
   const renderLemon = () => {
     if (lemonAt === null || frame < lemonAt) return null;
     const local = frame - lemonAt;
     const enter = spring({ frame: local, fps, config: { damping: 14 } });
-    const leave = interpolate(local, [70, 85], [0, 1], {
-      ...clamp,
-      easing: Easing.in(Easing.cubic),
-    });
+    const leave = interpolate(local, [70, 85], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
     const squeeze = interpolate(local, [24, 32, 44], [1, 0.72, 1], clamp);
     const lx = 110;
-    const ly = -230 - (1 - enter) * 500 - leave * 600;
+    const ly = -220 - (1 - enter) * 500 - leave * 600;
     const rnd = mulberry32(61);
     const drops: React.ReactNode[] = [];
     for (let i = 0; i < 9; i++) {
-      const tx = (rnd() - 0.5) * 380;
-      const ty = 10 + rnd() * 170;
+      const tx = (rnd() - 0.5) * 340;
+      const ty = 10 + rnd() * 150;
       const d0 = 28 + i * 2.5;
-      const p = interpolate(local, [d0, d0 + 14], [0, 1], {
-        ...clamp,
-        easing: Easing.in(Easing.quad),
-      });
       if (local < d0) continue;
+      const p = interpolate(local, [d0, d0 + 14], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
       const x = lx + (tx - lx) * p;
-      const y = -190 + (ty + 190) * p;
+      const y = -180 + (ty + 180) * p;
       const landed = local - (d0 + 14);
       if (landed < 0) {
         drops.push(<circle key={`d${i}`} cx={x} cy={y} r={6} fill={FOOD.lemonFlesh} />);
@@ -399,13 +402,12 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
           transform={`translate(${lx} ${ly}) rotate(-15) scale(${1.1 * (2 - squeeze)} ${1.1 * squeeze})`}
           opacity={1 - leave}
         >
-          <LemonHalf r={62} />
+          <LemonHalf r={58} />
         </g>
       </>
     );
   };
 
-  // bollicine dell'olio
   const renderOilBubbles = () => {
     if (oilAt === null || frame < oilAt + 30) return null;
     const rnd = mulberry32(77);
@@ -433,15 +435,14 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     return out;
   };
 
-  // vapore
   const steamFrom = addAt("zucchini") ?? Infinity;
   const renderSteam = () => {
     if (frame < steamFrom) return null;
     const strength = interpolate(frame, [steamFrom, steamFrom + 60], [0, 1], clamp);
-    return [-150, -40, 80, 180].map((x0, i) => {
+    return [-140, -40, 70, 165].map((x0, i) => {
       const period = 70;
       const ph = ((frame + i * 19) % period) / period;
-      const y0 = -40 - ph * 260;
+      const y0 = -40 - ph * 240;
       const op = Math.sin(ph * Math.PI) * 0.22 * strength;
       const wob = (k: number) => Math.sin(ph * 6 + i + k) * 18;
       return (
@@ -459,49 +460,98 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     });
   };
 
-  // filo d'olio che scende
   const renderPour = () => {
     if (oilAt === null) return null;
     const local = frame - oilAt;
     if (local < 0 || local > 40) return null;
-    const top = interpolate(local, [0, 10, 30, 40], [-700, -700, -700, -60], clamp);
+    const top = interpolate(local, [0, 30, 40], [-700, -700, -60], clamp);
     const bottom = interpolate(local, [0, 14], [-700, 0], clamp);
     const w = interpolate(local, [0, 6, 30, 40], [0, 9, 9, 0], clamp);
     return <rect x={-w / 2} y={top} width={w} height={Math.max(0, bottom - top)} rx={w / 2} fill={FOOD.oil} />;
   };
 
-  // --- didascalia del passo corrente
+  // --- cuoco
+  const toLocal = (gx: number, gy: number) => ({ x: (gx - CHEF.x) / CHEF.s, y: (gy - CHEF.y) / CHEF.s });
+  const handGlobal = {
+    x: handleEnd.x + tossX - 6,
+    y: handleEnd.y + panShiftY + tossY - 4,
+  };
+  const rightHand = toLocal(handGlobal.x, handGlobal.y);
+  // mano libera: lancia gli ingredienti, poi saluta nel finale
+  const restHand = { x: -150, y: 250 };
+  const upHand = { x: -190, y: -40 };
+  let gesture = 0;
+  for (const a of allAdds) {
+    const tt = frame - a.at + 6;
+    if (tt >= 0 && tt < 24) gesture = Math.max(gesture, Math.sin((tt / 24) * Math.PI));
+  }
+  const waveAmt = interpolate(frame, [tl.outro + 10, tl.outro + 25], [0, 1], clamp);
+  gesture = Math.max(gesture, waveAmt);
+  const waveX = waveAmt * Math.sin((frame - tl.outro) * 0.35) * 26;
+  const leftHand = {
+    x: restHand.x + (upHand.x - restHand.x) * gesture + waveX,
+    y: restHand.y + (upHand.y - restHand.y) * gesture,
+  };
+  const blinkPhase = frame % 96;
+  const blink = blinkPhase < 6 ? Math.sin((blinkPhase / 6) * Math.PI) : 0;
+  const wow = Math.abs(tossAmt) > 0.15 ? 1 : 0;
+  const happy = frame >= tl.outro + 10 ? 1 : 0;
+  const bob = Math.sin(frame / 12) * 4;
+  const chefSlide = (1 - chefIn) * 500;
+
+  // --- didascalia
   const current = tl.steps.findIndex((s) => frame >= s.start && frame < s.end);
   const step = current >= 0 ? tl.steps[current] : null;
-  const capIn = step ? interpolate(frame - step.start, [0, 14], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) }) : 0;
+  const capIn = step
+    ? interpolate(frame - step.start, [0, 14], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) })
+    : 0;
   const capOut =
     step && current < tl.steps.length - 1
       ? interpolate(frame, [step.end - 8, step.end], [1, 0], clamp)
       : interpolate(frame, [tl.outro, tl.outro + 12], [1, 0], clamp);
 
   const outroText = (d: number) =>
-    interpolate(frame, [tl.outro + d, tl.outro + d + 20], [0, 1], {
-      ...clamp,
-      easing: Easing.out(Easing.cubic),
-    });
+    interpolate(frame, [tl.outro + d, tl.outro + d + 20], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const pill = spring({ frame: frame - tl.outro - 45, fps, config: { damping: 13 } });
+
+  const pastaBelow = frame >= pastaMixAt;
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.cream, fontFamily }}>
       <Waves />
 
       {/* Logo in alto */}
-      <div style={{ position: "absolute", top: 60, width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, opacity: interpolate(frame, [0, 18], [0, 1], clamp) }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 60,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 14,
+          opacity: interpolate(frame, [0, 18], [0, 1], clamp),
+        }}
+      >
         <Img src={staticFile("logo/fish.png")} style={{ width: 280 }} />
         <Img src={staticFile("logo/sapore.png")} style={{ width: 360 }} />
       </div>
 
       {/* Scena 1: titolo + ingredienti */}
       <AbsoluteFill style={{ opacity: 1 - listOut, transform: `translateY(${-listOut * 60}px)` }}>
-        <div style={{ position: "absolute", top: 320, width: "100%", textAlign: "center", opacity: titleIn, transform: `translateY(${(1 - titleIn) * 30}px)` }}>
+        <div
+          style={{
+            position: "absolute",
+            top: 312,
+            width: "100%",
+            textAlign: "center",
+            opacity: titleIn,
+            transform: `translateY(${(1 - titleIn) * 30}px)`,
+          }}
+        >
           <div style={{ color: COLORS.blue, fontSize: 30, fontWeight: 600, letterSpacing: 9 }}>LA RICETTA</div>
           {recipe.title.map((l) => (
-            <div key={l} style={{ color: COLORS.slate, fontSize: 80, fontWeight: 600, lineHeight: 1.12 }}>
+            <div key={l} style={{ color: COLORS.slate, fontSize: 70, fontWeight: 600, lineHeight: 1.12 }}>
               {l}
             </div>
           ))}
@@ -510,17 +560,17 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         <div
           style={{
             position: "absolute",
-            top: 600,
+            top: 560,
             left: 60,
             right: 60,
-            padding: "34px 44px 26px",
+            padding: "30px 44px 22px",
             borderRadius: 40,
             backgroundColor: "rgba(58,150,191,0.08)",
             opacity: cardIn,
             transform: `translateY(${(1 - cardIn) * 40}px)`,
           }}
         >
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
             <div style={{ color: COLORS.blue, fontSize: 32, fontWeight: 600, letterSpacing: 6 }}>INGREDIENTI</div>
             <div style={{ color: COLORS.slate, fontSize: 30, opacity: 0.75 }}>{recipe.servings}</div>
           </div>
@@ -532,16 +582,16 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  height: 112,
+                  height: 106,
                   gap: 26,
                   opacity: Math.min(1, p * 1.4),
                   transform: `translateX(${(1 - p) * -70}px)`,
                   borderTop: i ? "2px solid rgba(58,150,191,0.15)" : undefined,
                 }}
               >
-                <IngredientIcon size={88}>{ICONS[ing.icon]}</IngredientIcon>
-                <div style={{ flex: 1, color: COLORS.slate, fontSize: 42, fontWeight: 500 }}>{ing.name}</div>
-                <div style={{ color: COLORS.deepBlue, fontSize: 42, fontWeight: 600 }}>{ing.qty}</div>
+                <IngredientIcon size={84}>{ICONS[ing.icon]}</IngredientIcon>
+                <div style={{ flex: 1, color: COLORS.slate, fontSize: 40, fontWeight: 500 }}>{ing.name}</div>
+                <div style={{ color: COLORS.deepBlue, fontSize: 40, fontWeight: 600 }}>{ing.qty}</div>
               </div>
             );
           })}
@@ -552,19 +602,19 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       <div
         style={{
           position: "absolute",
-          top: 318,
+          top: 312,
           width: "100%",
           textAlign: "center",
           color: COLORS.deepBlue,
-          fontSize: 40,
+          fontSize: 34,
           fontWeight: 500,
-          opacity: interpolate(frame, [tl.listOut + 15, tl.listOut + 35], [0, 1], clamp) * (1 - outroP),
+          opacity: interpolate(frame, [tl.listOut + 15, tl.listOut + 35], [0, 1], clamp),
         }}
       >
         {recipe.title.join(" ")}
       </div>
 
-      {/* Padella */}
+      {/* Padella e cuoco */}
       {frame >= tl.panIn && (
         <svg width={1080} height={1920} style={{ position: "absolute", inset: 0 }}>
           <defs>
@@ -577,61 +627,85 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
               <feGaussianBlur stdDeviation={9} />
             </filter>
           </defs>
-          <g
-            transform={`translate(${PAN.cx + tossX} ${PAN.cy + panShiftY}) scale(${panScale}) translate(${-PAN.cx} ${-PAN.cy})`}
-          >
+
+          <g transform={`translate(${tossX} ${panShiftY + tossY})`}>
             <Pan />
             <g transform={`translate(${PAN.cx} ${PAN.cy})`}>
               <circle r={oilR} fill="url(#oilGrad)" />
               {oilR > 40 && (
-                <ellipse cx={-oilR * 0.35} cy={-oilR * 0.4} rx={oilR * 0.22} ry={oilR * 0.08} fill="#FFFFFF" opacity={0.18} transform={`rotate(-30 ${-oilR * 0.35} ${-oilR * 0.4})`} />
+                <ellipse
+                  cx={-oilR * 0.35}
+                  cy={-oilR * 0.4}
+                  rx={oilR * 0.22}
+                  ry={oilR * 0.08}
+                  fill="#FFFFFF"
+                  opacity={0.18}
+                  transform={`rotate(-30 ${-oilR * 0.35} ${-oilR * 0.4})`}
+                />
               )}
               {renderOilBubbles()}
+              {pastaBelow && renderPasta()}
               {renderGroup("garlic")}
               {renderGroup("zucchini")}
               {renderGroup("tomato")}
               {renderGroup("shrimp")}
               {renderSprinkle("salt")}
+              {!pastaBelow && renderPasta()}
               {renderSprinkle("parsley")}
               {renderSteam()}
             </g>
           </g>
-          <g transform={`translate(${PAN.cx} ${PAN.cy + panShiftY})`}>
+          <g transform={`translate(${panX} ${panY})`}>
             {renderPour()}
             {renderLemon()}
+          </g>
+
+          <g
+            transform={`translate(${CHEF.x - chefSlide} ${CHEF.y + bob}) scale(${CHEF.s})`}
+            opacity={Math.min(1, chefIn * 1.5)}
+          >
+            <Chef
+              rightHand={{ x: rightHand.x + chefSlide / CHEF.s, y: rightHand.y - bob / CHEF.s }}
+              leftHand={leftHand}
+              blink={blink}
+              happy={happy}
+              wow={wow}
+            />
           </g>
         </svg>
       )}
 
-      {/* Didascalia del passo */}
+      {/* Didascalia del passo, a destra del cuoco */}
       {step && (
         <div
           style={{
             position: "absolute",
-            top: 1380,
-            left: 70,
-            right: 70,
-            textAlign: "center",
+            top: TEXT_COL.top,
+            left: TEXT_COL.left,
+            right: TEXT_COL.right,
             opacity: capIn * capOut,
             transform: `translateY(${(1 - capIn) * 30}px)`,
           }}
         >
-          <div style={{ color: COLORS.blue, fontSize: 28, fontWeight: 600, letterSpacing: 6 }}>
+          <div style={{ color: COLORS.blue, fontSize: 26, fontWeight: 600, letterSpacing: 5 }}>
             PASSO {current + 1} DI {tl.steps.length}
           </div>
-          <div style={{ color: COLORS.slate, fontSize: 68, fontWeight: 600, marginTop: 8 }}>{step.title}</div>
-          <div style={{ color: COLORS.slate, fontSize: 40, opacity: 0.85, marginTop: 10, lineHeight: 1.3 }}>{step.text}</div>
+          <div style={{ color: COLORS.slate, fontSize: 60, fontWeight: 600, marginTop: 6, lineHeight: 1.1 }}>
+            {step.title}
+          </div>
+          <div style={{ color: COLORS.slate, fontSize: 36, opacity: 0.85, marginTop: 12, lineHeight: 1.3 }}>
+            {step.text}
+          </div>
         </div>
       )}
       {frame >= tl.stepsStart && frame < tl.outro + 12 && (
         <div
           style={{
             position: "absolute",
-            top: 1690,
-            width: "100%",
+            top: 1620,
+            left: TEXT_COL.left,
             display: "flex",
-            justifyContent: "center",
-            gap: 14,
+            gap: 12,
             opacity: interpolate(frame, [tl.outro, tl.outro + 12], [1, 0], clamp),
           }}
         >
@@ -639,8 +713,8 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             <div
               key={i}
               style={{
-                width: i === current ? 38 : 14,
-                height: 14,
+                width: i === current ? 36 : 13,
+                height: 13,
                 borderRadius: 7,
                 backgroundColor: i <= current ? COLORS.blue : "rgba(58,150,191,0.25)",
               }}
@@ -651,29 +725,39 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 
       {/* Finale */}
       {frame >= tl.outro && (
-        <div style={{ position: "absolute", top: 1330, width: "100%", textAlign: "center" }}>
-          <div style={{ color: COLORS.slate, fontSize: 88, fontWeight: 600, opacity: outroText(14), transform: `translateY(${(1 - outroText(14)) * 30}px)` }}>
+        <div style={{ position: "absolute", top: TEXT_COL.top, left: TEXT_COL.left, right: TEXT_COL.right }}>
+          <div
+            style={{
+              color: COLORS.slate,
+              fontSize: 76,
+              fontWeight: 600,
+              lineHeight: 1.05,
+              opacity: outroText(14),
+              transform: `translateY(${(1 - outroText(14)) * 30}px)`,
+            }}
+          >
             Buon appetito!
           </div>
-          <div style={{ color: COLORS.blue, fontSize: 40, fontWeight: 500, marginTop: 14, opacity: outroText(30) }}>
+          <div style={{ color: COLORS.blue, fontSize: 36, fontWeight: 500, marginTop: 16, opacity: outroText(30) }}>
             {recipe.outro}
           </div>
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 44 }}>
-            <div
-              style={{
-                padding: "24px 52px",
-                borderRadius: 999,
-                backgroundColor: COLORS.blue,
-                color: COLORS.cream,
-                fontSize: 44,
-                fontWeight: 600,
-                opacity: Math.min(1, pill * 1.5),
-                transform: `scale(${pill})`,
-                boxShadow: "0 12px 30px rgba(31,120,168,0.25)",
-              }}
-            >
-              saporedimareraffadali.it
-            </div>
+          <div
+            style={{
+              display: "inline-block",
+              marginTop: 36,
+              padding: "22px 40px",
+              borderRadius: 999,
+              backgroundColor: COLORS.blue,
+              color: COLORS.cream,
+              fontSize: 36,
+              fontWeight: 600,
+              opacity: Math.min(1, pill * 1.5),
+              transform: `scale(${pill})`,
+              transformOrigin: "left center",
+              boxShadow: "0 12px 30px rgba(31,120,168,0.25)",
+            }}
+          >
+            saporedimareraffadali.it
           </div>
         </div>
       )}
@@ -686,7 +770,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 // ---------------------------------------------------------------- suoni
 
 const MASTER = 1.5;
-const NOTES = ["note-d5", "note-fs5", "note-a5", "note-d5", "note-fs5", "note-a5", "note-b5", "note-d6"];
+const NOTES = ["note-d5", "note-fs5", "note-a5", "note-d5", "note-fs5", "note-a5", "note-b5", "note-d6", "note-b5"];
 
 const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const tl = recipeTimeline(recipe);
@@ -709,6 +793,9 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
           cues.push({ from: a.at + i * g.stagger + 6, file: "plop", volume: 0.3 });
         }
         cues.push({ from: a.at + 6, file: "sizzle-burst", volume: 0.55 });
+      } else if (a.kind === "pasta") {
+        cues.push({ from: a.at + 7, file: "plop", volume: 0.45 });
+        cues.push({ from: a.at + 9, file: "sizzle-burst", volume: 0.5 });
       } else if (a.kind === "salt" || a.kind === "parsley") {
         cues.push({ from: a.at, file: "sprinkle", volume: 0.55 });
       } else if (a.kind === "lemon") {
@@ -730,6 +817,7 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         <Sequence from={sizzleFrom} name="SFX sizzle (padella)">
           <Audio
             src={staticFile("sfx/sizzle.wav")}
+            loop
             volume={(f) =>
               interpolate(
                 f + sizzleFrom!,
