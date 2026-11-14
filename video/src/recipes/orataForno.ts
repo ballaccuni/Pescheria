@@ -3,14 +3,14 @@ import type { Recipe } from "./types";
 export const orataForno: Recipe = {
   vessel: "tray",
   dish: "fish",
-  title: ["Orata al forno", "con pangrattato"],
+  title: ["Filetti di orata al forno", "con pangrattato"],
   servings: "per 2 persone",
   ingredients: [
-    { name: "Orate pulite", qty: "2 da 400 g", icon: "orata" },
+    { name: "Filetti di orata", qty: "4 (da 2 orate)", icon: "fillet" },
     { name: "Pangrattato", qty: "4 cucchiai", icon: "breadcrumbs" },
     { name: "Prezzemolo", qty: "1 ciuffo", icon: "parsleySprig" },
     { name: "Aglio", qty: "1 spicchio", icon: "garlicClove" },
-    { name: "Limone", qty: "1", icon: "lemon" },
+    { name: "Limone (per servire)", qty: "1", icon: "lemon" },
     { name: "Olio extravergine", qty: "4 cucchiai", icon: "oilBottle" },
     { name: "Sale e pepe", qty: "q.b.", icon: "saltPepper" },
   ],
@@ -22,16 +22,10 @@ export const orataForno: Recipe = {
       duration: 85,
     },
     {
-      title: "Le orate",
-      text: "Adagia le orate pulite e condisci con sale e pepe",
+      title: "I filetti",
+      text: "Adagia i filetti con la pelle verso il basso, poi sale e pepe",
       add: ["fish", "salt"],
       duration: 110,
-    },
-    {
-      title: "Limone e prezzemolo",
-      text: "Metti nella pancia fettine di limone e prezzemolo",
-      add: ["lemonSlices"],
-      duration: 85,
     },
     {
       title: "Pangrattato",
@@ -47,13 +41,13 @@ export const orataForno: Recipe = {
     },
     {
       title: "In forno",
-      text: "Cuoci a 200 °C per 25 minuti, finché la panatura è dorata",
-      oven: { temp: 200, minutes: 25 },
+      text: "Cuoci a 200 °C per 15 minuti, finché la panatura è dorata",
+      oven: { temp: 200, minutes: 15 },
       duration: 160,
     },
     {
       title: "Impiattamento",
-      text: "Servi l'orata con spicchi di limone e prezzemolo fresco",
+      text: "Servi i filetti con spicchi di limone e prezzemolo fresco",
       plate: true,
       duration: 135,
     },

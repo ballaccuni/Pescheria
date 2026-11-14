@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { interpolate, spring } from "remotion";
 import { COLORS } from "../LogoAnimation";
-import { Crust, Orata } from "./Orata";
+import { Crust, FILLET_CRUST, Fillet } from "./Orata";
 import { Steam } from "./Steam";
 import {
   LemonWedge,
@@ -57,7 +57,7 @@ const FISH_PARSLEY = scatter(16, 1, 0, 25).map((s, i) => {
   const rnd = mulberry32(400 + i);
   const a = rnd() * Math.PI * 2;
   const rr = Math.sqrt(rnd());
-  return { x: 19 + Math.cos(a) * rr * 98, y: Math.sin(a) * rr * 56, rot: s.rot };
+  return { x: 2 + Math.cos(a) * rr * 116, y: Math.sin(a) * rr * 32, rot: s.rot };
 });
 const GARNISH_SPOTS = scatter(14, 190, 26, 26);
 
@@ -157,24 +157,28 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish"; frame: number; fps: 
             <ParsleyFleck />
           </Drop>
         ))}
-        <Drop local={local} start={104} fps={fps} x={160} y={150} rot={28} scale={1.15} from={{ x: 420, y: 60 }}>
-          <LemonWedge />
-        </Drop>
       </>
     );
   };
 
   const fish = () => (
     <>
-      <Drop local={local} start={34} fps={fps} x={-6} y={-6} rot={-10} scale={0.92} from={{ x: 0, y: -620 }}>
-        <Orata baked={1} id="plate" />
-        <Crust local={999} baked={1} seed={101} />
-        {FISH_PARSLEY.map((s, i) => (
-          <g key={i} transform={`translate(${s.x} ${s.y}) rotate(${s.rot}) scale(1.35)`}>
-            <ParsleyFleck />
+      {[
+        { x: -10, y: -62, rot: -12, flip: 1, seed: 101, start: 34 },
+        { x: 10, y: 58, rot: -6, flip: -1, seed: 202, start: 44 },
+      ].map((f, i) => (
+        <Drop key={i} local={local} start={f.start} fps={fps} x={f.x} y={f.y} rot={f.rot} scale={0.9} from={{ x: 0, y: -620 }}>
+          <g transform={`scale(${f.flip} 1)`}>
+            <Fillet baked={1} id={`plate${i}`} />
+            <Crust local={999} baked={1} seed={f.seed} area={FILLET_CRUST} />
+            {FISH_PARSLEY.map((s, j) => (
+              <g key={j} transform={`translate(${s.x} ${s.y}) rotate(${s.rot}) scale(1.35)`}>
+                <ParsleyFleck />
+              </g>
+            ))}
           </g>
-        ))}
-      </Drop>
+        </Drop>
+      ))}
       <Drop local={local} start={60} fps={fps} x={150} y={156} rot={24} scale={1.1} from={{ x: 420, y: 60 }}>
         <LemonWedge />
       </Drop>

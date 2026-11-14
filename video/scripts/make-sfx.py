@@ -347,6 +347,25 @@ def pour(dur=1.4):
     return noise * wobble * env
 
 
+def grate(dur=1.6):
+    """Scorza grattugiata: colpi di raspa ritmati (generatore separato)."""
+    grng = np.random.default_rng(44)
+    n = int(SR * dur)
+    out = np.zeros(n)
+    stroke = int(SR * 0.16)
+    st = np.arange(stroke) / SR
+    for k in range(8):
+        start = int(SR * (0.05 + k * 0.19))
+        if start + stroke > n:
+            break
+        noise = highpass(lowpass(grng.standard_normal(stroke), 7000), 2200)
+        # piccoli scatti dei dentini della grattugia
+        teeth = 0.6 + 0.4 * (np.sin(2 * np.pi * 70 * st) > 0.3)
+        env = np.sin(np.pi * st / st[-1]) ** 1.2
+        out[start : start + stroke] += noise * teeth * env * (0.8 + 0.2 * grng.random())
+    return out
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save("ocean", ocean(19.5), peak=0.5)
@@ -372,4 +391,5 @@ if __name__ == "__main__":
     save("oven-hum", oven_hum(), peak=0.5)
     save("tick", tick(), peak=0.6)
     save("pour", pour(), peak=0.5)
+    save("grate", grate(), peak=0.6)
     print("ok")

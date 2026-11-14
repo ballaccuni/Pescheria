@@ -19,6 +19,7 @@ import { PlateStage } from "./PlateStage";
 import { TrayStage } from "./TrayStage";
 import {
   BreadcrumbsIcon,
+  FilletIcon,
   FishIcon,
   GarlicClove,
   IngredientIcon,
@@ -55,6 +56,11 @@ const ICONS: Record<IconKind, React.ReactNode> = {
   lemon: <LemonHalf r={34} />,
   saltPepper: <SaltPepper />,
   orata: <FishIcon />,
+  fillet: (
+    <g transform="scale(1.1)">
+      <FilletIcon />
+    </g>
+  ),
   breadcrumbs: <BreadcrumbsIcon />,
 };
 
@@ -434,6 +440,9 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       } else if (a.kind === "lemon") {
         add(a.at + 22, "squeeze", 0.6);
         add(a.at + 42, "sizzle-burst", 0.3);
+      } else if (a.kind === "lemonZest") {
+        add(a.at + 16, "grate", 0.5);
+        add(a.at + 30, "sprinkle", 0.3);
       } else if (a.kind === "drizzle") {
         add(a.at, "pour", 0.5);
       } else if (a.kind === "fish") {
@@ -461,7 +470,8 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     }
     if (s.plate) {
       add(s.start + 22, "pop", 0.5); // arriva il piatto
-      add(s.start + 38, "plop", recipe.dish === "fish" ? 0.6 : 0.45);
+      add(s.start + 38, "plop", recipe.dish === "fish" ? 0.5 : 0.45);
+      if (recipe.dish === "fish") add(s.start + 48, "plop", 0.5);
       add(s.start + 62, "plop", 0.3);
       add(s.start + 72, "plop", 0.3);
       add(s.start + 92, "sprinkle", 0.5);

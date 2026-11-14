@@ -12,6 +12,7 @@ export type AddKind =
   | "pasta"
   | "parsley"
   | "lemon"
+  | "lemonZest"
   // teglia
   | "drizzle"
   | "fish"
@@ -29,6 +30,7 @@ export type IconKind =
   | "lemon"
   | "saltPepper"
   | "orata"
+  | "fillet"
   | "breadcrumbs";
 
 export type Step = {

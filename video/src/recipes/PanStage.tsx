@@ -12,6 +12,7 @@ import {
   TomatoHalf,
   ZucchiniSlice,
   ZucchiniStick,
+  ZestGrater,
   makeLinguine,
 } from "./ingredients";
 import { TOSS_DELAY, firstAdd, type AddKind, type Recipe, type Timeline } from "./types";
@@ -271,6 +272,52 @@ export const PanStage: React.FC<{
     );
   };
 
+  // scorza di limone grattugiata sopra la pasta
+  const zestAt = addAt("lemonZest");
+  const renderZest = () => {
+    if (zestAt === null || frame < zestAt) return null;
+    const local = frame - zestAt;
+    const enter = spring({ frame: local, fps, config: { damping: 14 } });
+    const leave = interpolate(local, [68, 82], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+    // il limone va avanti e indietro sulla grattugia
+    const rub = interpolate(local, [16, 62], [0, 1], clamp);
+    const lemonX = -70 + Math.sin(rub * Math.PI * 5) * 62;
+    const gx = 30;
+    const gy = -250 - (1 - enter) * 500 - leave * 600;
+    const rnd = mulberry32(91);
+    const shreds: React.ReactNode[] = [];
+    for (let i = 0; i < 70; i++) {
+      const tx = (rnd() - 0.5) * 420;
+      const ty = (rnd() - 0.5) * 330;
+      const startX = gx - 120 + rnd() * 160;
+      const d0 = 18 + rnd() * 46;
+      const len = 12 + rnd() * 10;
+      const rot = rnd() * 360;
+      const curl = (rnd() - 0.5) * 10;
+      const color = rnd() > 0.4 ? "#FFD23F" : "#FFE680";
+      const l = local - d0;
+      if (l < 0) continue;
+      const p = interpolate(l, [0, 14], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
+      const x = startX + (tx - startX) * p;
+      const y = gy + 16 + (ty - gy - 16) * p;
+      const d = `M ${-len / 2} 0 Q 0 ${curl} ${len / 2} 0`;
+      shreds.push(
+        <g key={i} transform={`translate(${x} ${y}) rotate(${rot + (1 - p) * 180})`}>
+          <path d={d} stroke="#B98A0E" strokeWidth={8} strokeLinecap="round" fill="none" />
+          <path d={d} stroke={color} strokeWidth={4.5} strokeLinecap="round" fill="none" />
+        </g>,
+      );
+    }
+    return (
+      <>
+        {shreds}
+        <g transform={`translate(${gx} ${gy}) rotate(-8)`} opacity={1 - leave}>
+          <ZestGrater lemonX={lemonX} />
+        </g>
+      </>
+    );
+  };
+
   const renderOilBubbles = () => {
     if (oilAt === null || frame < oilAt + 30) return null;
     const rnd = mulberry32(77);
@@ -347,6 +394,7 @@ export const PanStage: React.FC<{
         <Steam frame={frame} strength={steam} />
         {renderPour()}
         {renderLemon()}
+        {renderZest()}
       </g>
     </g>
   );

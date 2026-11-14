@@ -13,7 +13,7 @@ export const gamberiZucchine: Recipe = {
     { name: "Aglio", qty: "1 spicchio", icon: "garlicClove" },
     { name: "Olio extravergine", qty: "3 cucchiai", icon: "oilBottle" },
     { name: "Prezzemolo", qty: "q.b.", icon: "parsleySprig" },
-    { name: "Limone", qty: "½", icon: "lemon" },
+    { name: "Scorza di limone", qty: "½ limone", icon: "lemon" },
     { name: "Sale e pepe", qty: "q.b.", icon: "saltPepper" },
   ],
   steps: [
@@ -63,9 +63,9 @@ export const gamberiZucchine: Recipe = {
       duration: 65,
     },
     {
-      title: "Limone",
-      text: "Finisci con una spruzzata di limone",
-      add: ["lemon"],
+      title: "Scorza di limone",
+      text: "Finisci con la scorza di limone grattugiata",
+      add: ["lemonZest"],
       duration: 95,
     },
     {

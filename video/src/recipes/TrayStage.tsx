@@ -1,19 +1,22 @@
 import React from "react";
 import { Easing, interpolate, spring } from "remotion";
 import { COLORS } from "../LogoAnimation";
-import { Crust, Orata } from "./Orata";
+import { Crust, FILLET_CRUST, Fillet } from "./Orata";
 import { Steam } from "./Steam";
-import { FOOD, LemonHalf, ParsleyFleck, ParsleySprig } from "./ingredients";
+import { FOOD, ParsleyFleck } from "./ingredients";
 import { addTimes, firstAdd, type Timeline } from "./types";
 import { STAGE, clamp, mulberry32, roundedRect, type Pt } from "./utils";
 
-// Teglia vista dall'alto con le orate, e il forno che le cuoce.
+// Teglia vista dall'alto con i filetti di orata, e il forno che li cuoce.
 
 export const TRAY = { cx: STAGE.cx + 10, cy: STAGE.cy - 10, w: 620, h: 500, r: 46 };
-const FISH_SCALE = 0.86;
-const FISH = [
-  { x: -36, y: -110, rot: -2, flip: 1, seed: 101 },
-  { x: 36, y: 110, rot: 2, flip: -1, seed: 202 },
+const FILLET_SCALE = 0.9;
+// 4 filetti (2 orate), alternati testa/coda
+const FILLETS = [
+  { x: -12, y: -165, rot: -2, flip: 1, seed: 101 },
+  { x: 12, y: -55, rot: 2, flip: -1, seed: 202 },
+  { x: -12, y: 55, rot: -1.5, flip: 1, seed: 303 },
+  { x: 12, y: 165, rot: 1.5, flip: -1, seed: 404 },
 ];
 
 const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
@@ -72,7 +75,6 @@ export const TrayStage: React.FC<{
 
   const fishAt = firstAdd(tl, "fish");
   const saltAt = firstAdd(tl, "salt");
-  const slicesAt = firstAdd(tl, "lemonSlices");
   const crumbsAt = firstAdd(tl, "breadcrumbs");
   const parsleyAt = firstAdd(tl, "parsley");
   const drizzles = addTimes(tl, "drizzle");
@@ -98,44 +100,17 @@ export const TrayStage: React.FC<{
     );
   };
 
-  // limone e prezzemolo che spuntano dalla pancia (disegnati sotto al pesce)
-  const renderStuffing = (fishIndex: number) => {
-    if (slicesAt === null) return null;
-    const items = [
-      { x: -34, y: 98, kind: "lemon" as const },
-      { x: 4, y: 90, kind: "sprig" as const },
-      { x: 40, y: 90, kind: "lemon" as const },
-    ];
-    return items.map((it, j) => {
-      const s = slicesAt + fishIndex * 12 + j * 6;
-      if (frame < s) return null;
-      const p = spring({ frame: frame - s, fps, config: { damping: 13 } });
-      const op = interpolate(frame - s, [0, 5], [0, 1], clamp);
-      return (
-        <g key={j} opacity={op} transform={`translate(${it.x} ${it.y + (1 - p) * 150})`}>
-          {it.kind === "lemon" ? (
-            <LemonHalf r={30} />
-          ) : (
-            <g transform="rotate(180) scale(0.62)">
-              <ParsleySprig />
-            </g>
-          )}
-        </g>
-      );
-    });
-  };
-
   // prezzemolo tritato sopra la panatura
   const renderFishParsley = (fishIndex: number) => {
     if (parsleyAt === null || frame < parsleyAt) return null;
     const rnd = mulberry32(300 + fishIndex);
     const out: React.ReactNode[] = [];
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 14; i++) {
       const a = rnd() * Math.PI * 2;
       const rr = Math.sqrt(rnd());
-      const x = 19 + Math.cos(a) * rr * 98;
-      const y = Math.sin(a) * rr * 56;
-      const delay = rnd() * 28 + fishIndex * 6;
+      const x = FILLET_CRUST.cx + Math.cos(a) * rr * (FILLET_CRUST.rx - 10);
+      const y = Math.sin(a) * rr * (FILLET_CRUST.ry - 4);
+      const delay = rnd() * 28 + fishIndex * 4;
       const rot = rnd() * 360;
       const local = frame - parsleyAt - delay;
       if (local < 0) continue;
@@ -155,8 +130,8 @@ export const TrayStage: React.FC<{
 
   const renderFish = () => {
     if (fishAt === null) return null;
-    return FISH.map((f, i) => {
-      const s = fishAt + i * 14;
+    return FILLETS.map((f, i) => {
+      const s = fishAt + i * 9;
       if (frame < s) return null;
       const fall = spring({ frame: frame - s, fps, config: { damping: 12, mass: 0.9 } });
       const op = interpolate(frame - s, [0, 5], [0, 1], clamp);
@@ -166,11 +141,12 @@ export const TrayStage: React.FC<{
         <g
           key={i}
           opacity={op}
-          transform={`translate(${f.x} ${y}) rotate(${rot}) scale(${FISH_SCALE * f.flip} ${FISH_SCALE})`}
+          transform={`translate(${f.x} ${y}) rotate(${rot}) scale(${FILLET_SCALE * f.flip} ${FILLET_SCALE})`}
         >
-          {renderStuffing(i)}
-          <Orata baked={bake} id={`tray${i}`} />
-          {crumbsAt !== null && <Crust local={frame - crumbsAt - i * 8} baked={bake} seed={f.seed} />}
+          <Fillet baked={bake} id={`tray${i}`} />
+          {crumbsAt !== null && (
+            <Crust local={frame - crumbsAt - i * 6} baked={bake} seed={f.seed} area={FILLET_CRUST} />
+          )}
           {renderFishParsley(i)}
         </g>
       );

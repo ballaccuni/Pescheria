@@ -467,3 +467,51 @@ export const LinguineNest: React.FC<{ paths: string[]; radius: number }> = ({ pa
     ))}
   </g>
 );
+
+/** Filetto di pesce (icona). */
+export const FilletIcon: React.FC = () => (
+  <g transform="rotate(-18)">
+    <path
+      d="M -42 -2 C -42 -14 -28 -18 -8 -17 C 14 -16 32 -9 44 -2 C 46 -1 46 1 44 2 C 32 9 14 16 -8 17 C -28 18 -42 10 -42 -2 Z"
+      fill="#9DB0BB"
+      stroke={COLORS.slate}
+      strokeWidth={2.5}
+    />
+    <path
+      d="M -38 -2 C -38 -12 -26 -14 -8 -13 C 12 -12 28 -7 38 -2 C 28 5 12 12 -8 13 C -26 14 -38 8 -38 -2 Z"
+      fill="#F2DCCF"
+    />
+    {[-26, -14, -2, 10, 22].map((x, i) => (
+      <path key={i} d={`M ${x + 2} -11 Q ${x - 4} 0 ${x + 2} 11`} stroke="#E3BFAE" strokeWidth={1.8} fill="none" />
+    ))}
+  </g>
+);
+
+/** Grattugia con il limone (scorza). */
+export const ZestGrater: React.FC<{ lemonX: number }> = ({ lemonX }) => (
+  <g>
+    <rect x={-150} y={-22} width={250} height={44} rx={10} fill="#D8E2E7" stroke={COLORS.slate} strokeWidth={3.5} />
+    {Array.from({ length: 22 }).map((_, i) => (
+      <g key={i}>
+        <path d={`M ${-138 + i * 11} -10 l 5 -4`} stroke="#8EA3AE" strokeWidth={2.5} strokeLinecap="round" />
+        <path d={`M ${-138 + i * 11} 8 l 5 -4`} stroke="#8EA3AE" strokeWidth={2.5} strokeLinecap="round" />
+      </g>
+    ))}
+    <rect x={98} y={-17} width={96} height={34} rx={17} fill={COLORS.slate} />
+    <circle cx={180} cy={0} r={6} fill={COLORS.cream} />
+    {/* limone intero che passa sulla grattugia */}
+    <g transform={`translate(${lemonX} -40)`}>
+      <ellipse rx={52} ry={38} fill={FOOD.lemonRind} stroke="#D9B13A" strokeWidth={3.5} />
+      <ellipse cx={54} rx={9} ry={7} fill={FOOD.lemonRind} stroke="#D9B13A" strokeWidth={3} />
+      <ellipse cx={-16} cy={-14} rx={16} ry={7} fill="#FFFFFF" opacity={0.35} />
+      {[
+        [-20, 8],
+        [6, 16],
+        [22, -4],
+        [-34, -6],
+      ].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={1.8} fill="#D9B13A" />
+      ))}
+    </g>
+  </g>
+);

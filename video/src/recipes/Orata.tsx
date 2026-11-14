@@ -99,16 +99,24 @@ const CRUMB_TONES: [string, string][] = [
  * Panatura di pangrattato sopra l'orata (stesse coordinate del pesce).
  * local: fotogrammi da quando inizia a piovere il pangrattato. baked: doratura 0..1.
  */
-export const Crust: React.FC<{ local: number; baked: number; seed: number }> = ({ local, baked, seed }) => {
+export type CrustArea = { cx: number; rx: number; ry: number; blob: string; count: number };
+const WHOLE_FISH_AREA: CrustArea = { cx: 19, rx: 108, ry: 64, blob: CRUST_BLOB, count: 230 };
+
+export const Crust: React.FC<{ local: number; baked: number; seed: number; area?: CrustArea }> = ({
+  local,
+  baked,
+  seed,
+  area = WHOLE_FISH_AREA,
+}) => {
   if (local < 0) return null;
   const rnd = mulberry32(seed);
   const crumbs: React.ReactNode[] = [];
-  for (let i = 0; i < 230; i++) {
+  for (let i = 0; i < area.count; i++) {
     const a = rnd() * Math.PI * 2;
     // qualche briciola cade anche fuori dal pesce
     const rr = Math.sqrt(rnd()) * (rnd() < 0.1 ? 1.28 : 1);
-    const x = 19 + Math.cos(a) * rr * 108;
-    const y = Math.sin(a) * rr * 64;
+    const x = area.cx + Math.cos(a) * rr * area.rx;
+    const y = Math.sin(a) * rr * area.ry;
     const delay = rnd() * 42;
     const size = 3.5 + rnd() * 4.5;
     const tone = CRUMB_TONES[Math.floor(rnd() * CRUMB_TONES.length)];
@@ -128,8 +136,63 @@ export const Crust: React.FC<{ local: number; baked: number; seed: number }> = (
   }
   return (
     <g>
-      <path d={CRUST_BLOB} fill={mix("#E5CB93", "#CC9140", baked)} opacity={interpolate(local, [12, 46], [0, 0.94], clamp)} />
+      <path d={area.blob} fill={mix("#E5CB93", "#CC9140", baked)} opacity={interpolate(local, [12, 46], [0, 0.94], clamp)} />
       {crumbs}
+    </g>
+  );
+};
+
+// ---------------------------------------------------------------- filetto
+
+// Filetto di orata visto dall'alto, pelle sotto e polpa sopra.
+// Lungo circa 320: da x=-152 (lato testa, più largo) a x=166 (coda).
+const FILLET =
+  "M -152 -8 C -152 -46 -104 -60 -32 -58 C 46 -55 116 -32 160 -8 C 168 -3 168 4 160 8 C 116 32 46 55 -32 58 C -104 60 -152 34 -152 -8 Z";
+
+/** Zona coperta dalla panatura su un filetto. */
+export const FILLET_CRUST: CrustArea = {
+  cx: 2,
+  rx: 128,
+  ry: 38,
+  count: 150,
+  blob: "M -128 -6 C -128 -36 -80 -46 -20 -44 C 50 -42 104 -26 132 -6 C 104 18 50 38 -20 40 C -80 42 -128 26 -128 -6 Z",
+};
+
+/** baked: 0 = crudo (polpa rosata e lucida), 1 = cotto (polpa bianca). */
+export const Fillet: React.FC<{ baked?: number; id: string }> = ({ baked = 0, id }) => {
+  const flesh = mix("#F2DCCF", "#F8F1E6", baked);
+  const lines = mix("#E3BFAE", "#E9DCC6", baked);
+  return (
+    <g>
+      <defs>
+        <clipPath id={`fillet-${id}`}>
+          <path d={FILLET} />
+        </clipPath>
+      </defs>
+      {/* pelle argentata che sporge dal bordo */}
+      <path d={FILLET} fill={mix("#9DB0BB", "#B6A27E", baked * 0.7)} stroke={COLORS.slate} strokeWidth={3.5} />
+      <g transform="scale(0.94 0.84)">
+        <path d={FILLET} fill={flesh} />
+        <g clipPath={`url(#fillet-${id})`}>
+          {/* parte scura vicino alla pelle e linea centrale */}
+          <path d="M -150 -2 C -60 6 60 4 166 0" stroke={mix("#D9A79A", "#E2CDB2", baked)} strokeWidth={9} fill="none" opacity={0.55} />
+          {/* venature della polpa */}
+          {[-118, -88, -58, -28, 2, 32, 62, 92, 122].map((x, i) => {
+            const h = 52 - Math.max(0, x) * 0.24;
+            return (
+              <path
+                key={i}
+                d={`M ${x + 8} ${-h} Q ${x - 14} 0 ${x + 8} ${h}`}
+                stroke={lines}
+                strokeWidth={3}
+                fill="none"
+                strokeLinecap="round"
+              />
+            );
+          })}
+          <ellipse cx={-70} cy={-24} rx={46} ry={9} fill="#FFFFFF" opacity={0.28 * (1 - baked)} transform="rotate(-6 -70 -24)" />
+        </g>
+      </g>
     </g>
   );
 };
