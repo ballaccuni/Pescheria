@@ -32,13 +32,25 @@ export const SoundEffects: React.FC<{ durationInFrames: number }> = ({
 }) => {
   return (
     <>
+      {/* Musichetta di sottofondo (scripts/make-music.py) */}
+      <Audio
+        src={staticFile("sfx/music.wav")}
+        volume={(f) =>
+          interpolate(
+            f,
+            [0, 20, durationInFrames - 30, durationInFrames],
+            [0, 0.4 * MASTER, 0.4 * MASTER, 0],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+          )
+        }
+      />
       <Audio
         src={staticFile("sfx/ocean.wav")}
         volume={(f) =>
           interpolate(
             f,
             [0, 30, durationInFrames - 45, durationInFrames],
-            [0, 0.35 * MASTER, 0.35 * MASTER, 0],
+            [0, 0.2 * MASTER, 0.2 * MASTER, 0],
             { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
           )
         }
