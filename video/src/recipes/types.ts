@@ -22,6 +22,9 @@ export type AddKind =
   | "potatoes"
   // mixer
   | "blend"
+  // ciotola del condimento
+  | "mixBase"
+  | "mixFinish"
   // teglia
   | "drizzle"
   | "fish"
@@ -46,7 +49,7 @@ export type IconKind =
   | "paccheri";
 
 /** Dove si svolge un passo. Il piatto è a parte (plate: true). */
-export type StageKind = "pan" | "tray" | "pot" | "mixer" | "bowl";
+export type StageKind = "pan" | "tray" | "pot" | "mixer" | "bowl" | "mixbowl";
 
 export type Step = {
   title: string;

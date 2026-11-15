@@ -397,6 +397,17 @@ def blender(dur=2.3):
     return x
 
 
+def stir(dur=2.2):
+    """Cucchiaio che mescola in una ciotola: fruscio morbido che va e viene."""
+    srng = np.random.default_rng(77)
+    n = int(SR * dur)
+    tt = np.arange(n) / SR
+    x = lowpass(highpass(srng.standard_normal(n), 250), 1400)
+    x = x / np.max(np.abs(x))
+    swirl = (0.45 + 0.55 * np.sin(2 * np.pi * 1.6 * tt) ** 2) * np.sin(np.pi * np.clip(tt / dur, 0, 1)) ** 0.5
+    return x * swirl
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save("ocean", ocean(19.5), peak=0.5)
@@ -425,4 +436,5 @@ if __name__ == "__main__":
     save("grate", grate(), peak=0.6)
     save("boil", boil(), peak=0.5)
     save("blender", blender(), peak=0.6)
+    save("stir", stir(), peak=0.5)
     print("ok")

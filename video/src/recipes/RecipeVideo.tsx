@@ -16,6 +16,7 @@ import { fontFamily } from "../font";
 import { Chef, type ChefMood, type HandPose } from "./Chef";
 import { BowlStage, SHELLED_COUNT, shellLandAt } from "./BowlStage";
 import { BLEND, MixerStage } from "./MixerStage";
+import { MIX, MixBowlStage } from "./MixBowlStage";
 import { GROUPS, PanStage, musselOpenAt, panHandleEnd } from "./PanStage";
 import { PlateStage, ZEST } from "./PlateStage";
 import { PotStage } from "./PotStage";
@@ -313,6 +314,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             if (seg.kind === "pot") return <PotStage key={i} {...common} />;
             if (seg.kind === "mixer") return <MixerStage key={i} {...common} />;
             if (seg.kind === "bowl") return <BowlStage key={i} {...common} />;
+            if (seg.kind === "mixbowl") return <MixBowlStage key={i} {...common} />;
             return <TrayStage key={i} tl={tl} frame={frame} fps={fps} offset={m.offset} />;
           })}
 
@@ -486,6 +488,15 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       } else if (a.kind === "lemonZest") {
         add(a.at + 16, "grate", 0.5);
         add(a.at + 30, "sprinkle", 0.3);
+      } else if (a.kind === "mixBase") {
+        add(a.at + MIX.crumbs[0], "sprinkle", 0.6);
+        add(a.at + MIX.crumbs[0] + 14, "sprinkle", 0.5);
+        add(a.at + MIX.parsley[0], "sprinkle", 0.4);
+        add(a.at + MIX.garlic[0], "sprinkle", 0.4);
+      } else if (a.kind === "mixFinish") {
+        add(a.at + MIX.oil[0] + 8, "pour", 0.4);
+        add(a.at + MIX.salt[0], "sprinkle", 0.45);
+        add(a.at + MIX.stir[0], "stir", 0.55);
       } else if (a.kind === "transfer") {
         for (let i = 0; i < 14; i += 3) add(a.at + i * 3 + 8, "plop", 0.25);
       } else if (a.kind === "shell") {

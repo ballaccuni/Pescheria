@@ -8,13 +8,27 @@ export const orataForno: Recipe = {
   ingredients: [
     { name: "Filetti di orata", qty: "4 (da 2 orate)", icon: "fillet" },
     { name: "Pangrattato", qty: "4 cucchiai", icon: "breadcrumbs" },
-    { name: "Prezzemolo", qty: "1 ciuffo", icon: "parsleySprig" },
-    { name: "Aglio", qty: "1 spicchio", icon: "garlicClove" },
+    { name: "Prezzemolo tritato", qty: "1 ciuffo", icon: "parsleySprig" },
+    { name: "Aglio tritato", qty: "1 spicchio", icon: "garlicClove" },
     { name: "Limone (per servire)", qty: "1", icon: "lemon" },
     { name: "Olio extravergine", qty: "4 cucchiai", icon: "oilBottle" },
     { name: "Sale e pepe", qty: "q.b.", icon: "saltPepper" },
   ],
   steps: [
+    {
+      title: "Il condimento",
+      text: "In una ciotola metti il pangrattato, il prezzemolo e l'aglio tritati",
+      stage: "mixbowl",
+      add: ["mixBase"],
+      duration: 112,
+    },
+    {
+      title: "Olio, sale e pepe",
+      text: "Aggiungi un cucchiaio d'olio, sale e pepe e mescola bene",
+      stage: "mixbowl",
+      add: ["mixFinish"],
+      duration: 150,
+    },
     {
       title: "La teglia",
       text: "Fodera una teglia con carta forno e versa un filo d'olio",
@@ -23,15 +37,15 @@ export const orataForno: Recipe = {
     },
     {
       title: "I filetti",
-      text: "Adagia i filetti con la pelle verso il basso, poi sale e pepe",
-      add: ["fish", "salt"],
-      duration: 110,
+      text: "Adagia i filetti nella teglia con la pelle verso il basso",
+      add: ["fish"],
+      duration: 85,
     },
     {
-      title: "Pangrattato",
-      text: "Copri con pangrattato, aglio tritato e prezzemolo",
+      title: "Copri con il condimento",
+      text: "Distribuisci il condimento sopra i filetti",
       add: ["breadcrumbs", "parsley"],
-      duration: 115,
+      duration: 110,
     },
     {
       title: "Un filo d'olio",
