@@ -63,16 +63,10 @@ export const gamberiZucchine: Recipe = {
       duration: 65,
     },
     {
-      title: "Scorza di limone",
-      text: "Finisci con la scorza di limone grattugiata",
-      add: ["lemonZest"],
-      duration: 95,
-    },
-    {
       title: "Impiattamento",
-      text: "Fai un nido di linguine nel piatto e completa con gamberi e verdure",
+      text: "Fai un nido di linguine, completa con gamberi e verdure e grattugia la scorza di limone",
       plate: true,
-      duration: 135,
+      duration: 190,
     },
   ],
   outro: "I gamberi freschi li trovi da noi",

@@ -192,6 +192,8 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
             <ParsleyFleck />
           </Drop>
         ))}
+        {/* scorza di limone grattugiata sul piatto */}
+        {local >= ZEST.from && renderGrater()}
       </>
     );
   };

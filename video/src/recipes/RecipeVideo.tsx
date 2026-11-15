@@ -354,13 +354,13 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             transform: `translateY(${(1 - capIn) * 30}px)`,
           }}
         >
-          <div style={{ color: COLORS.blue, fontSize: 26, fontWeight: 600, letterSpacing: 5 }}>
+          <div style={{ color: COLORS.blue, fontSize: 30, fontWeight: 600, letterSpacing: 5 }}>
             PASSO {current + 1} DI {tl.steps.length}
           </div>
-          <div style={{ color: COLORS.slate, fontSize: 60, fontWeight: 600, marginTop: 6, lineHeight: 1.1 }}>
+          <div style={{ color: COLORS.slate, fontSize: 68, fontWeight: 600, marginTop: 6, lineHeight: 1.08 }}>
             {step.title}
           </div>
-          <div style={{ color: COLORS.slate, fontSize: 36, opacity: 0.85, marginTop: 12, lineHeight: 1.3 }}>
+          <div style={{ color: COLORS.slate, fontSize: 43, opacity: 0.88, marginTop: 14, lineHeight: 1.28 }}>
             {step.text}
           </div>
         </div>
@@ -369,7 +369,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         <div
           style={{
             position: "absolute",
-            top: 1620,
+            top: 1655,
             left: TEXT_COL.left,
             display: "flex",
             gap: 12,
@@ -533,7 +533,7 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       add(s.start + 62, "plop", 0.3);
       add(s.start + 72, "plop", 0.3);
       add(s.start + 92, "sprinkle", 0.5);
-      if (recipe.dish === "cozze") add(s.start + ZEST.from + 12, "grate", 0.5);
+      if (recipe.dish === "cozze" || recipe.dish === "pasta") add(s.start + ZEST.from + 12, "grate", 0.5);
       add(s.start + 106, "note-d5", 0.3);
       add(s.start + 110, "note-fs5", 0.3);
       add(s.start + 114, "note-a5", 0.3);
