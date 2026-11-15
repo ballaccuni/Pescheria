@@ -10,7 +10,7 @@ import {
   Pacchero,
   ZestGrater,
   ParsleyFleck,
-  ParsleySprig,
+  ParsleyLeaf,
   Shrimp,
   TomatoHalf,
   ZucchiniStick,
@@ -74,7 +74,6 @@ const FISH_PARSLEY = scatter(16, 1, 0, 25).map((s, i) => {
   const rr = Math.sqrt(rnd());
   return { x: 2 + Math.cos(a) * rr * 116, y: Math.sin(a) * rr * 32, rot: s.rot };
 });
-const GARNISH_SPOTS = scatter(14, 190, 26, 26);
 // paccheri in ordine: un cerchio interno e quattro tra le cozze, nessuno sopra l'altro
 const PACCHERI_SPOTS = (() => {
   const out: Spot[] = [];
@@ -303,28 +302,22 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
           </g>
         </Drop>
       ))}
-      <Drop local={local} start={60} fps={fps} x={150} y={156} rot={24} scale={1.1} from={{ x: 420, y: 60 }}>
+      {/* spicchi di limone */}
+      <Drop local={local} start={60} fps={fps} x={160} y={150} rot={28} scale={1.15} from={{ x: 420, y: 60 }}>
         <LemonWedge />
       </Drop>
-      <Drop local={local} start={68} fps={fps} x={72} y={196} rot={-14} scale={1.1} from={{ x: 420, y: 120 }}>
+      <Drop local={local} start={68} fps={fps} x={66} y={196} rot={-12} scale={1.15} from={{ x: 420, y: 120 }}>
         <LemonWedge />
       </Drop>
-      <Drop local={local} start={78} fps={fps} x={-178} y={-150} rot={-35} scale={1.25} from={{ x: -380, y: -120 }}>
-        <ParsleySprig />
-      </Drop>
-      {GARNISH_SPOTS.filter((s) => Math.abs(s.y) > 120 || Math.abs(s.x) > 170).map((s, i) => (
-        <Drop
-          key={`g${i}`}
-          local={local}
-          start={90 + (i % 5) * 2}
-          fps={fps}
-          x={s.x}
-          y={s.y}
-          rot={s.rot}
-          scale={1.3}
-          from={{ x: 0, y: -260 }}
-        >
-          <ParsleyFleck />
+      {/* solo foglie di prezzemolo */}
+      {[
+        { x: -178, y: -132, rot: -35, s: 1.25, start: 80 },
+        { x: -150, y: -178, rot: 15, s: 1.05, start: 84 },
+        { x: 212, y: 92, rot: 70, s: 1.15, start: 88 },
+        { x: -118, y: 170, rot: -150, s: 1.1, start: 92 },
+      ].map((l, i) => (
+        <Drop key={`leaf${i}`} local={local} start={l.start} fps={fps} x={l.x} y={l.y} rot={l.rot} scale={l.s} from={{ x: 0, y: -300 }}>
+          <ParsleyLeaf />
         </Drop>
       ))}
     </>

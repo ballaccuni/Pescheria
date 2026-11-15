@@ -375,11 +375,50 @@ export const ZucchiniStick: React.FC<{ len?: number; curve?: number; skin?: bool
 /** Spicchio di limone (per l'impiattamento). */
 export const LemonWedge: React.FC = () => (
   <g>
-    <path d="M -46 8 Q 0 -54 46 8 Q 0 36 -46 8 Z" fill={FOOD.lemonRind} stroke="#D9B13A" strokeWidth={3} strokeLinejoin="round" />
-    <path d="M -34 8 Q 0 -38 34 8 Q 0 24 -34 8 Z" fill={FOOD.lemonFlesh} />
-    <path d="M 0 -14 L 0 18 M -16 -6 L -11 15 M 16 -6 L 11 15" stroke="#FFF6D6" strokeWidth={3} strokeLinecap="round" />
+    {/* buccia */}
+    <path d="M -54 12 Q 0 -70 54 12 Q 0 22 -54 12 Z" fill="#F2C230" stroke="#C99A1E" strokeWidth={3} strokeLinejoin="round" />
+    <path d="M -46 9 Q 0 -60 46 9" stroke="#F7D65A" strokeWidth={4} fill="none" opacity={0.8} />
+    {/* parte bianca sotto la buccia */}
+    <path d="M -45 12 Q 0 -54 45 12 Q 0 19 -45 12 Z" fill="#FFF7DE" />
+    {/* polpa a spicchi */}
+    <path d="M -40 12 Q 0 -46 40 12 Q 0 17 -40 12 Z" fill="#FBDD5E" />
+    {[-31, -16, 0, 16, 31].map((x, i) => (
+      <path key={i} d={`M 0 14 L ${x} ${-22 + Math.abs(x) * 0.62}`} stroke="#FFF2B8" strokeWidth={2.6} strokeLinecap="round" />
+    ))}
+    {/* riflessi di succo */}
+    {[
+      [-22, -6],
+      [-6, -18],
+      [10, -12],
+      [24, -2],
+    ].map(([x, y], i) => (
+      <ellipse key={i} cx={x} cy={y} rx={4.5} ry={2.2} fill="#FFFFFF" opacity={0.7} transform={`rotate(${x * 1.5} ${x} ${y})`} />
+    ))}
+    {/* semi */}
+    <ellipse cx={-8} cy={4} rx={2.6} ry={4.5} fill="#F6EBC8" stroke="#D9C38A" strokeWidth={1} transform="rotate(-20 -8 4)" />
+    <ellipse cx={8} cy={2} rx={2.6} ry={4.5} fill="#F6EBC8" stroke="#D9C38A" strokeWidth={1} transform="rotate(25 8 2)" />
+    {/* taglio dello spicchio */}
+    <path d="M -54 12 Q 0 22 54 12" stroke="#C99A1E" strokeWidth={3} fill="none" strokeLinecap="round" />
   </g>
 );
+
+/** Foglia di prezzemolo intera (prezzemolo a foglia piatta), senza gambo lungo. */
+export const ParsleyLeaf: React.FC = () => {
+  // un lobo dentellato; la foglia ne ha tre
+  const lobe =
+    "M 0 0 C -10 -6 -19 -17 -15 -27 C -13 -33 -7 -34 -4 -30 C -2 -39 7 -39 8 -31 C 13 -35 19 -30 16 -22 C 14 -12 8 -5 0 0 Z";
+  return (
+    <g>
+      <path d="M 0 6 L 0 -2" stroke="#2E6E33" strokeWidth={4} strokeLinecap="round" />
+      {[-48, 0, 48].map((r) => (
+        <g key={r} transform={`rotate(${r})`}>
+          <path d={lobe} fill={r === 0 ? "#3E9142" : "#358539"} stroke="#2A6630" strokeWidth={2} strokeLinejoin="round" />
+          <path d="M 0 -2 L 1 -30 M 0 -14 L -8 -24 M 1 -18 L 9 -26" stroke="#63B565" strokeWidth={1.8} strokeLinecap="round" fill="none" />
+        </g>
+      ))}
+    </g>
+  );
+};
 
 /** Nido di linguine arrotolate (per l'impiattamento). */
 export const makeNest = (radius: number, count = 28, seed = 7) => {
