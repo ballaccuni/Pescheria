@@ -10,7 +10,7 @@ export const orataForno: Recipe = {
     { name: "Pangrattato", qty: "4 cucchiai", icon: "breadcrumbs" },
     { name: "Prezzemolo tritato", qty: "1 ciuffo", icon: "parsleySprig" },
     { name: "Aglio tritato", qty: "1 spicchio", icon: "garlicClove" },
-    { name: "Limone (per servire)", qty: "1", icon: "lemon" },
+    { name: "Limone (scorza e per servire)", qty: "1", icon: "lemon" },
     { name: "Olio extravergine", qty: "4 cucchiai", icon: "oilBottle" },
     { name: "Sale e pepe", qty: "q.b.", icon: "saltPepper" },
   ],
@@ -21,6 +21,13 @@ export const orataForno: Recipe = {
       stage: "mixbowl",
       add: ["mixBase"],
       duration: 112,
+    },
+    {
+      title: "Scorza di limone",
+      text: "Grattugia sopra la scorza di limone",
+      stage: "mixbowl",
+      add: ["mixZest"],
+      duration: 100,
     },
     {
       title: "Olio, sale e pepe",

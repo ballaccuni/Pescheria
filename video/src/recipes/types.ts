@@ -24,6 +24,7 @@ export type AddKind =
   | "blend"
   // ciotola del condimento
   | "mixBase"
+  | "mixZest"
   | "mixFinish"
   // teglia
   | "drizzle"

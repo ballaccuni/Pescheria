@@ -493,6 +493,8 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         add(a.at + MIX.crumbs[0] + 14, "sprinkle", 0.5);
         add(a.at + MIX.parsley[0], "sprinkle", 0.4);
         add(a.at + MIX.garlic[0], "sprinkle", 0.4);
+      } else if (a.kind === "mixZest") {
+        add(a.at + 12, "grate", 0.5);
       } else if (a.kind === "mixFinish") {
         add(a.at + MIX.oil[0] + 8, "pour", 0.4);
         add(a.at + MIX.salt[0], "sprinkle", 0.45);

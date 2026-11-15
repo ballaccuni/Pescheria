@@ -1,7 +1,7 @@
 import React from "react";
 import { Easing, interpolate, spring } from "remotion";
 import { COLORS } from "../LogoAnimation";
-import { FOOD, ParsleyFleck, mix } from "./ingredients";
+import { FOOD, ParsleyFleck, ZestGrater, mix } from "./ingredients";
 import { firstAddIn, type Timeline } from "./types";
 import { STAGE, clamp, lerpPt, mulberry32, type Pt } from "./utils";
 
@@ -18,12 +18,14 @@ export const MIX = {
   oil: [4, 34],
   salt: [40, 56],
   stir: [64, 128],
+  /** grattugia: dall'inizio del passo "scorza di limone" */
+  zest: [0, 78],
 } as const;
 
 const CRUMB_TONES = ["#EBD3A0", "#DFC283", "#F4E3BB", "#D8B670"];
 
 type Particle = {
-  kind: "crumb" | "parsley" | "garlic" | "salt" | "pepper";
+  kind: "crumb" | "parsley" | "garlic" | "salt" | "pepper" | "zest";
   p0: Pt; // dove cade
   p1: Pt; // dove finisce dopo aver mescolato
   delay: number;
@@ -60,6 +62,27 @@ const PARTICLES: Particle[] = (() => {
   add("parsley", 40, { x: 85, y: -55 }, 62, MIX.parsley, [0.95, 1.2]);
   add("garlic", 34, { x: -85, y: 70 }, 50, MIX.garlic, [8, 11]);
   return out;
+})();
+
+// scorza di limone grattugiata sul condimento
+const ZEST_SHREDS: Particle[] = (() => {
+  const rnd = mulberry32(13);
+  return Array.from({ length: 42 }, () => {
+    const a = rnd() * Math.PI * 2;
+    const r = Math.sqrt(rnd()) * 110;
+    const b = rnd() * Math.PI * 2;
+    const r1 = Math.sqrt(rnd()) * 165;
+    return {
+      kind: "zest",
+      p0: { x: -20 + Math.cos(a) * r, y: -10 + Math.sin(a) * r * 0.8 },
+      p1: { x: Math.cos(b) * r1, y: Math.sin(b) * r1 },
+      delay: 14 + rnd() * 50,
+      size: 12 + rnd() * 8,
+      tone: rnd() > 0.4 ? "#FFD23F" : "#FFE680",
+      rot: rnd() * 360,
+      speed: 0.7 + rnd() * 0.6,
+    } as Particle;
+  });
 })();
 
 // sale e pepe cadono dopo l'olio
@@ -111,6 +134,8 @@ export const MixBowlStage: React.FC<{
 }> = ({ tl, frame, fps, offset, range }) => {
   const baseAt = firstAddIn(tl, "mixBase", range[0], range[1]);
   const finishAt = firstAddIn(tl, "mixFinish", range[0], range[1]);
+  const zestAt = firstAddIn(tl, "mixZest", range[0], range[1]);
+  const lz = zestAt === null ? -1 : frame - zestAt;
   const lb = baseAt === null ? -1 : frame - baseAt;
   const lf = finishAt === null ? -1 : frame - finishAt;
   const m = interpolate(lf, MIX.stir, [0, 1], { ...clamp, easing: Easing.inOut(Easing.quad) });
@@ -128,8 +153,8 @@ export const MixBowlStage: React.FC<{
     return { x, y, op: interpolate(t, [0, 3], [0, 1], clamp), rot: pt.rot + ang * 57 };
   };
 
-  const particles = [...PARTICLES, ...(lf >= 0 ? SEASONING : [])].map((pt, i) => {
-    const local = pt.kind === "salt" || pt.kind === "pepper" ? lf : lb;
+  const particles = [...PARTICLES, ...(lz >= 0 ? ZEST_SHREDS : []), ...(lf >= 0 ? SEASONING : [])].map((pt, i) => {
+    const local = pt.kind === "salt" || pt.kind === "pepper" ? lf : pt.kind === "zest" ? lz : lb;
     const q = place(pt, local);
     if (!q) return null;
     if (pt.kind === "crumb") {
@@ -140,6 +165,15 @@ export const MixBowlStage: React.FC<{
       return (
         <g key={i} transform={`translate(${q.x} ${q.y}) rotate(${q.rot}) scale(${1.3 * pt.size})`} opacity={q.op}>
           <ParsleyFleck />
+        </g>
+      );
+    }
+    if (pt.kind === "zest") {
+      const d = `M ${-pt.size / 2} 0 Q 0 ${(i % 3) * 3 - 3} ${pt.size / 2} 0`;
+      return (
+        <g key={i} transform={`translate(${q.x} ${q.y}) rotate(${q.rot})`} opacity={q.op}>
+          <path d={d} stroke="#B98A0E" strokeWidth={8} strokeLinecap="round" fill="none" />
+          <path d={d} stroke={pt.tone} strokeWidth={4.5} strokeLinecap="round" fill="none" />
         </g>
       );
     }
@@ -218,11 +252,26 @@ export const MixBowlStage: React.FC<{
     );
   };
 
+  // grattugia con il limone sopra la ciotola
+  const renderGrater = () => {
+    if (lz < 0 || lz > MIX.zest[1] + 16) return null;
+    const enter = spring({ frame: lz, fps, config: { damping: 14 } });
+    const leave = interpolate(lz, [MIX.zest[1], MIX.zest[1] + 16], [0, 1], clamp);
+    const rub = interpolate(lz, [10, MIX.zest[1] - 10], [0, 1], clamp);
+    const lemonX = -70 + Math.sin(rub * Math.PI * 6) * 62;
+    return (
+      <g transform={`translate(10 ${-230 - (1 - enter) * 500 - leave * 600}) rotate(-8)`} opacity={1 - leave}>
+        <ZestGrater lemonX={lemonX} />
+      </g>
+    );
+  };
+
   return (
     <g transform={`translate(${STAGE.cx + offset.x} ${STAGE.cy + offset.y})`}>
       <Bowl />
       {renderOil()}
       {particles}
+      {renderGrater()}
       {renderStir()}
       {renderOilSpoon()}
     </g>
