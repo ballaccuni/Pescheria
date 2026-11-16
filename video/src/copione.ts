@@ -11,6 +11,8 @@
 //  segnaposto → testo mostrato nel segnaposto finché non c'è l'immagine
 //  timbro     → scritta "timbrata" sopra l'immagine (facoltativa)
 //  lente      → true per far passare una lente d'ingrandimento sull'immagine
+//  pioggia    → "soldi" per far cadere banconote e monete dall'alto,
+//               oppure il nome di un PNG in public/immagini da far cadere
 //  secondi    → durata della scena
 // ─────────────────────────────────────────────────────────────
 
@@ -22,6 +24,7 @@ export type Scena = {
   segnaposto?: string;
   timbro?: string;
   lente?: boolean;
+  pioggia?: string;
   secondi: number;
 };
 
@@ -61,6 +64,14 @@ export const copione: Scena[] = [
     segnaposto: "onda",
     timbro: "Fresco ✓",
     secondi: 3.5,
+  },
+  {
+    etichetta: "E il prezzo?",
+    titolo: "Fresco *non vuol dire caro*.",
+    sottotitolo: "Compri giusto, non butti niente.",
+    segnaposto: "portafoglio",
+    pioggia: "soldi",
+    secondi: 4,
   },
   {
     etichetta: "Da noi",

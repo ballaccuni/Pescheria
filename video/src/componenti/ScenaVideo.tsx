@@ -4,6 +4,7 @@ import { colori, font } from "../tema";
 import { Etichetta } from "./Etichetta";
 import { Ritaglio } from "./Ritaglio";
 import { TestoParole } from "./TestoParole";
+import { Pioggia } from "./Pioggia";
 import { Timbro } from "./Timbro";
 
 const coloriCerchio = [colori.oro, colori.corallo, colori.azzurro];
@@ -26,6 +27,12 @@ export const ScenaVideo: React.FC<{ scena: Scena; indice: number }> = ({ scena, 
   });
 
   return (
+    <>
+    {scena.pioggia && (
+      <AbsoluteFill style={{ opacity: 1 - uscita }}>
+        <Pioggia tipo={scena.pioggia} strato="dietro" />
+      </AbsoluteFill>
+    )}
     <AbsoluteFill
       style={{
         alignItems: "center",
@@ -66,5 +73,11 @@ export const ScenaVideo: React.FC<{ scena: Scena; indice: number }> = ({ scena, 
         </div>
       )}
     </AbsoluteFill>
+    {scena.pioggia && (
+      <AbsoluteFill style={{ opacity: 1 - uscita }}>
+        <Pioggia tipo={scena.pioggia} strato="davanti" inizio={16} />
+      </AbsoluteFill>
+    )}
+    </>
   );
 };
