@@ -5,6 +5,7 @@ import { Background, Camera, Source } from "./components/Common";
 import { Caption } from "./components/Caption";
 import { BigNumber, Document, Headline, List, Quote, Split } from "./scenes/Scenes";
 import { MapScene } from "./scenes/MapScene";
+import { MagnifierScene } from "./scenes/MagnifierScene";
 import { HANDLE, MUSIC, Scene, SCENES, VOICEOVER } from "./script";
 import { C, F } from "./theme";
 
@@ -24,6 +25,8 @@ const SceneBody: React.FC<{ s: Scene }> = ({ s }) => {
       return <Document {...s} />;
     case "split":
       return <Split {...s} />;
+    case "magnifier":
+      return <MagnifierScene {...s} />;
   }
 };
 

@@ -4,7 +4,7 @@
  * ============================================================
  *
  * Ogni scena ha:
- *  - type:     "map" | "headline" | "number" | "quote" | "list" | "document" | "split"
+ *  - type:     "map" | "headline" | "number" | "quote" | "list" | "document" | "split" | "magnifier"
  *  - seconds:  durata della scena
  *  - bg:       "cream" | "dark" | "gold"   (ignorato per "map")
  *  - caption:  la frase detta dalla voce. Appare parola per parola.
@@ -25,6 +25,7 @@ import type {
   SplitProps,
 } from "./scenes/Scenes";
 import type { MapProps } from "./scenes/MapScene";
+import type { MagnifierProps } from "./scenes/MagnifierScene";
 
 export const VOICEOVER: string | null = null; // es. "voce.mp3"
 export const MUSIC: string | null = null; // es. "musica.mp3" (volume basso)
@@ -38,7 +39,8 @@ export type Scene =
   | (Base & { type: "quote" } & QuoteProps)
   | (Base & { type: "list" } & ListProps)
   | (Base & { type: "document" } & DocumentProps)
-  | (Base & { type: "split" } & SplitProps);
+  | (Base & { type: "split" } & SplitProps)
+  | (Base & { type: "magnifier" } & MagnifierProps);
 
 export const SCENES: Scene[] = [
   {
@@ -79,6 +81,19 @@ export const SCENES: Scene[] = [
     sub: "Occhi · branchie · odore · carne",
     circle: true,
     caption: "Bastano *quattro controlli.* Te li spieghiamo.",
+  },
+  {
+    type: "magnifier",
+    seconds: 8,
+    bg: "cream",
+    tape: "Guardalo da vicino",
+    // x, y = punto del disegno del pesce su cui si ferma la lente
+    stops: [
+      { x: 268, y: 528, title: "Occhio", text: "Lucido, vivo e convesso" },
+      { x: 352, y: 566, title: "Branchie", text: "Rosso brillante, mai scure" },
+      { x: 600, y: 560, title: "Pelle", text: "Brillante, squame ben attaccate" },
+    ],
+    caption: "Avvicinati e guarda bene: *l'occhio,* poi *le branchie,* e infine *la pelle.*",
   },
   {
     type: "list",
