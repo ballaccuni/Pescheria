@@ -1,14 +1,19 @@
 import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { colori, font } from "../tema";
+import { Lente } from "./Lente";
+
+const LATO = 760;
 
 // Immagine ritagliata (PNG trasparente) sopra un cerchio colorato, che entra
 // con un rimbalzo e poi "respira". Senza immagine mostra un segnaposto.
+// Con `lente` una lente d'ingrandimento passa sopra l'immagine.
 export const Ritaglio: React.FC<{
   immagine?: string;
   segnaposto?: string;
   coloreCerchio: string;
   ritardo?: number;
-}> = ({ immagine, segnaposto, coloreCerchio, ritardo = 6 }) => {
+  lente?: boolean;
+}> = ({ immagine, segnaposto, coloreCerchio, ritardo = 6, lente }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const sCerchio = spring({ frame: frame - ritardo, fps, config: { damping: 12 } });
@@ -16,8 +21,9 @@ export const Ritaglio: React.FC<{
   const respiro = 1 + Math.sin(frame / 14) * 0.015;
   const rot = interpolate(sImg, [0, 1], [-12, 0]) + Math.sin(frame / 20) * 1.5;
 
-  return (
-    <div style={{ position: "relative", width: 760, height: 760 }}>
+  // Il disegno completo (cerchio + immagine): la lente ne mostra una copia ingrandita.
+  const disegno = (
+    <div style={{ position: "relative", width: LATO, height: LATO }}>
       <div
         style={{
           position: "absolute",
@@ -72,6 +78,13 @@ export const Ritaglio: React.FC<{
           </div>
         )}
       </div>
+    </div>
+  );
+
+  return (
+    <div style={{ position: "relative", width: LATO, height: LATO }}>
+      {disegno}
+      {lente && <Lente contenuto={disegno} lato={LATO} inizio={ritardo + 20} />}
     </div>
   );
 };

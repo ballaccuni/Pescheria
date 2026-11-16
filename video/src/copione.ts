@@ -10,6 +10,7 @@
 //               trasparente). Se manca, appare un segnaposto.
 //  segnaposto → testo mostrato nel segnaposto finché non c'è l'immagine
 //  timbro     → scritta "timbrata" sopra l'immagine (facoltativa)
+//  lente      → true per far passare una lente d'ingrandimento sull'immagine
 //  secondi    → durata della scena
 // ─────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ export type Scena = {
   immagine?: string;
   segnaposto?: string;
   timbro?: string;
+  lente?: boolean;
   secondi: number;
 };
 
@@ -28,7 +30,8 @@ export const copione: Scena[] = [
     etichetta: "Lo sapevi?",
     titolo: "Il pesce *fresco* si riconosce in 4 secondi.",
     segnaposto: "pesce intero",
-    secondi: 3.5,
+    lente: true,
+    secondi: 4.5,
   },
   {
     etichetta: "Primo segnale",

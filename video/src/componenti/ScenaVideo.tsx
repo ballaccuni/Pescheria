@@ -43,6 +43,7 @@ export const ScenaVideo: React.FC<{ scena: Scena; indice: number }> = ({ scena, 
           immagine={scena.immagine}
           segnaposto={scena.segnaposto}
           coloreCerchio={coloriCerchio[indice % coloriCerchio.length]}
+          lente={scena.lente}
         />
         {scena.timbro && (
           <div style={{ position: "absolute", left: 0, right: 0, bottom: 120, display: "flex", justifyContent: "center" }}>
