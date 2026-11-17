@@ -12,11 +12,14 @@ import {
   useVideoConfig,
 } from "remotion";
 import * as THREE from "three";
+import { useThree } from "@react-three/fiber";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { COLORS, Waves } from "./LogoAnimation";
 import shapesData from "./logo-shapes.json";
 
 // Logo in 3D: le forme sono ricalcate dall'immagine originale (scripts/trace-logo.py)
-// e hanno solo un po' di spessore, come un'insegna in rilievo.
+// e hanno solo un po' di spessore, come un'insegna smaltata appesa a una parete.
+// Luce da studio (riflessi), ombra morbida sulla parete, telecamera che si muove piano.
 // Da creare con --gl=swangle.
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -69,15 +72,55 @@ const Part: React.FC<{ name: PartName; p: number; bob?: number }> = ({ name, p, 
   const { geom, center } = usePart(name);
   const st = PART_STYLE[name];
   if (p <= 0.001) return null;
+  // arriva da davanti e si appoggia alla parete: l'ombra si stringe man mano
   return (
-    <group position={[center.x, center.y + bob - (1 - p) * 0.6, (1 - p) * -7]} rotation={[(1 - p) * -0.5, (1 - p) * -0.35, 0]} scale={0.7 + p * 0.3}>
-      <mesh geometry={geom} position={[-center.x, -center.y, 0]}>
-        {/* faccia davanti: colori del logo; fianchi: un tono più scuro */}
-        <meshStandardMaterial attach="material-0" color={st.color} roughness={0.42} metalness={0.05} />
-        <meshStandardMaterial attach="material-1" color={st.side} roughness={0.5} metalness={0.05} />
+    <group
+      position={[center.x, center.y + bob + (1 - p) * 0.5, (1 - p) * 3.2]}
+      rotation={[(1 - p) * 0.35, (1 - p) * -0.25, 0]}
+      scale={0.85 + p * 0.15}
+    >
+      <mesh geometry={geom} position={[-center.x, -center.y, 0]} castShadow>
+        {/* faccia davanti: colori del logo, smaltati; fianchi: un tono più scuro */}
+        <meshPhysicalMaterial
+          attach="material-0"
+          color={st.color}
+          roughness={0.38}
+          metalness={0}
+          clearcoat={0.7}
+          clearcoatRoughness={0.22}
+          envMapIntensity={0.08}
+        />
+        <meshPhysicalMaterial attach="material-1" color={st.side} roughness={0.45} metalness={0} clearcoat={0.4} envMapIntensity={0.06} />
       </mesh>
     </group>
   );
+};
+
+const ENV_INTENSITY = 0.42;
+
+/** Luce da studio: il materiale riflette una stanza illuminata (niente file esterni). */
+const StudioEnvironment: React.FC = () => {
+  const { gl, scene } = useThree();
+  useMemo(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = ENV_INTENSITY;
+    pmrem.dispose();
+  }, [gl, scene]);
+  return null;
+};
+
+/** Telecamera: si allontana piano e gira appena intorno al logo. */
+const CameraRig: React.FC<{ frame: number }> = ({ frame }) => {
+  const { camera } = useThree();
+  const pull = interpolate(frame, [0, 140], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const orbit = interpolate(frame, [100, 300], [0, 1], clamp);
+  const z = 15.5 + pull * 4.5;
+  const x = Math.sin(orbit * Math.PI * 1.2) * 1.6;
+  const y = 0.6 - pull * 0.5 + Math.sin(orbit * Math.PI) * 0.4;
+  camera.position.set(x, y, z);
+  camera.lookAt(0, 0.35, 0);
+  return null;
 };
 
 export const LogoThree: React.FC = () => {
@@ -90,11 +133,8 @@ export const LogoThree: React.FC = () => {
   const pSap = enter(48);
   const pRaf = enter(64);
 
-  // dopo l'entrata il logo si muove appena, per far vedere lo spessore
-  const sway = interpolate(frame, [100, 150], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
-  const rotY = Math.sin((frame - 100) / 45) * 0.2 * sway;
-  const rotX = Math.sin((frame - 100) / 70) * 0.06 * sway;
-  const bob = Math.sin(frame / 18) * 0.05;
+  // il logo resta appeso alla parete: si muove la telecamera
+  const bob = 0;
 
   // luce morbida che attraversa il logo
   const sweepX = frame < 215 ? interpolate(frame, [130, 200], [-8, 8], clamp) : interpolate(frame, [225, 295], [-8, 8], clamp);
@@ -105,26 +145,35 @@ export const LogoThree: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: `radial-gradient(circle at 50% 45%, #FFFDF8 0%, ${COLORS.cream} 52%, #F2E8D6 100%)` }}>
       <Waves />
-      {/* ombra a terra */}
-      <div
-        style={{
-          position: "absolute",
-          left: width / 2 - 360,
-          top: 900,
-          width: 720,
-          height: 64,
-          borderRadius: "50%",
-          background: "radial-gradient(ellipse at center, rgba(47,72,88,0.22) 0%, rgba(47,72,88,0) 70%)",
-          opacity: Math.min(1, pFish) * outro,
-        }}
-      />
       <AbsoluteFill style={{ opacity: outro }}>
-        <ThreeCanvas width={width} height={height} camera={{ position: [0, 0, 20], fov: 30 }}>
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[3, 5, 10]} intensity={1.55} />
-          <directionalLight position={[-6, -3, 6]} intensity={0.5} color="#DCEEFF" />
-          <pointLight position={[sweepX, 1, 4]} intensity={45 * sweepOn} distance={12} />
-          <group rotation={[rotX, rotY, 0]}>
+        <ThreeCanvas width={width} height={height} camera={{ position: [0, 0, 20], fov: 30 }} shadows="variance" flat>
+          <StudioEnvironment />
+          <CameraRig frame={frame} />
+          <ambientLight intensity={0.16} />
+          {/* luce principale dall'alto a sinistra: proietta l'ombra sulla parete */}
+          <directionalLight
+            position={[-4, 6, 9]}
+            intensity={0.62}
+            castShadow
+            shadow-mapSize={[2048, 2048]}
+            shadow-camera-left={-8}
+            shadow-camera-right={8}
+            shadow-camera-top={8}
+            shadow-camera-bottom={-8}
+            shadow-camera-near={1}
+            shadow-camera-far={30}
+            shadow-radius={9}
+            shadow-blurSamples={16}
+            shadow-bias={-0.0004}
+          />
+          <directionalLight position={[6, -2, 6]} intensity={0.14} color="#DCEEFF" />
+          <pointLight position={[sweepX, 1, 4]} intensity={22 * sweepOn} distance={12} />
+          {/* parete: si vede solo l'ombra, il colore è lo sfondo */}
+          <mesh position={[0, 0, -0.45]} receiveShadow>
+            <planeGeometry args={[60, 60]} />
+            <shadowMaterial opacity={0.2} />
+          </mesh>
+          <group>
             <Part name="fish" p={pFish} bob={bob} />
             <Part name="pescheria" p={pPesc} />
             <Part name="sapore" p={pSap} />
