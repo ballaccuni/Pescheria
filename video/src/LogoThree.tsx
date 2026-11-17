@@ -111,19 +111,30 @@ const StudioEnvironment: React.FC = () => {
 };
 
 /** Telecamera: si allontana piano e gira appena intorno al logo. */
-const CameraRig: React.FC<{ frame: number }> = ({ frame }) => {
+const CameraRig: React.FC<{ frame: number; compactAt?: number }> = ({ frame, compactAt }) => {
   const { camera } = useThree();
   const pull = interpolate(frame, [0, 140], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const orbit = interpolate(frame, [100, 300], [0, 1], clamp);
-  const z = 15.5 + pull * 4.5;
-  const x = Math.sin(orbit * Math.PI * 1.2) * 1.6;
-  const y = 0.6 - pull * 0.5 + Math.sin(orbit * Math.PI) * 0.4;
+  // "compatto": la telecamera si allontana e porta il logo in alto, per far posto ai testi sotto
+  const c =
+    compactAt === undefined
+      ? 0
+      : interpolate(frame, [compactAt, compactAt + 45], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
+  const lerp = (a: number, b: number) => a + (b - a) * c;
+  const z = lerp(15.5 + pull * 4.5, 40);
+  const x = Math.sin(orbit * Math.PI * 1.2) * 1.6 * (1 - c * 0.75);
+  const y = lerp(0.6 - pull * 0.5 + Math.sin(orbit * Math.PI) * 0.4, -6.7);
   camera.position.set(x, y, z);
-  camera.lookAt(0, 0.35, 0);
+  camera.lookAt(0, lerp(0.35, -6.7), 0);
   return null;
 };
 
-export const LogoThree: React.FC = () => {
+export const LogoThree: React.FC<{
+  /** se indicato, da questo fotogramma il logo si sposta in alto e si rimpicciolisce */
+  compactAt?: number;
+  /** false: niente suoni e niente dissolvenza finale (quando è parte di un video più lungo) */
+  standalone?: boolean;
+}> = ({ compactAt, standalone = true }) => {
   const frame = useCurrentFrame();
   const { width, height, fps, durationInFrames } = useVideoConfig();
 
@@ -140,7 +151,7 @@ export const LogoThree: React.FC = () => {
   const sweepX = frame < 215 ? interpolate(frame, [130, 200], [-8, 8], clamp) : interpolate(frame, [225, 295], [-8, 8], clamp);
   const sweepOn = (frame >= 130 && frame <= 200) || (frame >= 225 && frame <= 295) ? 1 : 0;
 
-  const outro = interpolate(frame, [durationInFrames - 18, durationInFrames], [1, 0], clamp);
+  const outro = standalone ? interpolate(frame, [durationInFrames - 18, durationInFrames], [1, 0], clamp) : 1;
 
   return (
     <AbsoluteFill style={{ background: `radial-gradient(circle at 50% 45%, #FFFDF8 0%, ${COLORS.cream} 52%, #F2E8D6 100%)` }}>
@@ -148,7 +159,7 @@ export const LogoThree: React.FC = () => {
       <AbsoluteFill style={{ opacity: outro }}>
         <ThreeCanvas width={width} height={height} camera={{ position: [0, 0, 20], fov: 30 }} shadows="variance" flat>
           <StudioEnvironment />
-          <CameraRig frame={frame} />
+          <CameraRig frame={frame} compactAt={compactAt} />
           <ambientLight intensity={0.16} />
           {/* luce principale dall'alto a sinistra: proietta l'ombra sulla parete */}
           <directionalLight
@@ -182,7 +193,16 @@ export const LogoThree: React.FC = () => {
         </ThreeCanvas>
       </AbsoluteFill>
 
-      {/* suoni: mare e primo suono al minimo */}
+      {standalone && <LogoThreeSounds />}
+    </AbsoluteFill>
+  );
+};
+
+/** Suoni del logo 3D: mare e primo suono al minimo. */
+export const LogoThreeSounds: React.FC = () => {
+  const { durationInFrames } = useVideoConfig();
+  return (
+    <>
       <Audio
         src={staticFile("sfx/ocean.wav")}
         volume={(f) => interpolate(f, [0, 30, durationInFrames - 40, durationInFrames], [0, 0.06, 0.06, 0], clamp)}
@@ -193,12 +213,11 @@ export const LogoThree: React.FC = () => {
         { from: 52, file: "pop", volume: 0.65 },
         { from: 68, file: "note-a5", volume: 0.45 },
         { from: 132, file: "note-d5", volume: 0.3 },
-        { from: 227, file: "note-fs5", volume: 0.3 },
       ].map((c) => (
         <Sequence key={`${c.file}${c.from}`} from={c.from} layout="none">
           <Audio src={staticFile(`sfx/${c.file}.wav`)} volume={c.volume} />
         </Sequence>
       ))}
-    </AbsoluteFill>
+    </>
   );
 };

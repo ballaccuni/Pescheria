@@ -136,7 +136,7 @@ export const Waves: React.FC = () => {
   );
 };
 
-const HOURS: {
+export const HOURS: {
   day: string;
   morning: string | null;
   afternoon: string | null;
@@ -298,7 +298,7 @@ export const LogoAnimation: React.FC = () => {
               transform: `translateY(${(1 - slogan2) * 24}px)`,
             }}
           >
-            per voi solo il pesce migliore
+            per voi, solo il pesce migliore
           </div>
         </div>
 
@@ -406,7 +406,7 @@ export const LogoAnimation: React.FC = () => {
   );
 };
 
-const Slot: React.FC<{ value: string | null }> = ({ value }) => (
+export const Slot: React.FC<{ value: string | null }> = ({ value }) => (
   <div
     style={{
       flex: 1,
