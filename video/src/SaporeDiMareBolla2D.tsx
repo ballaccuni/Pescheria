@@ -69,8 +69,10 @@ export const SaporeDiMareBolla2D: React.FC = () => {
     return { a, sp, r: 5 + ((i * 7) % 9) };
   });
 
-  // --- scena 2: slogan e orari
-  const S = POP_2D + 6;
+  // --- scena 2: il logo resta, piccolo in alto; sotto slogan e orari
+  const logoBack = frame < POP_2D ? 0 : spring({ frame: frame - POP_2D - 2, fps, config: { damping: 14 } });
+  const smallScale = scale * 0.5 * (0.85 + 0.15 * logoBack);
+  const S = POP_2D + 12;
   const t = (d: number, len = 22) =>
     interpolate(frame, [S + d, S + d + len], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   const slogan1 = t(0);
@@ -83,7 +85,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
     <AbsoluteFill style={{ backgroundColor: COLORS.cream, fontFamily }}>
       <Waves />
 
-      {frame < POP_2D && (
+      {(frame < POP_2D || logoBack > 0) && (
         <div
           style={{
             position: "absolute",
@@ -92,7 +94,11 @@ export const SaporeDiMareBolla2D: React.FC = () => {
             left: 0,
             top: 0,
             transformOrigin: "0 0",
-            transform: `translate(0px, ${height / 2 - 490 * scale}px) scale(${scale})`,
+            transform:
+              frame < POP_2D
+                ? `translate(0px, ${height / 2 - 490 * scale}px) scale(${scale})`
+                : `translate(${width / 2 - 512 * smallScale}px, ${205 - 490 * smallScale}px) scale(${smallScale})`,
+            opacity: frame < POP_2D ? 1 : Math.min(1, logoBack * 1.4),
           }}
         >
           <div style={{ position: "absolute", inset: 0, transform: `translateY(${fishBob}px) rotate(${fishTilt}deg)`, transformOrigin: "520px 312px" }}>
@@ -145,7 +151,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
       {frame >= POP_2D && (
         <>
           {/* Slogan */}
-          <div style={{ position: "absolute", top: 220, width: "100%", textAlign: "center" }}>
+          <div style={{ position: "absolute", top: 420, width: "100%", textAlign: "center" }}>
             <div
               style={{
                 color: COLORS.blue,
@@ -162,7 +168,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
             <div
               style={{
                 color: COLORS.slate,
-                fontSize: 54,
+                fontSize: 50,
                 fontWeight: 500,
                 marginTop: 10,
                 opacity: slogan2,
@@ -177,7 +183,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
           <div
             style={{
               position: "absolute",
-              top: 400,
+              top: 600,
               left: width / 2 - 260 * divider,
               width: 520 * divider,
               height: 3,
@@ -191,7 +197,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
           <div
             style={{
               position: "absolute",
-              top: 428,
+              top: 625,
               width: "100%",
               textAlign: "center",
               color: COLORS.blue,
@@ -206,7 +212,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
           <div
             style={{
               position: "absolute",
-              top: 482,
+              top: 676,
               left: 90,
               right: 90,
               padding: "0 28px",
@@ -223,7 +229,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
             <div style={{ flex: 1, textAlign: "right" }}>Mattina</div>
             <div style={{ flex: 1, textAlign: "right" }}>Pomeriggio</div>
           </div>
-          <div style={{ position: "absolute", top: 524, left: 90, right: 90, display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ position: "absolute", top: 718, left: 90, right: 90, display: "flex", flexDirection: "column", gap: 18 }}>
             {HOURS.map((row, i) => {
               const p = spring({ frame: frame - S - 52 - i * 12, fps, config: { damping: 16 } });
               return (
@@ -232,7 +238,7 @@ export const SaporeDiMareBolla2D: React.FC = () => {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    padding: "18px 28px",
+                    padding: "14px 28px",
                     borderRadius: 18,
                     backgroundColor: "rgba(58,150,191,0.09)",
                     opacity: Math.min(1, p * 1.4),
