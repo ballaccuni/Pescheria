@@ -199,11 +199,7 @@ export const LogoAnimation: React.FC = () => {
   const orariLabel = interpolate(frame, [215, 235], [0, 1], clamp);
   const headersIn = interpolate(frame, [228, 248], [0, 1], clamp);
 
-  // --- Scena 3: slogan e orari lasciano spazio al sito web ---
-  const infoOut = interpolate(frame, [395, 415], [1, 0], {
-    ...clamp,
-    easing: Easing.in(Easing.cubic),
-  });
+
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.cream, fontFamily }}>
@@ -268,8 +264,6 @@ export const LogoAnimation: React.FC = () => {
 
       <AbsoluteFill
         style={{
-          opacity: infoOut,
-          transform: `translateY(${(1 - infoOut) * -30}px)`,
         }}
       >
         {/* Slogan */}
@@ -407,7 +401,6 @@ export const LogoAnimation: React.FC = () => {
         </div>
       </AbsoluteFill>
 
-      <WebsiteCta start={410} />
       <SoundEffects durationInFrames={durationInFrames} />
     </AbsoluteFill>
   );
@@ -427,147 +420,3 @@ const Slot: React.FC<{ value: string | null }> = ({ value }) => (
     {value ?? "—"}
   </div>
 );
-
-const SITE = "saporedimareraffadali.it";
-
-// Pulsante del sito con cursore che clicca
-const WebsiteCta: React.FC<{ start: number }> = ({ start }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const f = frame - start;
-  if (f < 0) return null;
-
-  const labelIn = interpolate(f, [0, 20], [0, 1], {
-    ...clamp,
-    easing: Easing.out(Easing.cubic),
-  });
-  const pillIn = spring({ frame: f - 8, fps, config: { damping: 13 } });
-
-  // il cursore entra dal basso a destra e si ferma sul pulsante
-  const clickAt = 62;
-  const cursorMove = interpolate(f, [24, 56], [0, 1], {
-    ...clamp,
-    easing: Easing.inOut(Easing.cubic),
-  });
-  const cursorX = interpolate(cursorMove, [0, 1], [1000, 610]);
-  const cursorY = interpolate(cursorMove, [0, 1], [1120, 712]);
-  const cursorOpacity = interpolate(f, [24, 32], [0, 1], clamp);
-  const press = interpolate(
-    f,
-    [clickAt - 4, clickAt, clickAt + 6],
-    [1, 0.82, 1],
-    clamp,
-  );
-  const pillPress = interpolate(
-    f,
-    [clickAt - 4, clickAt, clickAt + 8],
-    [1, 0.95, 1],
-    clamp,
-  );
-  const filled = interpolate(f, [clickAt, clickAt + 10], [0, 1], clamp);
-  const ripple = interpolate(f, [clickAt, clickAt + 28], [0, 1], {
-    ...clamp,
-    easing: Easing.out(Easing.cubic),
-  });
-  const hintIn = interpolate(f, [clickAt + 14, clickAt + 34], [0, 1], clamp);
-
-  return (
-    <AbsoluteFill>
-      <div
-        style={{
-          position: "absolute",
-          top: 560,
-          width: "100%",
-          textAlign: "center",
-          color: COLORS.slate,
-          fontSize: 44,
-          fontWeight: 500,
-          opacity: labelIn,
-          transform: `translateY(${(1 - labelIn) * 24}px)`,
-        }}
-      >
-        Visita il nostro sito
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: 655,
-          width: "100%",
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            position: "relative",
-            padding: "26px 54px",
-            borderRadius: 999,
-            border: `4px solid ${COLORS.blue}`,
-            backgroundColor: `rgba(58,150,191,${filled})`,
-            color: filled > 0.5 ? COLORS.cream : COLORS.deepBlue,
-            fontSize: 46,
-            fontWeight: 600,
-            opacity: Math.min(1, pillIn * 1.5),
-            transform: `scale(${pillIn * pillPress})`,
-            boxShadow: `0 ${12 * filled}px ${30 * filled}px rgba(31,120,168,0.25)`,
-          }}
-        >
-          {SITE}
-          {/* onda del click */}
-          <div
-            style={{
-              position: "absolute",
-              inset: -4,
-              borderRadius: 999,
-              border: `4px solid ${COLORS.blue}`,
-              opacity: ripple > 0 ? 1 - ripple : 0,
-              transform: `scale(${1 + ripple * 0.25}, ${1 + ripple * 0.9})`,
-            }}
-          />
-        </div>
-      </div>
-
-      <div
-        style={{
-          position: "absolute",
-          top: 815,
-          width: "100%",
-          textAlign: "center",
-          color: COLORS.blue,
-          fontSize: 28,
-          fontWeight: 500,
-          letterSpacing: 3,
-          opacity: hintIn,
-          transform: `translateY(${(1 - hintIn) * 16}px)`,
-        }}
-      >
-        Ti aspettiamo!
-      </div>
-
-      {/* cursore */}
-      <svg
-        width={54}
-        height={64}
-        viewBox="0 0 27 32"
-        style={{
-          position: "absolute",
-          left: cursorX,
-          top: cursorY,
-          opacity: cursorOpacity,
-          transform: `scale(${press})`,
-          transformOrigin: "0 0",
-          filter: "drop-shadow(0 4px 6px rgba(47,72,88,0.3))",
-        }}
-      >
-        <path
-          d="M2 2 L2 25 L8 19.5 L12.5 29 L16.5 27.2 L12 18 L20 18 Z"
-          fill="#ffffff"
-          stroke={COLORS.slate}
-          strokeWidth={2}
-          strokeLinejoin="round"
-        />
-      </svg>
-    </AbsoluteFill>
-  );
-};

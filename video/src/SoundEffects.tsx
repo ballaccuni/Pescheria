@@ -16,12 +16,6 @@ const CUES: { from: number; file: string; volume: number }[] = [
   { from: 235, file: "note-d5", volume: 0.35 }, // Lunedì
   { from: 247, file: "note-fs5", volume: 0.35 }, // Martedì – Venerdì
   { from: 259, file: "note-a5", volume: 0.35 }, // Sabato
-  { from: 410, file: "note-b5", volume: 0.35 }, // Visita il nostro sito
-  { from: 418, file: "pop", volume: 0.5 }, // pulsante del sito
-  { from: 436, file: "swipe", volume: 0.12 }, // il cursore si muove
-  { from: 472, file: "click", volume: 0.8 }, // click
-  { from: 474, file: "success", volume: 0.45 }, // pulsante attivato
-  { from: 486, file: "note-d6", volume: 0.3 }, // Ti aspettiamo!
 ];
 
 export const SoundEffects: React.FC<{ durationInFrames: number }> = ({

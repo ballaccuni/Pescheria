@@ -1,4 +1,5 @@
 import { Composition } from "remotion";
+import { Logo3D } from "./Logo3D";
 import { LogoAnimation } from "./LogoAnimation";
 import { RecipeVideo } from "./recipes/RecipeVideo";
 import { gamberiZucchine } from "./recipes/gamberiZucchine";
@@ -12,7 +13,15 @@ export const MyComposition = () => {
       <Composition
         id="SaporeDiMare"
         component={LogoAnimation}
-        durationInFrames={570}
+        durationInFrames={420}
+        fps={30}
+        width={1080}
+        height={1080}
+      />
+      <Composition
+        id="Logo3D"
+        component={Logo3D}
+        durationInFrames={270}
         fps={30}
         width={1080}
         height={1080}
