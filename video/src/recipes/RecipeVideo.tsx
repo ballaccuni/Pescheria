@@ -39,7 +39,7 @@ import {
   TomatoWhole,
   ZucchiniWhole,
 } from "./ingredients";
-import { ROW_GAP, recipeTimeline, type IconKind, type Recipe, type Segment } from "./types";
+import { ROW_GAP, recipeTimeline, toReal, toTimeline, type IconKind, type Recipe, type Segment } from "./types";
 import { clamp, lerpPt, segmentMotion, type Pt } from "./utils";
 
 // Video-ricetta: logo, lista ingredienti, preparazione animata con il cuoco,
@@ -75,9 +75,11 @@ const ICONS: Record<IconKind, React.ReactNode> = {
 };
 
 export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
-  const frame = useCurrentFrame();
+  const realFrame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const tl = useMemo(() => recipeTimeline(recipe), [recipe]);
+  // il procedimento scorre più lento: tutto quello che segue usa il tempo della ricetta
+  const frame = toTimeline(realFrame, tl);
   const plateAt = tl.plateAt ?? Infinity;
   const oven = tl.ovenStep;
   // scene (padella, pentola, mixer, teglia) con il loro movimento
@@ -158,7 +160,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     rightAnchored = gripW > 0.9;
   }
 
-  const blinkPhase = frame % 96;
+  const blinkPhase = realFrame % 96;
   const blink = blinkPhase < 6 ? Math.sin((blinkPhase / 6) * Math.PI) : 0;
   const wow = Math.abs(tossAmt) > 0.15;
   // guarda la padella, ogni tanto dà un'occhiata a chi guarda il video
@@ -174,7 +176,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   if (wow) mood = "wow";
   if (inOutro) mood = thumbsUp ? "wink" : "happy";
   const brow = gesture * 5 + (wow ? 8 : 0);
-  const bob = Math.sin(frame / 12) * 4;
+  const bob = Math.sin(realFrame / 12) * 4;
   const headTilt =
     tossAmt * 5 +
     Math.sin(frame / 40) * 1.2 +
@@ -195,7 +197,6 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
 
   const outroText = (d: number) =>
     interpolate(frame, [tl.outro + d, tl.outro + d + 20], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
-  const pill = spring({ frame: frame - tl.outro - 45, fps, config: { damping: 13 } });
 
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.cream, fontFamily }}>
@@ -410,24 +411,6 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
           <div style={{ color: COLORS.blue, fontSize: 36, fontWeight: 500, marginTop: 16, opacity: outroText(30) }}>
             {recipe.outro}
           </div>
-          <div
-            style={{
-              display: "inline-block",
-              marginTop: 36,
-              padding: "22px 36px",
-              borderRadius: 999,
-              backgroundColor: COLORS.blue,
-              color: COLORS.cream,
-              fontSize: 34,
-              fontWeight: 600,
-              opacity: Math.min(1, pill * 1.5),
-              transform: `scale(${pill})`,
-              transformOrigin: "left center",
-              boxShadow: "0 12px 30px rgba(31,120,168,0.25)",
-            }}
-          >
-            saporedimareraffadali.it
-          </div>
         </div>
       )}
 
@@ -553,31 +536,35 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
     }
   }
   add(tl.outro + 14, "note-b5", 0.35);
-  add(tl.outro + 45, "pop", 0.5);
 
   const oven = tl.ovenStep;
+  // tutti i tempi sono "della ricetta": li converto nei fotogrammi reali (procedimento rallentato)
+  const R = (t: number) => Math.round(toReal(t, tl));
+  const total = R(tl.total);
 
   return (
     <>
       {sizzles.map((z, i) => (
-        <Sequence key={`sz${i}`} from={z.from} durationInFrames={z.to - z.from + 16} name="SFX sizzle (padella)">
+        <Sequence key={`sz${i}`} from={R(z.from)} durationInFrames={R(z.to) - R(z.from) + 16} name="SFX sizzle (padella)">
           <Audio
             src={staticFile("sfx/sizzle.wav")}
             loop
-            volume={(f) =>
-              interpolate(f + z.from, [z.from, z.from + 20, z.to - 4, z.to + 14], [0, 0.35 * MASTER, 0.35 * MASTER, 0], clamp)
-            }
+            volume={(f) => {
+              const d = R(z.to) - R(z.from);
+              return interpolate(f, [0, 20, d - 4, d + 14], [0, 0.35 * MASTER, 0.35 * MASTER, 0], clamp);
+            }}
           />
         </Sequence>
       ))}
       {loops.map((z, i) => (
-        <Sequence key={`lp${i}`} from={z.from} durationInFrames={z.to - z.from} name={`SFX ${z.file}`}>
+        <Sequence key={`lp${i}`} from={R(z.from)} durationInFrames={R(z.to) - R(z.from)} name={`SFX ${z.file}`}>
           <Audio
             src={staticFile(`sfx/${z.file}.wav`)}
             loop
-            volume={(f) =>
-              interpolate(f, [0, 16, z.to - z.from - 16, z.to - z.from], [0, z.volume * MASTER, z.volume * MASTER, 0], clamp)
-            }
+            volume={(f) => {
+              const d = R(z.to) - R(z.from);
+              return interpolate(f, [0, 16, d - 16, d], [0, z.volume * MASTER, z.volume * MASTER, 0], clamp);
+            }}
           />
         </Sequence>
       ))}
@@ -586,22 +573,23 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         <Audio
           src={staticFile("sfx/ocean.wav")}
           loop
-          volume={(f) => interpolate(f, [0, 30, tl.total - 45, tl.total], [0, 0.2 * MASTER, 0.2 * MASTER, 0], clamp)}
+          volume={(f) => interpolate(f, [0, 30, total - 45, total], [0, 0.2 * MASTER, 0.2 * MASTER, 0], clamp)}
         />
       )}
       {oven && (
-        <Sequence from={oven.start + 18} durationInFrames={oven.duration - 40} name="SFX forno">
+        <Sequence from={R(oven.start + 18)} durationInFrames={R(oven.end - 22) - R(oven.start + 18)} name="SFX forno">
           <Audio
             src={staticFile("sfx/oven-hum.wav")}
             loop
-            volume={(f) =>
-              interpolate(f, [0, 14, oven.duration - 58, oven.duration - 42], [0, 0.28 * MASTER, 0.28 * MASTER, 0], clamp)
-            }
+            volume={(f) => {
+              const d = R(oven.end - 22) - R(oven.start + 18);
+              return interpolate(f, [0, 14, d - 18, d], [0, 0.28 * MASTER, 0.28 * MASTER, 0], clamp);
+            }}
           />
         </Sequence>
       )}
       {cues.map((c, i) => (
-        <Sequence key={i} from={c.from} name={`SFX ${c.file}`} layout="none">
+        <Sequence key={i} from={R(c.from)} name={`SFX ${c.file}`} layout="none">
           <Audio src={staticFile(`sfx/${c.file}.wav`)} volume={c.volume * MASTER} />
         </Sequence>
       ))}

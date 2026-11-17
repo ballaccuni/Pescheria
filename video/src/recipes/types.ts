@@ -143,6 +143,32 @@ export const recipeTimeline = (recipe: Recipe) => {
 
 export type Timeline = ReturnType<typeof recipeTimeline>;
 
+/** Quanto è rallentato il procedimento (i passi) rispetto ai tempi scritti nelle ricette. */
+export const SLOW = 1.5;
+
+const realOutro = (tl: Timeline) => tl.stepsStart + (tl.outro - tl.stepsStart) * SLOW;
+
+/** Dal fotogramma reale del video al tempo della ricetta (i passi scorrono più lenti). */
+export const toTimeline = (real: number, tl: Timeline) => {
+  if (real < tl.stepsStart) return real;
+  const ro = realOutro(tl);
+  if (real < ro) return tl.stepsStart + (real - tl.stepsStart) / SLOW;
+  return tl.outro + (real - ro);
+};
+
+/** Dal tempo della ricetta al fotogramma reale del video. */
+export const toReal = (t: number, tl: Timeline) => {
+  if (t < tl.stepsStart) return t;
+  if (t < tl.outro) return tl.stepsStart + (t - tl.stepsStart) * SLOW;
+  return realOutro(tl) + (t - tl.outro);
+};
+
+/** Durata del video in fotogrammi. */
+export const videoLength = (recipe: Recipe) => {
+  const tl = recipeTimeline(recipe);
+  return Math.round(toReal(tl.total, tl));
+};
+
 /** Tutti i momenti in cui entra un certo ingrediente. */
 export const addTimes = (tl: Timeline, kind: AddKind) =>
   tl.steps.flatMap((s) => s.adds.filter((a) => a.kind === kind).map((a) => a.at));
