@@ -29,8 +29,8 @@ type Traced = { outer: number[][]; holes: number[][][] }[];
 const TRACED = shapesData as unknown as Record<PartName, Traced>;
 
 // coordinate del logo (1024x1024) -> spazio 3D, centrato sul logo
-const X = (x: number) => (x - 512) / 100;
-const Y = (y: number) => -(y - 490) / 100;
+export const X = (x: number) => (x - 512) / 100;
+export const Y = (y: number) => -(y - 490) / 100;
 
 const toPath = (pts: number[][], path: THREE.Path) => {
   pts.forEach(([x, y], i) => (i === 0 ? path.moveTo(X(x), Y(y)) : path.lineTo(X(x), Y(y))));
@@ -68,7 +68,7 @@ const usePart = (name: PartName) =>
   }, [name]);
 
 /** Una parte del logo che entra dal fondo e si appoggia al suo posto. */
-const Part: React.FC<{ name: PartName; p: number; bob?: number }> = ({ name, p, bob = 0 }) => {
+export const Part: React.FC<{ name: PartName; p: number; bob?: number }> = ({ name, p, bob = 0 }) => {
   const { geom, center } = usePart(name);
   const st = PART_STYLE[name];
   if (p <= 0.001) return null;
@@ -99,7 +99,7 @@ const Part: React.FC<{ name: PartName; p: number; bob?: number }> = ({ name, p, 
 const ENV_INTENSITY = 0.42;
 
 /** Luce da studio: il materiale riflette una stanza illuminata (niente file esterni). */
-const StudioEnvironment: React.FC = () => {
+export const StudioEnvironment: React.FC = () => {
   const { gl, scene } = useThree();
   useMemo(() => {
     const pmrem = new THREE.PMREMGenerator(gl);

@@ -5,7 +5,7 @@ import path from "node:path";
 import opentype from "opentype.js";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
-const CHARS = "PESCHERIAapore di Mare Raffadali ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzàèéìòù'.,!-";
+const CHARS = "PESCHERIAapore di Mare Raffadali ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzàèéìòùÌ'.,!-–—:0123456789";
 
 for (const weight of ["500", "600"]) {
   const font = opentype.loadSync(path.join(here, "fonts", `lexend-${weight}.woff`));
