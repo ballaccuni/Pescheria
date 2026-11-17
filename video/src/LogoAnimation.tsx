@@ -33,7 +33,7 @@ const PARTS = {
   raffadali: { x: 315, y: 722, w: 405, h: 86 },
 };
 
-const Part: React.FC<{
+export const Part: React.FC<{
   name: keyof typeof PARTS;
   style?: React.CSSProperties;
   clip?: string;
@@ -56,7 +56,7 @@ const Part: React.FC<{
 };
 
 // Bollicine che escono dalla bocca del pesce
-const Bubbles: React.FC<{ start: number }> = ({ start }) => {
+export const Bubbles: React.FC<{ start: number }> = ({ start }) => {
   const frame = useCurrentFrame();
   const bubbles = [
     { delay: 0, size: 16, drift: -18 },

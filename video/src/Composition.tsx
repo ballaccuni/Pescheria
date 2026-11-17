@@ -3,6 +3,7 @@ import { Logo3D } from "./Logo3D";
 import { LogoAnimation } from "./LogoAnimation";
 import { LogoThree } from "./LogoThree";
 import { SaporeDiMare3D } from "./SaporeDiMare3D";
+import { SaporeDiMareBolla2D } from "./SaporeDiMareBolla2D";
 import { SaporeDiMareBolla3D } from "./SaporeDiMareBolla3D";
 import { RecipeVideo } from "./recipes/RecipeVideo";
 import { gamberiZucchine } from "./recipes/gamberiZucchine";
@@ -17,6 +18,14 @@ export const MyComposition = () => {
         id="SaporeDiMare"
         component={LogoAnimation}
         durationInFrames={420}
+        fps={30}
+        width={1080}
+        height={1080}
+      />
+      <Composition
+        id="SaporeDiMareBolla2D"
+        component={SaporeDiMareBolla2D}
+        durationInFrames={450}
         fps={30}
         width={1080}
         height={1080}
