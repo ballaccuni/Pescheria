@@ -1,0 +1,81 @@
+import type { Recipe } from "./types";
+
+export const calamariRipieni: Recipe = {
+  vessel: "pan",
+  dish: "calamari",
+  title: ["Calamari ripieni", "al sugo"],
+  servings: "per 2 persone",
+  ingredients: [
+    { name: "Calamari medi", qty: "4 (circa 600 g)", icon: "squid" },
+    { name: "Pangrattato", qty: "60 g", icon: "breadcrumbs" },
+    { name: "Pecorino grattugiato", qty: "30 g", icon: "pecorino" },
+    { name: "Uovo", qty: "1", icon: "egg" },
+    { name: "Aglio", qty: "2 spicchi", icon: "garlicClove" },
+    { name: "Prezzemolo", qty: "1 ciuffo", icon: "parsleySprig" },
+    { name: "Pomodorini ciliegino", qty: "250 g", icon: "tomatoWhole" },
+    { name: "Vino bianco", qty: "½ bicchiere", icon: "wine" },
+    { name: "Olio extravergine", qty: "4 cucchiai", icon: "oilBottle" },
+    { name: "Sale e pepe", qty: "q.b.", icon: "saltPepper" },
+  ],
+  steps: [
+    {
+      title: "Il ripieno",
+      text: "In una ciotola metti pangrattato, pecorino, aglio e prezzemolo tritati",
+      stage: "mixbowl",
+      add: ["mixBase", "mixCheese"],
+      duration: 120,
+    },
+    {
+      title: "Uovo e tentacoli",
+      text: "Aggiungi l'uovo, i tentacoli tritati, olio, sale e pepe e mescola",
+      stage: "mixbowl",
+      add: ["mixEgg", "mixTentacles", "mixFinish"],
+      duration: 228,
+    },
+    {
+      title: "Riempi i calamari",
+      text: "Riempi i calamari per due terzi con il ripieno",
+      stage: "board",
+      add: ["squidBoard", "stuff"],
+      duration: 150,
+    },
+    {
+      title: "Chiudi i calamari",
+      text: "Chiudi ogni calamaro con uno stuzzicadenti",
+      stage: "board",
+      add: ["close"],
+      duration: 62,
+    },
+    {
+      title: "In padella",
+      text: "Rosola i calamari in padella con olio e aglio",
+      add: ["oil", "garlic", "squid"],
+      duration: 150,
+    },
+    {
+      title: "Vino bianco",
+      text: "Sfuma con mezzo bicchiere di vino bianco",
+      add: ["wine"],
+      duration: 80,
+    },
+    {
+      title: "Pomodorini",
+      text: "Aggiungi i pomodorini, copri e cuoci per 25 minuti",
+      add: ["tomatoSauce", "lid"],
+      duration: 170,
+    },
+    {
+      title: "Prezzemolo",
+      text: "Spolvera con prezzemolo fresco tritato",
+      add: ["parsley"],
+      duration: 70,
+    },
+    {
+      title: "Impiattamento",
+      text: "Servi i calamari interi e a fette con il loro sugo",
+      plate: true,
+      duration: 150,
+    },
+  ],
+  outro: "I calamari freschi li trovi da noi",
+};
