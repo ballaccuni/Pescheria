@@ -18,6 +18,7 @@ import {
   ZestGrater,
   makeLinguine,
 } from "./ingredients";
+import { Squid } from "./squid";
 import { firstAddIn, type AddKind, type Recipe, type Timeline } from "./types";
 import { STAGE, clamp, mulberry32, type Pt } from "./utils";
 
@@ -44,6 +45,8 @@ export const GROUPS: Partial<
   shrimp: { count: 8, minDist: 50, stagger: 4, seed: 11 },
   mussels: { count: 14, minDist: 62, stagger: 3, seed: 13 },
   paccheri: { count: 35, minDist: 46, stagger: 1, seed: 17 },
+  squid: { count: 4, minDist: 0, stagger: 7, seed: 31 },
+  tomatoSauce: { count: 8, minDist: 0, stagger: 3, seed: 33 },
 };
 
 /** Cozze che restano intere (le altre vengono sgusciate). */
@@ -116,6 +119,19 @@ const placeItems = (kinds: AddKind[]) => {
         const a = (k / g.count) * Math.PI * 2 + Math.PI / g.count;
         return { x: Math.cos(a) * 152, y: Math.sin(a) * 152, rot: (a * 180) / Math.PI + 90, phase: k * 1.3 };
       });
+      continue;
+    }
+    if (kind === "squid") {
+      // 4 calamari ripieni in fila, alternati
+      out[kind] = [-168, -56, 56, 168].map((y, k) => ({ x: 0, y, rot: k % 2 ? 180 : 0, phase: k * 2.1 }));
+      continue;
+    }
+    if (kind === "tomatoSauce") {
+      // pomodorini ai lati dei calamari
+      out[kind] = [-112, -37, 37, 112].flatMap((y, k) => [
+        { x: -196, y, rot: k * 40, phase: k },
+        { x: 196, y, rot: k * 40 + 90, phase: k + 4 },
+      ]);
       continue;
     }
     if (kind === "paccheri") {
@@ -258,6 +274,12 @@ export const PanStage: React.FC<{
         node = <TomatoHalf />;
       } else if (kind === "shrimp") {
         node = <Shrimp cooked={interpolate(frame, [s + 15, s + 85], [0, 1], clamp)} />;
+      } else if (kind === "squid") {
+        const cooked = interpolate(frame, [s + 20, s + 260], [0, 1], clamp);
+        const sauced = sauceAt === null ? 0 : interpolate(frame, [sauceAt + 20, sauceAt + 140], [0, 1], clamp);
+        node = <Squid stuffed={1} closed cooked={cooked} sauce={sauced} />;
+      } else if (kind === "tomatoSauce") {
+        node = <TomatoHalf />;
       } else if (kind === "paccheri") {
         node = <Pacchero coated={interpolate(frame, [s + 30, s + 90], [0, 1], clamp)} shadow />;
       } else if (kind === "mussels") {
@@ -474,6 +496,60 @@ export const PanStage: React.FC<{
     return <rect x={-w / 2} y={top} width={w} height={Math.max(0, bottom - top)} rx={w / 2} fill={FOOD.oil} />;
   };
 
+  // sugo di pomodorini, vino bianco e coperchio (calamari ripieni)
+  const sauceAt = addAt("tomatoSauce");
+  const sauceR =
+    sauceAt === null
+      ? 0
+      : interpolate(frame, [sauceAt + 10, sauceAt + 60], [0, PAN.inner - 24], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const wineAt = addAt("wine");
+  const renderWine = () => {
+    if (wineAt === null) return null;
+    const local = frame - wineAt;
+    if (local < 0) return null;
+    const top = interpolate(local, [0, 26, 36], [-700, -700, -60], clamp);
+    const bottom = interpolate(local, [0, 12], [-700, 0], clamp);
+    const w = interpolate(local, [0, 6, 26, 36], [0, 12, 12, 0], clamp);
+    const sheen = interpolate(local, [10, 40, 90], [0, 0.45, 0], clamp);
+    return (
+      <>
+        <circle r={interpolate(local, [10, 40], [0, PAN.inner - 20], clamp)} fill="#F3E3A0" opacity={sheen} />
+        {local <= 36 && <rect x={-w / 2} y={top} width={w} height={Math.max(0, bottom - top)} rx={w / 2} fill="#F3E3A0" stroke="#E2C770" strokeWidth={1.5} />}
+      </>
+    );
+  };
+  const lidAt = addAt("lid");
+  const lidStep = lidAt === null ? null : tl.steps.find((st) => st.adds.some((a) => a.kind === "lid" && a.at === lidAt)) ?? null;
+  const renderLid = () => {
+    if (lidAt === null || !lidStep || frame < lidAt) return null;
+    const on = spring({ frame: frame - lidAt, fps, config: { damping: 15 } });
+    const off = interpolate(frame, [lidStep.end - 26, lidStep.end - 8], [0, 1], { ...clamp, easing: Easing.in(Easing.cubic) });
+    if (off >= 1) return null;
+    const y = -(1 - on) * 700 - off * 700;
+    const drops = [
+      [-120, -90],
+      [-60, 130],
+      [90, -140],
+      [150, 60],
+      [20, 40],
+      [-170, 30],
+      [110, 150],
+    ];
+    return (
+      <g transform={`translate(0 ${y})`}>
+        <circle r={PAN.R - 4} fill="rgba(220,236,243,0.42)" stroke={COLORS.slate} strokeWidth={10} />
+        <circle r={PAN.R - 22} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={4} />
+        {/* condensa sul vetro */}
+        {drops.map(([x, yy], i) => (
+          <circle key={i} cx={x} cy={yy} r={5 + (i % 3) * 2} fill="rgba(255,255,255,0.55)" opacity={interpolate(frame, [lidAt + 20 + i * 4, lidAt + 40 + i * 4], [0, 1], clamp)} />
+        ))}
+        <path d={`M ${-PAN.R * 0.55} ${-PAN.R * 0.5} A ${PAN.R * 0.75} ${PAN.R * 0.75} 0 0 1 ${-PAN.R * 0.05} ${-PAN.R * 0.74}`} stroke="#FFFFFF" strokeWidth={12} opacity={0.5} strokeLinecap="round" fill="none" />
+        <circle r={34} fill={COLORS.slate} stroke="#1E3038" strokeWidth={4} />
+        <circle r={14} fill="#41606F" />
+      </g>
+    );
+  };
+
   // crema di patate e cozze versata in padella
   const creamAt = addAt("cream");
   const creamR =
@@ -517,6 +593,21 @@ export const PanStage: React.FC<{
           />
         )}
         {renderOilBubbles()}
+        {sauceR > 0 && (
+          <g>
+            <circle r={sauceR} fill="#C8432F" opacity={0.92} />
+            <circle r={sauceR} fill="none" stroke="#A9321F" strokeWidth={4} opacity={0.7} />
+            <path
+              d={`M ${-sauceR * 0.55} ${-sauceR * 0.45} Q ${-sauceR * 0.1} ${-sauceR * 0.64} ${sauceR * 0.32} ${-sauceR * 0.52}`}
+              stroke="#FFFFFF"
+              strokeWidth={9}
+              opacity={0.22}
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+        )}
+        {renderWine()}
         {creamR > 0 && (
           <g>
             <circle r={creamR} fill={CREAM} />
@@ -539,12 +630,15 @@ export const PanStage: React.FC<{
         {renderGroup("shrimp")}
         {renderGroup("mussels")}
         {renderGroup("paccheri")}
+        {renderGroup("squid")}
+        {renderGroup("tomatoSauce")}
         {renderSprinkle("salt")}
         {!pastaBelow && renderPasta()}
         {renderSprinkle("parsley")}
         <Steam frame={frame} strength={steam} />
         {renderPour()}
         {renderCreamPour()}
+        {renderLid()}
         {renderLemon()}
         {renderZest()}
       </g>

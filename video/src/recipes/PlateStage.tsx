@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { interpolate, spring } from "remotion";
 import { COLORS } from "../LogoAnimation";
 import { Crust, FILLET_CRUST, Fillet } from "./Orata";
+import { Squid, SquidSlice } from "./squid";
 import { Steam } from "./Steam";
 import {
   LemonWedge,
@@ -133,7 +134,7 @@ const Drop: React.FC<{
   );
 };
 
-export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: number; fps: number; at: number }> = ({
+export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze" | "calamari"; frame: number; fps: number; at: number }> = ({
   dish,
   frame,
   fps,
@@ -284,6 +285,54 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
     );
   };
 
+  // calamari ripieni: sugo, un calamaro intero e uno a fette
+  const calamari = () => {
+    const pool = interpolate(local, [30, 54], [0, 172], clamp);
+    return (
+      <>
+        {pool > 0 && (
+          <g>
+            <circle r={pool} fill="#C8432F" opacity={0.95} />
+            <circle r={pool} fill="none" stroke="#A9321F" strokeWidth={3} />
+            <path d={`M ${-pool * 0.55} ${-pool * 0.5} Q ${-pool * 0.1} ${-pool * 0.68} ${pool * 0.3} ${-pool * 0.56}`} stroke="#FFFFFF" strokeWidth={8} opacity={0.22} fill="none" strokeLinecap="round" />
+          </g>
+        )}
+        <Drop local={local} start={44} fps={fps} x={-10} y={-62} rot={-10} scale={1.05} from={{ x: 0, y: -600 }}>
+          <Squid stuffed={1} closed cooked={1} sauce={0.8} />
+        </Drop>
+        {[
+          { x: -96, y: 72, r: -14 },
+          { x: -32, y: 92, r: -4 },
+          { x: 32, y: 92, r: 4 },
+          { x: 96, y: 72, r: 14 },
+        ].map((p, i) => (
+          <Drop key={`sl${i}`} local={local} start={60 + i * 5} fps={fps} x={p.x} y={p.y} rot={p.r} scale={1.15}>
+            <SquidSlice sauce={0.8} />
+          </Drop>
+        ))}
+        {[
+          { x: 168, y: -110, r: 20 },
+          { x: 186, y: 30, r: 80 },
+          { x: -186, y: 30, r: 140 },
+          { x: -150, y: -142, r: 200 },
+        ].map((p, i) => (
+          <Drop key={`tm${i}`} local={local} start={80 + i * 4} fps={fps} x={p.x} y={p.y} rot={p.r} scale={1.05}>
+            <TomatoHalf />
+          </Drop>
+        ))}
+        {[
+          { x: 0, y: 182, rot: 0, s: 1.15, start: 98 },
+          { x: 214, y: -54, rot: 60, s: 1.05, start: 102 },
+          { x: -214, y: -54, rot: -60, s: 1.05, start: 106 },
+        ].map((l, i) => (
+          <Drop key={`lf${i}`} local={local} start={l.start} fps={fps} x={l.x} y={l.y} rot={l.rot} scale={l.s} from={{ x: 0, y: -300 }}>
+            <ParsleyLeaf />
+          </Drop>
+        ))}
+      </>
+    );
+  };
+
   const fish = () => (
     <>
       {[
@@ -329,7 +378,7 @@ export const PlateStage: React.FC<{ dish: "pasta" | "fish" | "cozze"; frame: num
       transform={`translate(${PLATE.cx} ${PLATE.cy}) scale(${0.55 + enter * 0.45})`}
     >
       <Plate />
-      {dish === "pasta" ? pasta() : dish === "fish" ? fish() : cozze()}
+      {dish === "pasta" ? pasta() : dish === "fish" ? fish() : dish === "calamari" ? calamari() : cozze()}
       <Steam frame={frame} strength={steam} xs={[-110, -20, 80]} rise={200} />
     </g>
   );

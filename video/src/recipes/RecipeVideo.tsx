@@ -14,7 +14,9 @@ import {
 import { COLORS, Waves } from "../LogoAnimation";
 import { fontFamily } from "../font";
 import { Chef, type ChefMood, type HandPose } from "./Chef";
+import { BoardStage, BOARD_SQUID, CLOSE_EACH, STUFF_EACH } from "./BoardStage";
 import { BowlStage, SHELLED_COUNT, shellLandAt } from "./BowlStage";
+import { EggIcon, PecorinoIcon, SquidIcon, WineIcon } from "./squid";
 import { BLEND, MixerStage } from "./MixerStage";
 import { MIX, MixBowlStage } from "./MixBowlStage";
 import { GROUPS, PanStage, musselOpenAt, panHandleEnd } from "./PanStage";
@@ -72,6 +74,10 @@ const ICONS: Record<IconKind, React.ReactNode> = {
   potato: <PotatoIcon />,
   mussel: <MusselIcon />,
   paccheri: <PaccheriIcon />,
+  squid: <SquidIcon />,
+  pecorino: <PecorinoIcon />,
+  egg: <EggIcon />,
+  wine: <WineIcon />,
 };
 
 export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
@@ -316,6 +322,7 @@ export const RecipeVideo: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             if (seg.kind === "mixer") return <MixerStage key={i} {...common} />;
             if (seg.kind === "bowl") return <BowlStage key={i} {...common} />;
             if (seg.kind === "mixbowl") return <MixBowlStage key={i} {...common} />;
+            if (seg.kind === "board") return <BoardStage key={i} {...common} />;
             return <TrayStage key={i} tl={tl} frame={frame} fps={fps} offset={m.offset} />;
           })}
 
@@ -476,6 +483,25 @@ const RecipeSounds: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         add(a.at + MIX.crumbs[0] + 14, "sprinkle", 0.5);
         add(a.at + MIX.parsley[0], "sprinkle", 0.4);
         add(a.at + MIX.garlic[0], "sprinkle", 0.4);
+      } else if (a.kind === "mixCheese") {
+        add(a.at, "sprinkle", 0.45);
+      } else if (a.kind === "mixTentacles") {
+        add(a.at + 6, "plop", 0.25);
+        add(a.at + 14, "plop", 0.2);
+      } else if (a.kind === "mixEgg") {
+        add(a.at + 14, "pop", 0.35); // il guscio si rompe
+        add(a.at + 30, "plop", 0.35);
+      } else if (a.kind === "squidBoard") {
+        for (let i = 0; i < BOARD_SQUID.length; i++) add(a.at + i * 4 + 8, "plop", 0.25);
+      } else if (a.kind === "stuff") {
+        for (let i = 0; i < BOARD_SQUID.length; i++) add(a.at + i * STUFF_EACH + 11, "plop", 0.3);
+      } else if (a.kind === "close") {
+        for (let i = 0; i < BOARD_SQUID.length; i++) add(a.at + i * CLOSE_EACH + 7, "click", 0.25);
+      } else if (a.kind === "wine") {
+        add(a.at + 2, "pour", 0.55);
+        add(a.at + 14, "sizzle-burst", 0.6);
+      } else if (a.kind === "lid") {
+        add(a.at + 12, "plop", 0.45);
       } else if (a.kind === "mixZest") {
         add(a.at + 12, "grate", 0.5);
       } else if (a.kind === "mixFinish") {

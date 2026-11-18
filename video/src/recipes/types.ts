@@ -26,6 +26,18 @@ export type AddKind =
   | "mixBase"
   | "mixZest"
   | "mixFinish"
+  | "mixCheese"
+  | "mixEgg"
+  | "mixTentacles"
+  // tagliere
+  | "squidBoard"
+  | "stuff"
+  | "close"
+  // padella dei calamari
+  | "squid"
+  | "wine"
+  | "tomatoSauce"
+  | "lid"
   // teglia
   | "drizzle"
   | "fish"
@@ -47,10 +59,14 @@ export type IconKind =
   | "breadcrumbs"
   | "potato"
   | "mussel"
-  | "paccheri";
+  | "paccheri"
+  | "squid"
+  | "pecorino"
+  | "egg"
+  | "wine";
 
 /** Dove si svolge un passo. Il piatto è a parte (plate: true). */
-export type StageKind = "pan" | "tray" | "pot" | "mixer" | "bowl" | "mixbowl";
+export type StageKind = "pan" | "tray" | "pot" | "mixer" | "bowl" | "mixbowl" | "board";
 
 export type Step = {
   title: string;
@@ -74,7 +90,7 @@ export type Recipe = {
   /** dove si cucina */
   vessel: StageKind;
   /** cosa va nel piatto all'impiattamento */
-  dish: "pasta" | "fish" | "cozze";
+  dish: "pasta" | "fish" | "cozze" | "calamari";
   title: string[];
   servings: string;
   ingredients: { name: string; qty: string; icon: IconKind }[];

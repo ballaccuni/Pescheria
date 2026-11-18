@@ -9,6 +9,7 @@ import { RecipeVideo } from "./recipes/RecipeVideo";
 import { gamberiZucchine } from "./recipes/gamberiZucchine";
 import { orataForno } from "./recipes/orataForno";
 import { pastaCozzePatate } from "./recipes/pastaCozzePatate";
+import { calamariRipieni } from "./recipes/calamariRipieni";
 import { videoLength } from "./recipes/types";
 
 export const MyComposition = () => {
@@ -79,6 +80,15 @@ export const MyComposition = () => {
         width={1080}
         height={1920}
         defaultProps={{ recipe: orataForno }}
+      />
+      <Composition
+        id="RicettaCalamariRipieni"
+        component={RecipeVideo}
+        durationInFrames={videoLength(calamariRipieni)}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{ recipe: calamariRipieni }}
       />
       <Composition
         id="RicettaPastaCozzePatate"

@@ -2,6 +2,7 @@ import React from "react";
 import { Easing, interpolate, spring } from "remotion";
 import { COLORS } from "../LogoAnimation";
 import { FOOD, ParsleyFleck, ZestGrater, mix } from "./ingredients";
+import { TentacleBit } from "./squid";
 import { firstAddIn, type Timeline } from "./types";
 import { STAGE, clamp, lerpPt, mulberry32, type Pt } from "./utils";
 
@@ -25,7 +26,7 @@ export const MIX = {
 const CRUMB_TONES = ["#EBD3A0", "#DFC283", "#F4E3BB", "#D8B670"];
 
 type Particle = {
-  kind: "crumb" | "parsley" | "garlic" | "salt" | "pepper" | "zest";
+  kind: "crumb" | "parsley" | "garlic" | "salt" | "pepper" | "zest" | "cheese" | "tentacle";
   p0: Pt; // dove cade
   p1: Pt; // dove finisce dopo aver mescolato
   delay: number;
@@ -85,6 +86,31 @@ const ZEST_SHREDS: Particle[] = (() => {
   });
 })();
 
+/** Un gruppo di pezzetti che cade in un punto della ciotola e poi viene mescolato. */
+const makeSet = (kind: Particle["kind"], n: number, center: Pt, spread: number, span: [number, number], size: [number, number], seed: number) => {
+  const rnd = mulberry32(seed);
+  const gauss = () => (rnd() + rnd() + rnd() - 1.5) / 1.5;
+  return Array.from({ length: n }, () => {
+    const b = rnd() * Math.PI * 2;
+    const r1 = Math.sqrt(rnd()) * 165;
+    return {
+      kind,
+      p0: { x: center.x + gauss() * spread, y: center.y + gauss() * spread },
+      p1: { x: Math.cos(b) * r1, y: Math.sin(b) * r1 },
+      delay: span[0] + rnd() * (span[1] - span[0]),
+      size: size[0] + rnd() * (size[1] - size[0]),
+      tone: rnd() > 0.5 ? "#F3E6B0" : "#EAD892",
+      rot: rnd() * 360,
+      speed: 0.7 + rnd() * 0.6,
+    } as Particle;
+  });
+};
+// pecorino grattugiato e tentacoli tritati (calamari ripieni)
+const CHEESE = makeSet("cheese", 70, { x: 70, y: 60 }, 55, [0, 26], [10, 16], 21);
+const TENTACLES = makeSet("tentacle", 30, { x: 0, y: -40 }, 60, [0, 24], [1, 1.3], 23);
+/** uovo: tempi dal suo ingresso */
+const EGG = { crack: 14, drop: 22 };
+
 // sale e pepe cadono dopo l'olio
 const SEASONING: Particle[] = (() => {
   const rnd = mulberry32(9);
@@ -138,6 +164,12 @@ export const MixBowlStage: React.FC<{
   const lz = zestAt === null ? -1 : frame - zestAt;
   const lb = baseAt === null ? -1 : frame - baseAt;
   const lf = finishAt === null ? -1 : frame - finishAt;
+  const cheeseAt = firstAddIn(tl, "mixCheese", range[0], range[1]);
+  const tentAt = firstAddIn(tl, "mixTentacles", range[0], range[1]);
+  const eggAt = firstAddIn(tl, "mixEgg", range[0], range[1]);
+  const lc = cheeseAt === null ? -1 : frame - cheeseAt;
+  const lt = tentAt === null ? -1 : frame - tentAt;
+  const le = eggAt === null ? -1 : frame - eggAt;
   const m = interpolate(lf, MIX.stir, [0, 1], { ...clamp, easing: Easing.inOut(Easing.quad) });
   const stirring = lf >= MIX.stir[0] && lf < MIX.stir[1];
 
@@ -153,18 +185,47 @@ export const MixBowlStage: React.FC<{
     return { x, y, op: interpolate(t, [0, 3], [0, 1], clamp), rot: pt.rot + ang * 57 };
   };
 
-  const particles = [...PARTICLES, ...(lz >= 0 ? ZEST_SHREDS : []), ...(lf >= 0 ? SEASONING : [])].map((pt, i) => {
-    const local = pt.kind === "salt" || pt.kind === "pepper" ? lf : pt.kind === "zest" ? lz : lb;
+  const particles = [
+    ...PARTICLES,
+    ...(lz >= 0 ? ZEST_SHREDS : []),
+    ...(lc >= 0 ? CHEESE : []),
+    ...(lt >= 0 ? TENTACLES : []),
+    ...(lf >= 0 ? SEASONING : []),
+  ].map((pt, i) => {
+    const local =
+      pt.kind === "salt" || pt.kind === "pepper"
+        ? lf
+        : pt.kind === "zest"
+          ? lz
+          : pt.kind === "cheese"
+            ? lc
+            : pt.kind === "tentacle"
+              ? lt
+              : lb;
     const q = place(pt, local);
     if (!q) return null;
     if (pt.kind === "crumb") {
       // l'olio scurisce un po' il pangrattato
-      return <circle key={i} cx={q.x} cy={q.y} r={pt.size} fill={mix(pt.tone, "#C99A4E", m * 0.35)} opacity={q.op} />;
+      const tint = eggAt !== null ? mix(pt.tone, "#E7B95A", m * 0.3) : mix(pt.tone, "#C99A4E", m * 0.35);
+      return <circle key={i} cx={q.x} cy={q.y} r={pt.size} fill={tint} opacity={q.op} />;
     }
     if (pt.kind === "parsley") {
       return (
         <g key={i} transform={`translate(${q.x} ${q.y}) rotate(${q.rot}) scale(${1.3 * pt.size})`} opacity={q.op}>
           <ParsleyFleck />
+        </g>
+      );
+    }
+    if (pt.kind === "cheese") {
+      const d = `M ${-pt.size / 2} 0 L ${pt.size / 2} 0`;
+      return (
+        <path key={i} d={d} transform={`translate(${q.x} ${q.y}) rotate(${q.rot})`} stroke={pt.tone} strokeWidth={3.2} strokeLinecap="round" opacity={q.op} />
+      );
+    }
+    if (pt.kind === "tentacle") {
+      return (
+        <g key={i} transform={`translate(${q.x} ${q.y}) rotate(${q.rot}) scale(${1.3 * pt.size})`} opacity={q.op}>
+          <TentacleBit />
         </g>
       );
     }
@@ -252,6 +313,43 @@ export const MixBowlStage: React.FC<{
     );
   };
 
+  const renderEgg = () => {
+    if (le < 0) return null;
+    const shellIn = spring({ frame: le, fps, config: { damping: 14 } });
+    const open = interpolate(le, [EGG.crack, EGG.crack + 8], [0, 1], clamp);
+    const shellOut = interpolate(le, [EGG.crack + 10, EGG.crack + 22], [0, 1], clamp);
+    const drop = interpolate(le, [EGG.drop, EGG.drop + 10], [0, 1], { ...clamp, easing: Easing.in(Easing.quad) });
+    const fade = 1 - m;
+    const sy = -240 - (1 - shellIn) * 420;
+    return (
+      <g>
+        {le >= EGG.drop && fade > 0 && (
+          <g transform={`translate(-30 ${-60 + (1 - drop) * (sy + 60)})`} opacity={fade}>
+            <ellipse rx={42 * (0.6 + drop * 0.4)} ry={34 * (0.6 + drop * 0.4)} fill="#FFFFFF" opacity={0.75} />
+            <circle r={17} fill="#F4B41A" stroke="#E09A0F" strokeWidth={2} />
+            <circle cx={-5} cy={-5} r={4.5} fill="#FFFFFF" opacity={0.6} />
+          </g>
+        )}
+        {shellOut < 1 && (
+          <g transform={`translate(-30 ${sy})`} opacity={1 - shellOut}>
+            {[-1, 1].map((sx) => (
+              <g key={sx} transform={`translate(${sx * open * 34} ${open * 10}) rotate(${sx * open * 35})`}>
+                <path
+                  d={sx < 0 ? "M 0 -38 C -30 -38 -34 0 -30 14 L -18 8 L -10 16 L 0 6 Z" : "M 0 -38 C 30 -38 34 0 30 14 L 18 8 L 10 16 L 0 6 Z"}
+                  fill="#FBF6EC"
+                  stroke={COLORS.slate}
+                  strokeWidth={3}
+                  strokeLinejoin="round"
+                />
+              </g>
+            ))}
+            {open < 0.2 && <ellipse cy={-6} rx={30} ry={38} fill="#FBF6EC" stroke={COLORS.slate} strokeWidth={3} />}
+          </g>
+        )}
+      </g>
+    );
+  };
+
   // grattugia con il limone sopra la ciotola
   const renderGrater = () => {
     if (lz < 0 || lz > MIX.zest[1] + 16) return null;
@@ -271,6 +369,7 @@ export const MixBowlStage: React.FC<{
       <Bowl />
       {renderOil()}
       {particles}
+      {renderEgg()}
       {renderGrater()}
       {renderStir()}
       {renderOilSpoon()}
