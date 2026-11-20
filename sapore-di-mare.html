@@ -1,397 +1,539 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sapore di Mare — Pescheria</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --teal: #1e5c6e; --teal-dk: #163f4e;
-      --gold: #c8962a; --gold-lt: #e8b84b;
-      --bg: #f9f7f4; --white: #ffffff;
-      --ink: #1a1a1a; --mid: #666; --line: #e0dbd4;
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sapore di Mare, Pescheria a Raffadali</title>
+<meta name="description" content="Pescheria Sapore di Mare a Raffadali: pesce fresco ogni mattina e ricette di mare per cucinarlo a casa."/>
+<meta name="theme-color" content="#1B7A9C"/>
+<link rel="icon" href="img/icon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Colori presi dal logo ─────────────────────────── */
+  :root {
+    --lisca: #3B93BC;      /* il pesce del logo */
+    --ardesia: #334A5A;    /* "Sapore di Mare" */
+    --raffadali: #1B7A9C;  /* "Raffadali" */
+    --crema: #FFFAF0;      /* fondo del logo */
+    --abisso: #0F3347;     /* acqua profonda, per la scena 3D */
+    --schiuma: #E6F1F6;    /* azzurro chiarissimo per i riquadri */
+    --linea: #DCE7EC;
+    --testo-2: #5D707D;
+    --bianco: #ffffff;
+
+    --font: 'Lexend', system-ui, sans-serif;
+    --step--1: .875rem;
+    --step-0: 1rem;
+    --step-1: 1.25rem;
+    --step-2: 1.6rem;
+    --step-3: 2.1rem;
+    --gutter: clamp(16px, 4vw, 48px);
+    --max: 1180px;
+    --bar-h: 68px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--bar-h) + 12px); }
+  body {
+    margin: 0; background: var(--crema); color: var(--ardesia);
+    font-family: var(--font); font-weight: 300; font-size: var(--step-0); line-height: 1.6;
+    overflow-x: hidden;
+  }
+  h1, h2, h3 { font-weight: 500; line-height: 1.15; margin: 0; letter-spacing: -.01em; }
+  p { margin: 0; }
+  a { color: var(--raffadali); }
+  img { max-width: 100%; display: block; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--lisca); outline-offset: 3px; border-radius: 6px; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ── Barra in alto ─────────────────────────────────── */
+  .bar {
+    position: sticky; top: 0; z-index: 50; height: var(--bar-h);
+    background: color-mix(in srgb, var(--crema) 94%, transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--linea);
+  }
+  .bar .wrap { height: 100%; display: flex; align-items: center; gap: 1.2rem; }
+  .brand { display: flex; align-items: center; gap: .7rem; text-decoration: none; color: var(--ardesia); margin-right: auto; }
+  .brand svg { width: 58px; height: auto; flex: none; }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
+  .brand-small { font-size: .62rem; font-weight: 600; letter-spacing: .22em; color: var(--lisca); }
+  .brand-name { font-size: 1.22rem; font-weight: 500; letter-spacing: -.01em; }
+  .bar-links { display: flex; gap: .3rem; }
+  .bar-links a { text-decoration: none; color: var(--ardesia); font-weight: 400; padding: .45rem .75rem; border-radius: 999px; }
+  .bar-links a:hover { background: var(--schiuma); }
+  .fav-link {
+    display: inline-flex; align-items: center; gap: .35rem; text-decoration: none;
+    color: var(--raffadali); font-weight: 500; padding: .45rem .8rem; border: 1.5px solid var(--linea); border-radius: 999px;
+  }
+  .fav-link svg { width: 18px; height: 18px; }
+  .menu-btn { display: none; background: none; border: 1.5px solid var(--linea); border-radius: 999px; padding: .45rem .9rem; font-weight: 400; cursor: pointer; }
+
+  @media (max-width: 860px) {
+    .menu-btn { display: inline-block; }
+    .bar-links {
+      position: fixed; inset: var(--bar-h) 0 auto 0; flex-direction: column; gap: 0;
+      background: var(--crema); border-bottom: 1px solid var(--linea); padding: .5rem var(--gutter) 1rem;
+      transform: translateY(-8px); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
     }
-    html { scroll-behavior: smooth; }
-    body { font-family: 'Lato', sans-serif; background: var(--bg); color: var(--ink); overflow-x: hidden; }
+    .bar-links.open { transform: none; opacity: 1; pointer-events: auto; }
+    .bar-links a { padding: .85rem .2rem; border-radius: 0; border-bottom: 1px solid var(--linea); font-size: var(--step-1); }
+    .bar-links a:last-child { border-bottom: 0; }
+    .brand svg { width: 48px; }
+    .brand-name { font-size: 1.08rem; }
+  }
+  .brand-name { white-space: nowrap; }
+  @media (max-width: 420px) {
+    .bar .wrap { gap: .6rem; }
+    .brand { gap: .5rem; }
+    .brand svg { width: 40px; }
+    .brand-name { font-size: .98rem; }
+    .fav-link, .menu-btn { padding: .4rem .7rem; }
+  }
 
-    /* PAGES */
-    .page { display: none; }
-    .page.active { display: block; }
+  /* ── Pagine ────────────────────────────────────────── */
+  .page { display: none; }
+  .page.active { display: block; }
 
-    /* TOP BANNER */
-    .top-banner { background: var(--teal-dk); color: var(--white); text-align: center; padding: .6rem 1rem; font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; font-weight: 700; }
+  /* ── Scena 3D (hero) ───────────────────────────────── */
+  .hero {
+    position: relative; isolation: isolate; overflow: hidden; color: var(--bianco);
+    min-height: clamp(560px, 88svh, 860px);
+    background: linear-gradient(180deg, var(--raffadali) 0%, #145F80 38%, var(--abisso) 100%);
+    display: flex; align-items: center;
+  }
+  .hero::before { /* raggi di luce che scendono dalla superficie */
+    content: ""; position: absolute; inset: -10% -20% 30% -20%; z-index: -1; pointer-events: none;
+    background: repeating-linear-gradient(100deg, rgba(255,255,255,.07) 0 60px, transparent 60px 170px);
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%); mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+  }
+  .scene { position: absolute; inset: 0; z-index: 0; }
+  .scene canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+  .hero-fallback {
+    position: absolute; z-index: 0; right: 6%; top: 50%; width: min(52vw, 620px); transform: translateY(-50%);
+    color: #8CCBE6; opacity: .9;
+  }
+  .has-3d .hero-fallback { display: none; }
+  .hero-copy { position: relative; z-index: 1; width: 100%; pointer-events: none; }
+  .hero-copy .inner { max-width: 33rem; pointer-events: auto; }
+  .hero h1 { font-size: clamp(2.5rem, 6.2vw, 4.7rem); font-weight: 500; line-height: 1.02; letter-spacing: -.03em; }
+  .hero p { margin-top: 1.1rem; font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: #D3EAF4; max-width: 28rem; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.8rem; }
 
-    /* NAV */
-    nav { background: var(--white); display: flex; align-items: center; justify-content: space-between; padding: .9rem 1.4rem; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 200; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
-    .nav-logo { display: flex; flex-direction: column; align-items: center; text-decoration: none; line-height: 1; cursor: pointer; }
-    .nav-logo-eyebrow { font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--teal); font-weight: 700; margin-bottom: .2rem; }
-    .nav-logo-main { font-family: 'Playfair Display', serif; font-size: 1.55rem; font-weight: 700; color: var(--teal); border-bottom: 2.5px solid var(--gold); padding-bottom: .1rem; }
-    .nav-icon-btn { background: #f0f0f0; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: background .2s; position: relative; }
-    .nav-icon-btn:hover { background: #e2e2e2; }
-    .fav-badge { position: absolute; top: -2px; right: -2px; background: var(--gold); color: var(--white); font-size: .6rem; font-weight: 700; border-radius: 50%; width: 16px; height: 16px; display: none; align-items: center; justify-content: center; }
-    .fav-badge.show { display: flex; }
+  @media (max-width: 760px) {
+    .hero { align-items: flex-end; min-height: max(620px, 92svh); }
+    .hero-copy { padding-bottom: 2.4rem; background: linear-gradient(180deg, transparent, rgba(15,51,71,.85) 35%); padding-top: 5rem; }
+    .hero-fallback { top: 30%; left: 50%; right: auto; width: 82vw; transform: translate(-50%, -50%); }
+  }
 
-    /* SIDE MENU */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; opacity: 0; pointer-events: none; transition: opacity .3s; }
-    .overlay.open { opacity: 1; pointer-events: all; }
-    .side-menu { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--white); z-index: 400; transition: left .3s ease; display: flex; flex-direction: column; box-shadow: 4px 0 20px rgba(0,0,0,.12); }
-    .side-menu.open { left: 0; }
-    .side-menu-header { background: var(--teal-dk); padding: 1.4rem 1.2rem; display: flex; align-items: center; justify-content: space-between; }
-    .side-menu-logo { font-family: 'Playfair Display', serif; color: var(--white); font-size: 1.2rem; font-weight: 700; }
-    .side-menu-logo span { color: var(--gold-lt); font-style: italic; }
-    .side-close { background: none; border: none; color: var(--white); font-size: 1.4rem; cursor: pointer; }
-    .side-item { display: flex; align-items: center; gap: .9rem; padding: 1rem 1.4rem; border-bottom: 1px solid var(--line); cursor: pointer; text-decoration: none; color: var(--ink); font-size: .95rem; transition: background .15s; }
-    .side-item:hover { background: #eaf4f8; color: var(--teal); }
-    .side-item-icon { font-size: 1.1rem; width: 22px; text-align: center; }
-    .side-menu-footer { padding: 1rem 1.4rem; background: var(--bg); font-size: .72rem; letter-spacing: .15em; text-transform: uppercase; color: var(--mid); text-align: center; margin-top: auto; }
+  /* ── Pulsanti ──────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px;
+    padding: .75rem 1.4rem; border-radius: 999px; border: 1.5px solid transparent;
+    font-weight: 500; text-decoration: none; cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+  }
+  .btn-light { background: var(--crema); color: var(--ardesia); }
+  .btn-light:hover { background: var(--bianco); }
+  .btn-ghost { border-color: rgba(255,255,255,.55); color: var(--bianco); }
+  .btn-ghost:hover { background: rgba(255,255,255,.12); }
+  .btn-solid { background: var(--raffadali); color: var(--bianco); }
+  .btn-solid:hover { background: #156582; }
+  .btn-line { border-color: var(--raffadali); color: var(--raffadali); background: transparent; }
+  .btn-line:hover { background: var(--schiuma); }
 
-    /* HERO */
-    .hero { position: relative; overflow: hidden; height: 420px; background: var(--teal-dk); }
-    .hero-bg { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.15) 60%, transparent 100%); z-index: 1; }
-    .hero-img-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 7rem; opacity: .18; z-index: 0; }
-    .hero-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem 1.6rem; z-index: 2; }
-    .hero-badge { display: inline-block; background: var(--gold); color: var(--white); font-size: .68rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; padding: .35rem .85rem; margin-bottom: .8rem; }
-    .hero-title { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 700; color: var(--white); line-height: 1.15; margin-bottom: .5rem; }
-    .hero-subtitle { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.1rem; color: rgba(255,255,255,.85); margin-bottom: 1.2rem; }
-    .hero-btn { display: inline-block; border: 2px solid var(--white); color: var(--white); padding: .75rem 2rem; font-size: .75rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; cursor: pointer; background: transparent; transition: all .2s; text-decoration: none; }
-    .hero-btn:hover { background: var(--white); color: var(--ink); }
-    .hero-dots { position: absolute; bottom: 1rem; right: 1.6rem; z-index: 3; display: flex; gap: .4rem; }
-    .hero-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.35); cursor: pointer; transition: background .2s; }
-    .hero-dot.active { background: var(--gold); }
+  /* ── Blocchi della home ────────────────────────────── */
+  .block { padding: clamp(56px, 8vw, 104px) 0; }
+  .block-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: .8rem 2rem; margin-bottom: 2rem; }
+  .block-head h2 { font-size: clamp(var(--step-2), 3.6vw, 2.6rem); }
+  .block-head p { color: var(--testo-2); max-width: 30rem; }
 
-    /* PILLS */
-    .cat-pills { display: flex; gap: .6rem; overflow-x: auto; padding: 1rem 1.4rem; scrollbar-width: none; border-bottom: 1px solid var(--line); background: var(--white); }
-    .cat-pills::-webkit-scrollbar { display: none; }
-    .pill { flex-shrink: 0; padding: .5rem 1.1rem; border-radius: 99px; border: 1.5px solid var(--line); font-size: .78rem; font-weight: 700; cursor: pointer; background: var(--white); color: var(--mid); transition: all .2s; white-space: nowrap; }
-    .pill.active, .pill:hover { background: var(--teal); color: var(--white); border-color: var(--teal); }
+  /* Filtri per portata */
+  .filters { display: flex; gap: .45rem; overflow-x: auto; padding-bottom: .4rem; margin-bottom: 1.6rem; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter {
+    flex: none; background: transparent; border: 1.5px solid var(--linea); border-radius: 999px;
+    padding: .5rem 1.05rem; font-weight: 400; cursor: pointer; color: var(--ardesia);
+  }
+  .filter[aria-pressed="true"] { background: var(--ardesia); border-color: var(--ardesia); color: var(--crema); }
 
-    /* SECTION */
-    .section { padding: 2rem 1.4rem; }
-    .section-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 1.4rem; }
-    .section-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--ink); }
-    .section-link { font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--teal); font-weight: 700; text-decoration: none; border-bottom: 1.5px solid var(--gold); cursor: pointer; }
+  /* Schede ricetta */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: clamp(14px, 2vw, 26px); }
+  .card { position: relative; }
+  .card > a { display: block; text-decoration: none; color: inherit; border-radius: 22px; }
+  .card-art {
+    position: relative; aspect-ratio: 4 / 3; border-radius: 22px; overflow: hidden;
+    background: radial-gradient(120% 90% at 30% 20%, #F4FAFC 0%, var(--schiuma) 55%, #D2E6EF 100%);
+    display: grid; place-items: center;
+  }
+  .card-art img { width: 100%; height: 100%; object-fit: cover; }
+  .card-emoji { font-size: clamp(3.6rem, 7vw, 4.6rem); filter: drop-shadow(0 10px 12px rgba(15,51,71,.18)); transition: transform .35s ease; }
+  .card > a:hover .card-emoji { transform: scale(1.08) rotate(-6deg); }
+  .card-tag {
+    position: absolute; left: 12px; top: 12px; background: var(--bianco); color: var(--raffadali);
+    font-size: var(--step--1); font-weight: 500; padding: .2rem .7rem; border-radius: 999px;
+  }
+  .card-body { padding: .9rem .2rem 0; }
+  .card-body h3 { font-size: var(--step-1); }
+  .card-body p { color: var(--testo-2); font-size: .95rem; margin-top: .2rem; }
+  .card-meta { margin-top: .5rem !important; color: var(--raffadali) !important; font-weight: 400; }
+  .heart-btn {
+    position: absolute; right: 10px; top: 10px; width: 44px; height: 44px; border-radius: 50%;
+    background: var(--bianco); border: 0; cursor: pointer; display: grid; place-items: center; color: var(--raffadali);
+  }
+  .heart-btn svg { width: 20px; height: 20px; fill: transparent; stroke: currentColor; stroke-width: 2; transition: fill .2s, transform .2s; }
+  .heart-btn[aria-pressed="true"] svg { fill: currentColor; }
+  .heart-btn:active svg { transform: scale(.85); }
 
-    /* RECIPE CARDS */
-    .cards-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .5rem; scrollbar-width: none; }
-    .cards-scroll::-webkit-scrollbar { display: none; }
-    .recipe-card { flex-shrink: 0; width: 200px; background: var(--white); border-radius: 4px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.08); transition: transform .2s, box-shadow .2s; cursor: pointer; }
-    .recipe-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.13); }
-    .recipe-card-img { width: 100%; height: 130px; position: relative; background: linear-gradient(135deg, #c8e6f0, #91c9d8); display: flex; align-items: center; justify-content: center; font-size: 3rem; overflow: hidden; }
-    .recipe-card-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .recipe-card-img .card-emoji { position: relative; z-index: 1; }
-    .recipe-card-badge { position: absolute; top: .5rem; left: .5rem; background: var(--teal); color: var(--white); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; padding: .25rem .55rem; font-weight: 700; }
-    .recipe-card-fav { position: absolute; top: .4rem; right: .5rem; background: rgba(255,255,255,.8); border: none; font-size: 1rem; cursor: pointer; color: var(--mid); transition: color .2s; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-    .recipe-card-fav.active { color: #e05a5a; }
-    .recipe-card-body { padding: .8rem; }
-    .recipe-card-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; line-height: 1.3; color: var(--ink); margin-bottom: .3rem; }
-    .recipe-card-meta { font-size: .75rem; color: var(--mid); }
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
+    .card-art, .card > a { border-radius: 16px; }
+    .card-emoji { font-size: 3rem; }
+    .card-tag { left: 8px; top: 8px; font-size: .75rem; padding: .1rem .55rem; }
+    .heart-btn { right: 6px; top: 6px; width: 38px; height: 38px; }
+    .card-body { padding-top: .6rem; }
+    .card-body h3 { font-size: 1rem; }
+    .card-body p:not(.card-meta) { display: none; }
+    .card-meta { font-size: .85rem; line-height: 1.35; margin-top: .25rem !important; }
+  }
+  .empty { padding: 3rem 1rem; text-align: center; color: var(--testo-2); border: 1.5px dashed var(--linea); border-radius: 22px; }
+  .empty a { font-weight: 500; }
 
-    /* ALL RECIPES GRID */
-    .recipes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .recipes-grid .recipe-card { width: 100%; }
+  /* Guide */
+  .block-guides { background: var(--bianco); border-top: 1px solid var(--linea); border-bottom: 1px solid var(--linea); }
+  .guide-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 2.4rem; }
+  .guide {
+    display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: start;
+    padding: 1.2rem 0; border-top: 1px solid var(--linea); text-decoration: none; color: inherit;
+  }
+  .guide-icon { width: 52px; height: 52px; border-radius: 16px; background: var(--schiuma); display: grid; place-items: center; font-size: 1.6rem; }
+  .guide strong { display: block; font-weight: 500; font-size: 1.08rem; }
+  .guide span span { display: block; color: var(--testo-2); font-size: .95rem; margin-top: .15rem; }
+  .guide:hover strong { color: var(--raffadali); }
 
-    /* ── RECIPE DETAIL PAGE ── */
-    .back-btn { display: flex; align-items: center; gap: .5rem; background: none; border: none; color: var(--teal); font-size: .9rem; font-weight: 700; cursor: pointer; padding: 1rem 1.4rem; font-family: 'Lato', sans-serif; }
-    .back-btn:hover { color: var(--teal-dk); }
-    .recipe-hero { height: 240px; background: linear-gradient(135deg, #c8e6f0, #91c9d8); display: flex; align-items: center; justify-content: center; font-size: 6rem; position: relative; overflow: hidden; }
-    .recipe-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-    .recipe-hero .hero-emoji { position: relative; z-index: 1; }
-    .recipe-hero-badge { position: absolute; top: 1rem; left: 1rem; background: var(--gold); color: var(--white); font-size: .68rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; padding: .35rem .85rem; }
-    .recipe-hero-fav { position: absolute; top: 1rem; right: 1rem; background: var(--white); border: none; font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
-    .recipe-detail { padding: 1.4rem; }
-    .recipe-detail-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; line-height: 1.2; margin-bottom: .3rem; }
-    .recipe-detail-sub { font-family: 'Playfair Display', serif; font-style: italic; color: var(--mid); font-size: 1rem; margin-bottom: 1rem; }
-    .recipe-meta-row { display: flex; gap: 1.2rem; margin-bottom: 1.4rem; padding-bottom: 1.2rem; border-bottom: 1px solid var(--line); }
-    .recipe-meta-item { display: flex; flex-direction: column; align-items: center; }
-    .recipe-meta-val { font-size: 1rem; font-weight: 700; color: var(--teal); }
-    .recipe-meta-lbl { font-size: .68rem; color: var(--mid); text-transform: uppercase; letter-spacing: .1em; }
-    .recipe-section-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: .8rem; margin-top: 1.4rem; color: var(--teal-dk); }
-    .ingredients-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
-    .ingredients-list li { display: flex; align-items: center; gap: .7rem; font-size: .88rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
-    .ingredients-list li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
-    .steps-list { list-style: none; display: flex; flex-direction: column; gap: 1rem; }
-    .step { display: flex; gap: .9rem; }
-    .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--teal); color: var(--white); font-size: .8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: .1rem; }
-    .step-text { font-size: .88rem; line-height: 1.7; color: var(--ink); }
-    .ai-recipe-btn { width: 100%; margin-top: 1.6rem; background: var(--teal-dk); color: var(--white); border: none; padding: 1rem; font-family: 'Lato', sans-serif; font-size: .85rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: background .2s; }
-    .ai-recipe-btn:hover { background: var(--teal); }
+  /* Chiedi a Marco */
+  .marco-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: clamp(24px, 5vw, 72px); align-items: start; }
+  .marco-intro h2 { font-size: clamp(var(--step-2), 3.6vw, 2.6rem); }
+  .marco-intro p { color: var(--testo-2); margin-top: .8rem; max-width: 26rem; }
+  .chat { background: var(--bianco); border: 1px solid var(--linea); border-radius: 26px; overflow: hidden; }
+  .chat-log { height: 340px; overflow-y: auto; padding: 1.2rem; display: flex; flex-direction: column; gap: .7rem; }
+  .msg { max-width: 85%; padding: .7rem 1rem; border-radius: 18px; font-size: .97rem; line-height: 1.5; }
+  .msg.bot { background: var(--schiuma); border-bottom-left-radius: 6px; align-self: flex-start; }
+  .msg.user { background: var(--raffadali); color: var(--bianco); border-bottom-right-radius: 6px; align-self: flex-end; }
+  .msg .msg-links { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+  .msg .msg-links a { background: var(--bianco); border-radius: 999px; padding: .3rem .8rem; text-decoration: none; font-weight: 500; font-size: .9rem; }
+  .chips { display: flex; gap: .4rem; overflow-x: auto; padding: 0 1.2rem .8rem; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; background: transparent; border: 1.5px solid var(--linea); border-radius: 999px; padding: .4rem .85rem; font-size: .9rem; cursor: pointer; }
+  .chip:hover { border-color: var(--lisca); }
+  .chat-form { display: flex; gap: .5rem; padding: .8rem; border-top: 1px solid var(--linea); }
+  .chat-form input {
+    flex: 1; min-width: 0; font: inherit; font-weight: 300; padding: .7rem 1rem; border-radius: 999px;
+    border: 1.5px solid var(--linea); background: var(--crema); color: var(--ardesia);
+  }
+  .chat-form input:focus { outline: none; border-color: var(--lisca); }
 
-    /* AI SECTION */
-    #ai-section { background: var(--teal-dk); padding: 1.6rem 1.4rem 2rem; }
-    #ai-section .section-title { color: var(--white); margin-bottom: .3rem; }
-    #ai-section .section-title span { color: var(--gold-lt); font-style: italic; }
-    .ai-sub { font-size: .82rem; color: rgba(255,255,255,.6); margin-bottom: 1.2rem; }
-    .ai-mode-toggle { display: flex; margin-bottom: 1rem; border: 1.5px solid rgba(255,255,255,.2); overflow: hidden; border-radius: 4px; }
-    .ai-mode-btn { flex: 1; padding: .55rem; background: transparent; color: rgba(255,255,255,.5); border: none; cursor: pointer; font-family: 'Lato', sans-serif; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; transition: all .2s; }
-    .ai-mode-btn.active { background: var(--gold); color: var(--white); }
-    .chat-box { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 4px; overflow: hidden; }
-    .chat-header { background: rgba(255,255,255,.08); padding: .8rem 1rem; border-bottom: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; gap: .7rem; }
-    .chat-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-    .chat-name { font-size: .88rem; font-weight: 700; color: var(--white); }
-    .chat-status { font-size: .7rem; color: #4ade80; }
-    .chat-status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #4ade80; margin-right: 4px; }
-    .chat-messages { height: 260px; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .7rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
-    .msg { max-width: 88%; padding: .65rem .9rem; font-size: .82rem; line-height: 1.6; }
-    .msg.bot { background: rgba(255,255,255,.1); color: rgba(255,255,255,.9); align-self: flex-start; border-radius: 0 10px 10px 10px; }
-    .msg.user { background: var(--gold); color: var(--white); align-self: flex-end; border-radius: 10px 0 10px 10px; }
-    .typing { background: rgba(255,255,255,.1); color: rgba(255,255,255,.5); align-self: flex-start; padding: .65rem .9rem; border-radius: 0 10px 10px 10px; font-size: .82rem; display: none; }
-    .typing.active { display: block; }
-    .dot { animation: blink 1.2s infinite; }
-    .dot:nth-child(2) { animation-delay: .3s; }
-    .dot:nth-child(3) { animation-delay: .6s; }
-    @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
-    .chat-chips { display: flex; gap: .5rem; flex-wrap: wrap; padding: 0 .8rem .7rem; }
-    .chip { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.7); font-size: .7rem; padding: .3rem .7rem; border-radius: 99px; cursor: pointer; transition: all .2s; }
-    .chip:hover { background: var(--gold); color: var(--white); border-color: var(--gold); }
-    .chat-input-row { padding: .8rem; border-top: 1px solid rgba(255,255,255,.1); display: flex; gap: .6rem; }
-    .chat-input { flex: 1; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); color: var(--white); padding: .6rem .9rem; font-family: 'Lato', sans-serif; font-size: .82rem; outline: none; border-radius: 4px; }
-    .chat-input::placeholder { color: rgba(255,255,255,.3); }
-    .chat-input:focus { border-color: var(--gold-lt); }
-    .chat-send { background: var(--gold); color: var(--white); border: none; width: 38px; height: 38px; border-radius: 4px; font-size: 1rem; cursor: pointer; transition: background .2s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .chat-send:hover { background: var(--gold-lt); }
+  /* Orari e indirizzo */
+  .info { background: var(--ardesia); color: var(--crema); }
+  .info h2 { font-size: clamp(var(--step-2), 3.6vw, 2.6rem); }
+  .info-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 80px); margin-top: 2rem; }
+  .facts-list { margin: 0; display: grid; gap: 0; }
+  .facts-list div { display: grid; grid-template-columns: 9.5rem 1fr; gap: 1rem; padding: 1rem 0; border-top: 1px solid rgba(255,250,240,.16); }
+  .facts-list dt { color: #A9C9D8; }
+  .facts-list dd { margin: 0; font-weight: 400; }
+  .facts-list a { color: var(--crema); }
+  .about p { color: #DCE7EC; max-width: 34rem; }
+  .about p + p { margin-top: 1rem; }
+  .about .btn { margin-top: 1.6rem; }
+  .info .btn-solid { background: var(--crema); color: var(--ardesia); }
+  .info .btn-solid:hover { background: var(--bianco); }
 
-    /* INFO STRIPS */
-    .info-strips { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; padding: 0 1.4rem 2rem; }
-    .info-strip { background: var(--white); border: 1px solid var(--line); padding: 1rem; display: flex; align-items: center; gap: .8rem; border-radius: 4px; }
-    .info-strip-icon { font-size: 1.5rem; flex-shrink: 0; }
-    .info-strip-label { font-size: .68rem; color: var(--mid); text-transform: uppercase; letter-spacing: .1em; }
-    .info-strip-value { font-size: .88rem; font-weight: 700; color: var(--ink); margin-top: .1rem; line-height: 1.3; }
+  @media (max-width: 760px) {
+    .marco-grid, .info-grid { grid-template-columns: 1fr; }
+    .facts-list div { grid-template-columns: 1fr; gap: .1rem; }
+    .chat-log { height: 300px; }
+  }
 
-    /* FAVORITES PAGE */
-    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; color: var(--mid); }
-    .empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; opacity: .4; }
-    .empty-state p { font-size: .95rem; line-height: 1.6; }
+  /* ── Pagina ricetta ────────────────────────────────── */
+  .recipe-head {
+    position: relative; isolation: isolate; overflow: hidden; color: var(--bianco);
+    min-height: clamp(300px, 44vh, 440px); display: flex; align-items: flex-end;
+    background: linear-gradient(180deg, var(--raffadali) 0%, #145F80 45%, var(--abisso) 100%);
+  }
+  .recipe-head .scene { z-index: 0; }
+  .recipe-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .recipe-head.has-photo::after { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(180deg, transparent 30%, rgba(15,51,71,.85)); }
+  .recipe-head-copy { position: relative; z-index: 1; width: 100%; padding: 2rem 0; pointer-events: none; }
+  .recipe-head-copy > .wrap > * { pointer-events: auto; }
+  .back { color: #D3EAF4; text-decoration: none; font-weight: 400; display: inline-block; margin-bottom: 1rem; padding: .3rem 0; }
+  .back:hover { color: var(--bianco); text-decoration: underline; }
+  .recipe-emoji { font-size: 2.6rem; line-height: 1; display: block; margin-bottom: .6rem; }
+  .recipe-head h1 { font-size: clamp(2.1rem, 5vw, 3.6rem); letter-spacing: -.025em; max-width: 18ch; }
+  .recipe-head p { color: #D3EAF4; margin-top: .5rem; font-size: var(--step-1); }
 
-    /* MINI GUIDE */
-    .guide-cards { display: flex; flex-direction: column; gap: 1rem; }
-    .guide-card { background: var(--white); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; display: flex; align-items: stretch; cursor: pointer; transition: box-shadow .2s; }
-    .guide-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-    .guide-card-color { width: 6px; flex-shrink: 0; }
-    .guide-card-body { padding: 1rem 1.2rem; flex: 1; }
-    .guide-card-icon { font-size: 1.6rem; margin-bottom: .4rem; }
-    .guide-card-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); margin-bottom: .2rem; }
-    .guide-card-desc { font-size: .8rem; color: var(--mid); line-height: 1.5; }
-    .guide-card-meta { font-size: .7rem; color: var(--teal); font-weight: 700; margin-top: .5rem; }
-    .guide-pdf-btn { display: inline-flex; align-items: center; gap: .4rem; margin-top: .6rem; background: var(--gold); color: var(--white); font-size: .7rem; font-weight: 700; padding: .35rem .8rem; border-radius: 3px; text-decoration: none; letter-spacing: .06em; }
-    .guide-pdf-btn:hover { background: #a87820; }
-    .guide-card-arrow { display: flex; align-items: center; padding-right: 1rem; color: var(--mid); font-size: 1.2rem; }
+  .recipe-facts { display: flex; flex-wrap: wrap; gap: .5rem 2rem; list-style: none; margin: 0; padding: 1.4rem 0; border-bottom: 1px solid var(--linea); }
+  .recipe-facts li { display: flex; flex-direction: column; }
+  .recipe-facts span { color: var(--testo-2); font-size: var(--step--1); }
+  .recipe-facts strong { font-weight: 500; }
+  .recipe-facts .fav-li { margin-left: auto; justify-content: center; }
+  .save-btn { display: inline-flex; align-items: center; gap: .5rem; }
+  .save-btn svg { width: 18px; height: 18px; fill: transparent; stroke: currentColor; stroke-width: 2; }
+  .save-btn[aria-pressed="true"] { background: var(--raffadali); color: var(--bianco); }
+  .save-btn[aria-pressed="true"] svg { fill: currentColor; }
 
-    /* GUIDE DETAIL */
-    .guide-detail-header { padding: 1.4rem; background: var(--teal-dk); color: var(--white); }
-    .guide-detail-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; margin-bottom: .3rem; }
-    .guide-detail-sub { font-size: .85rem; color: rgba(255,255,255,.7); }
-    .guide-content { padding: 1.4rem; }
-    .guide-section { margin-bottom: 1.8rem; }
-    .guide-section-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--teal-dk); margin-bottom: .8rem; display: flex; align-items: center; gap: .5rem; }
-    .guide-item { background: var(--white); border: 1px solid var(--line); border-radius: 4px; padding: .9rem 1rem; margin-bottom: .6rem; font-size: .85rem; line-height: 1.6; }
-    .guide-item strong { color: var(--teal-dk); }
-    .guide-tip { background: #fff8e8; border-left: 3px solid var(--gold); padding: .9rem 1rem; font-size: .85rem; line-height: 1.6; margin-bottom: .6rem; }
+  .recipe-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: clamp(28px, 5vw, 80px); padding: 2.4rem 0 1rem; }
+  .recipe-cols h2 { font-size: var(--step-2); margin-bottom: 1rem; }
+  .ingredients { list-style: none; margin: 0; padding: 0; }
+  .ingredients li { border-top: 1px solid var(--linea); }
+  .ingredients label { display: flex; gap: .8rem; align-items: center; padding: .7rem 0; cursor: pointer; }
+  .ingredients input { width: 22px; height: 22px; accent-color: var(--raffadali); flex: none; }
+  .ingredients input:checked + span { text-decoration: line-through; color: var(--testo-2); }
+  .ing-hint { color: var(--testo-2); font-size: var(--step--1); margin-top: .8rem; }
+  .steps { list-style: none; margin: 0; padding: 0; counter-reset: passo; }
+  .steps li { counter-increment: passo; display: grid; grid-template-columns: 2.6rem 1fr; gap: 1rem; padding: 0 0 1.4rem; }
+  .steps li::before {
+    content: counter(passo); width: 2.6rem; height: 2.6rem; border-radius: 50%;
+    border: 1.5px solid var(--lisca); color: var(--raffadali); display: grid; place-items: center; font-weight: 500;
+  }
+  .steps li p { padding-top: .35rem; max-width: 60ch; }
+  .order-box {
+    margin: 1.6rem 0 4rem; padding: 1.4rem 1.6rem; border-radius: 22px; background: var(--schiuma);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .order-box p { max-width: 36rem; }
+  @media (max-width: 760px) {
+    .recipe-cols { grid-template-columns: 1fr; }
+    .recipe-facts .fav-li { margin-left: 0; width: 100%; }
+  }
 
-    /* FOOTER */
-    footer { background: var(--teal-dk); color: rgba(255,255,255,.5); padding: 1.6rem 1.4rem; text-align: center; font-size: .75rem; border-top: 2px solid var(--gold); }
-    footer strong { color: var(--white); }
+  /* ── Pagine semplici (preferiti, guide) ────────────── */
+  .page-head { padding: clamp(40px, 6vw, 72px) 0 1.6rem; }
+  .page-head h1 { font-size: clamp(2rem, 4.6vw, 3.2rem); letter-spacing: -.02em; }
+  .page-head p { color: var(--testo-2); margin-top: .5rem; }
+  .page-head .back { color: var(--raffadali); }
+  .page-body { padding-bottom: 5rem; }
+  .guide-section { max-width: 44rem; padding: 1.4rem 0; border-top: 1px solid var(--linea); }
+  .guide-section h2 { font-size: var(--step-1); margin-bottom: .8rem; }
+  .guide-item + .guide-item { margin-top: .8rem; }
+  .guide-item strong { font-weight: 500; display: block; }
+  .guide-item p { color: var(--testo-2); }
+  .tip { margin-top: .9rem; padding: .8rem 1rem; border-left: 3px solid var(--lisca); background: var(--schiuma); border-radius: 0 12px 12px 0; }
 
-    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    .fade-in { animation: fadeIn .35s ease forwards; }
-  </style>
+  /* ── Piè di pagina ─────────────────────────────────── */
+  footer { padding: 2.6rem 0; border-top: 1px solid var(--linea); }
+  footer .wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; color: var(--testo-2); font-size: var(--step--1); }
+  footer img { width: 132px; height: auto; mix-blend-mode: multiply; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  }
+</style>
 </head>
 <body>
 
-<div class="top-banner">Pescheria Sapore di Mare — Raffadali</div>
+<!-- Il pesce del logo, disegnato a linee: usato nella barra e come riserva se il 3D non è disponibile -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="lisca" viewBox="196 176 650 274">
+    <g fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M215 318 C240 270 330 200 440 188 C410 250 400 330 446 436 C345 425 250 378 215 318 Z"/>
+      <path d="M406 306 C500 298 620 300 705 314"/>
+      <path d="M492 194 C470 255 470 365 492 424"/>
+      <path d="M552 198 C531 258 531 360 552 418"/>
+      <path d="M606 214 C588 265 588 352 606 402"/>
+      <path d="M656 240 C641 280 641 340 656 376"/>
+      <path d="M705 314 C750 280 800 240 832 214 C805 270 782 300 770 316 C790 340 812 380 826 410 C780 375 740 340 705 318"/>
+    </g>
+    <circle cx="332" cy="294" r="19" fill="currentColor"/>
+  </symbol>
+  <symbol id="cuore" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.4-9.3-9.2C1.4 7.7 3.7 4 7.4 4c2 0 3.6 1.1 4.6 2.6C13 5.1 14.6 4 16.6 4c3.7 0 6 3.7 4.7 7.3-1.8 4.8-9.3 9.2-9.3 9.2z" stroke-linejoin="round"/></symbol>
+</svg>
 
-<nav>
-  <button class="nav-icon-btn" onclick="toggleMenu()">☰</button>
-  <div class="nav-logo" onclick="showPage('home')">
-    <span class="nav-logo-eyebrow">Le Ricette di</span>
-    <span class="nav-logo-main">Sapore di Mare</span>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#/" aria-label="Sapore di Mare, torna alla pagina principale">
+      <svg style="color:var(--lisca)" aria-hidden="true"><use href="#lisca"/></svg>
+      <span class="brand-text"><span class="brand-small">PESCHERIA</span><span class="brand-name">Sapore di Mare</span></span>
+    </a>
+    <nav class="bar-links" id="barLinks" aria-label="Sezioni">
+      <a href="#ricette">Ricette</a>
+      <a href="#/guide">Guide</a>
+      <a href="#marco">Chiedi a Marco</a>
+      <a href="#info">Orari e indirizzo</a>
+    </nav>
+    <a class="fav-link" href="#/preferiti" aria-label="I tuoi preferiti">
+      <svg aria-hidden="true" fill="currentColor"><use href="#cuore"/></svg><span id="favCount">0</span>
+    </a>
+    <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="barLinks">Menu</button>
   </div>
-  <button class="nav-icon-btn" onclick="showPage('preferiti')" id="favNavBtn">
-    ♡<span class="fav-badge" id="favBadge">0</span>
-  </button>
-</nav>
+</header>
 
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-<div class="side-menu" id="sideMenu">
-  <div class="side-menu-header">
-    <div class="side-menu-logo">Sapore <span>di Mare</span></div>
-    <button class="side-close" onclick="toggleMenu()">✕</button>
-  </div>
-  <div class="side-menu-items">
-    <div class="side-item" onclick="nav('home')"><span class="side-item-icon">🏠</span>Home</div>
-    <div class="side-item" onclick="nav('preferiti')"><span class="side-item-icon">❤️</span>I Tuoi Preferiti</div>
-    <div class="side-item" onclick="nav('tutte-ricette')"><span class="side-item-icon">🍽️</span>Tutte le Ricette</div>
-    <div class="side-item" onclick="nav('ai')"><span class="side-item-icon">💡</span>Consigli dello Chef AI</div>
-    <div class="side-item" onclick="nav('guide')"><span class="side-item-icon">📖</span>Mini Guide PDF</div>
-    <div class="side-item" onclick="nav('info')"><span class="side-item-icon">🏪</span>Chi Siamo & Info</div>
-  </div>
-  <div class="side-menu-footer">Chiuso Domenica Pomeriggio</div>
-</div>
-
-<!-- ══════════════ HOME PAGE ══════════════ -->
-<div class="page active" id="page-home">
-  <div class="hero">
-    <div class="hero-img-placeholder" id="heroEmoji">🦐</div>
-    <div class="hero-bg"></div>
-    <div class="hero-content">
-      <span class="hero-badge" id="heroBadge">Ricetta Gourmet</span>
-      <h1 class="hero-title" id="heroTitle">Linguine Gambero Rosso</h1>
-      <p class="hero-subtitle" id="heroSubtitle">Burrata e Pistacchio di Bronte</p>
-      <button class="hero-btn" onclick="openRecipeById(0)">Leggi la Ricetta</button>
-    </div>
-    <div class="hero-dots">
-      <div class="hero-dot active" onclick="goSlide(0)"></div>
-      <div class="hero-dot" onclick="goSlide(1)"></div>
-      <div class="hero-dot" onclick="goSlide(2)"></div>
-    </div>
-  </div>
-
-  <div class="cat-pills" id="homePills">
-    <div class="pill active" data-cat="Tutti">Tutti</div>
-    <div class="pill" data-cat="Primi">Primi</div>
-    <div class="pill" data-cat="Secondi">Secondi</div>
-    <div class="pill" data-cat="Antipasti">Antipasti</div>
-    <div class="pill" data-cat="Zuppe">Zuppe</div>
-    <div class="pill" data-cat="Grigliata">Grigliata</div>
-  </div>
-
-  <div class="section">
-    <div class="section-header">
-      <h2 class="section-title">Le Più Richieste</h2>
-      <span class="section-link" onclick="showPage('tutte-ricette')">Vedi Tutte</span>
-    </div>
-    <div class="cards-scroll" id="homeCards"></div>
-  </div>
-
-  <div id="ai-section">
-    <h2 class="section-title">Consigli del <span>Chef AI</span></h2>
-    <p class="ai-sub">Chiedi una ricetta o informazioni sul negozio</p>
-    <div class="ai-mode-toggle">
-      <button class="ai-mode-btn active" id="modeRicette" onclick="setMode('ricette')">🍽 Ricette</button>
-      <button class="ai-mode-btn" id="modeInfo" onclick="setMode('info')">🏪 Negozio</button>
-    </div>
-    <div class="chat-box">
-      <div class="chat-header">
-        <div class="chat-avatar">🐟</div>
-        <div>
-          <div class="chat-name">Marco — Assistente Sapore di Mare</div>
-          <div class="chat-status"><span class="chat-status-dot"></span>Online ora</div>
+<main>
+<!-- ══════════════ HOME ══════════════ -->
+<div class="page" id="page-home">
+  <section class="hero" id="hero" aria-label="Benvenuti">
+    <div class="scene" id="heroScene" aria-hidden="true"></div>
+    <svg class="hero-fallback" aria-hidden="true"><use href="#lisca"/></svg>
+    <div class="hero-copy">
+      <div class="wrap">
+        <div class="inner">
+          <h1>Il pesce di stamattina, cucinato stasera.</h1>
+          <p>Lo scegli al banco della nostra pescheria a Raffadali. Qui trovi come prepararlo, passo dopo passo.</p>
+          <div class="hero-actions">
+            <a class="btn btn-light" href="#ricette">Sfoglia le ricette</a>
+            <a class="btn btn-ghost" href="#info">Orari e indirizzo</a>
+          </div>
         </div>
       </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="msg bot">Ciao! 👋 Sono Marco, l'assistente della <strong>Pescheria Sapore di Mare</strong> di Raffadali. Come posso aiutarti?</div>
+    </div>
+  </section>
+
+  <section class="block" id="ricette">
+    <div class="wrap">
+      <div class="block-head">
+        <h2>Ricette di mare</h2>
+        <p>Ogni ricetta usa pesce che trovi da noi. Tocca il cuore per salvarla.</p>
       </div>
-      <div class="typing" id="typingEl"><span class="dot">●</span> <span class="dot">●</span> <span class="dot">●</span></div>
-      <div class="chat-chips" id="chatChips">
-        <span class="chip" onclick="askChip(this)">Come cucino il branzino?</span>
-        <span class="chip" onclick="askChip(this)">Ricetta con gamberi</span>
-        <span class="chip" onclick="askChip(this)">Siete aperti domenica?</span>
-        <span class="chip" onclick="askChip(this)">Fate consegne?</span>
+      <div class="filters" id="filters" aria-label="Filtra per portata"></div>
+      <div class="grid" id="recipeGrid"></div>
+    </div>
+  </section>
+
+  <section class="block block-guides" aria-labelledby="guideTitle">
+    <div class="wrap">
+      <div class="block-head">
+        <h2 id="guideTitle">Piccole guide</h2>
+        <p>Come riconoscere il pesce fresco, pulirlo, cuocerlo e conservarlo.</p>
       </div>
-      <div class="chat-input-row">
-        <input class="chat-input" id="chatInput" type="text" placeholder="Scrivi un messaggio…" onkeydown="if(event.key==='Enter') sendMessage()"/>
-        <button class="chat-send" onclick="sendMessage()">➤</button>
+      <div class="guide-list" id="guideListHome"></div>
+    </div>
+  </section>
+
+  <section class="block" id="marco">
+    <div class="wrap marco-grid">
+      <div class="marco-intro">
+        <h2>Chiedi a Marco</h2>
+        <p>Risposte rapide su orari, consegne e su cosa cucinare con il pesce che hai preso. Per tutto il resto, chiamaci.</p>
+      </div>
+      <div class="chat">
+        <div class="chat-log" id="chatLog" aria-live="polite"></div>
+        <div class="chips" id="chips"></div>
+        <form class="chat-form" id="chatForm">
+          <label class="sr-only" for="chatInput">Scrivi una domanda</label>
+          <input id="chatInput" type="text" autocomplete="off" placeholder="Per esempio: come cucino le seppie?"/>
+          <button class="btn btn-solid" type="submit">Invia</button>
+        </form>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="section" id="info">
-    <div class="section-header"><h2 class="section-title">Info & Orari</h2></div>
-    <div class="info-strips">
-      <div class="info-strip"><div class="info-strip-icon">📍</div><div><div class="info-strip-label">Indirizzo</div><div class="info-strip-value">Via del Porto 12, Raffadali</div></div></div>
-      <div class="info-strip"><div class="info-strip-icon">🕐</div><div><div class="info-strip-label">Orari</div><div class="info-strip-value">Lun–Sab 6:00–13:30</div></div></div>
-      <div class="info-strip"><div class="info-strip-icon">📞</div><div><div class="info-strip-label">Telefono</div><div class="info-strip-value">+39 095 123 456</div></div></div>
-      <div class="info-strip"><div class="info-strip-icon">📦</div><div><div class="info-strip-label">Consegne</div><div class="info-strip-value">Su prenotazione</div></div></div>
+  <section class="block info" id="info">
+    <div class="wrap">
+      <h2>Orari e indirizzo</h2>
+      <div class="info-grid">
+        <dl class="facts-list" id="factsList"></dl>
+        <div class="about">
+          <p>La Pescheria Sapore di Mare nasce a Raffadali nel 1987 dalla passione della famiglia Marino per il mare e il pesce fresco.</p>
+          <p>Ogni mattina selezioniamo personalmente il meglio del mercato ittico. Puliamo e sfilettiamo il pesce gratis, basta chiedere al banco.</p>
+          <a class="btn btn-solid" id="mapLink" target="_blank" rel="noopener">Apri nella mappa</a>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <footer><strong>Pescheria Sapore di Mare</strong> — Raffadali<br><span style="margin-top:.4rem;display:inline-block;">© 2025 · Tutti i diritti riservati</span></footer>
+  </section>
 </div>
 
-<!-- ══════════════ TUTTE LE RICETTE ══════════════ -->
-<div class="page" id="page-tutte-ricette">
-  <button class="back-btn" onclick="showPage('home')">← Torna alla Home</button>
-  <div class="section" style="padding-top:0">
-    <div class="section-header"><h2 class="section-title">Tutte le Ricette</h2></div>
-    <div class="cat-pills" style="padding:0 0 1rem; border:none;" id="allPills">
-      <div class="pill active" data-cat="Tutti">Tutti</div>
-      <div class="pill" data-cat="Primi">Primi</div>
-      <div class="pill" data-cat="Secondi">Secondi</div>
-      <div class="pill" data-cat="Antipasti">Antipasti</div>
-      <div class="pill" data-cat="Zuppe">Zuppe</div>
-      <div class="pill" data-cat="Grigliata">Grigliata</div>
+<!-- ══════════════ RICETTA ══════════════ -->
+<div class="page" id="page-recipe">
+  <section class="recipe-head" id="recipeHead">
+    <div class="scene" id="recipeScene" aria-hidden="true"></div>
+    <div class="recipe-head-copy">
+      <div class="wrap">
+        <a class="back" href="#ricette">Tutte le ricette</a>
+        <span class="recipe-emoji" id="rEmoji" aria-hidden="true"></span>
+        <h1 id="rTitle"></h1>
+        <p id="rSub"></p>
+      </div>
     </div>
-    <div class="recipes-grid" id="allRecipesGrid"></div>
-  </div>
-</div>
-
-<!-- ══════════════ RECIPE DETAIL ══════════════ -->
-<div class="page" id="page-recipe-detail">
-  <button class="back-btn" id="recipeBackBtn">← Indietro</button>
-  <div class="recipe-hero" id="recipeHeroImg">
-    <span id="recipeHeroEmoji" class="hero-emoji" style="font-size:6rem"></span>
-    <span class="recipe-hero-badge" id="recipeHeroBadge"></span>
-    <button class="recipe-hero-fav" id="recipeHeroFav" onclick="toggleDetailFav()">♡</button>
-  </div>
-  <div class="recipe-detail fade-in">
-    <h1 class="recipe-detail-title" id="recipeDetailTitle"></h1>
-    <p class="recipe-detail-sub" id="recipeDetailSub"></p>
-    <div class="recipe-meta-row" id="recipeMetaRow"></div>
-    <h3 class="recipe-section-title">🛒 Ingredienti</h3>
-    <ul class="ingredients-list" id="recipeIngredients"></ul>
-    <h3 class="recipe-section-title">👨‍🍳 Preparazione</h3>
-    <ol class="steps-list" id="recipeSteps"></ol>
-    <button class="ai-recipe-btn" id="aiRecipeBtn">💬 Chiedi varianti all'AI Chef</button>
+  </section>
+  <div class="wrap">
+    <ul class="recipe-facts" id="rFacts"></ul>
+    <div class="recipe-cols">
+      <section>
+        <h2>Ingredienti</h2>
+        <ul class="ingredients" id="rIng"></ul>
+        <p class="ing-hint">Spunta gli ingredienti man mano che li prepari.</p>
+      </section>
+      <section>
+        <h2>Preparazione</h2>
+        <ol class="steps" id="rSteps"></ol>
+      </section>
+    </div>
+    <div class="order-box">
+      <p id="rOrderText"></p>
+      <a class="btn btn-solid" id="rOrderLink">Chiama la pescheria</a>
+    </div>
   </div>
 </div>
 
 <!-- ══════════════ PREFERITI ══════════════ -->
 <div class="page" id="page-preferiti">
-  <button class="back-btn" onclick="showPage('home')">← Torna alla Home</button>
-  <div class="section" style="padding-top:0">
-    <div class="section-header"><h2 class="section-title">❤️ I Tuoi Preferiti</h2></div>
-    <div id="favContent"></div>
+  <div class="wrap">
+    <div class="page-head">
+      <a class="back" href="#ricette">Tutte le ricette</a>
+      <h1>I tuoi preferiti</h1>
+      <p>Restano salvati su questo dispositivo.</p>
+    </div>
+    <div class="page-body" id="favBody"></div>
   </div>
 </div>
 
-<!-- ══════════════ MINI GUIDE ══════════════ -->
+<!-- ══════════════ GUIDE ══════════════ -->
 <div class="page" id="page-guide">
-  <button class="back-btn" onclick="showPage('home')">← Torna alla Home</button>
-  <div class="section" style="padding-top:0">
-    <div class="section-header"><h2 class="section-title">📖 Mini Guide</h2></div>
-    <div class="guide-cards" id="guideCards"></div>
+  <div class="wrap">
+    <div class="page-head">
+      <a class="back" href="#/">Pagina principale</a>
+      <h1>Piccole guide</h1>
+      <p>Quello che chiedete più spesso al banco, scritto per bene.</p>
+    </div>
+    <div class="page-body"><div class="guide-list" id="guideListAll"></div></div>
   </div>
 </div>
 
-<!-- ══════════════ GUIDE DETAIL ══════════════ -->
-<div class="page" id="page-guide-detail">
-  <button class="back-btn" onclick="showPage('guide')">← Mini Guide</button>
-  <div id="guideDetailContent" class="fade-in"></div>
-</div>
-
-<!-- ══════════════ INFO / CHI SIAMO ══════════════ -->
-<div class="page" id="page-info">
-  <button class="back-btn" onclick="showPage('home')">← Torna alla Home</button>
-  <div class="section" style="padding-top:0">
-    <div class="section-header"><h2 class="section-title">🏪 Chi Siamo</h2></div>
-    <div style="background:var(--white);border:1px solid var(--line);border-radius:4px;padding:1.4rem;margin-bottom:1.2rem;font-size:.9rem;line-height:1.8;color:var(--mid);">
-      La <strong style="color:var(--ink)">Pescheria Sapore di Mare</strong> nasce a Raffadali nel 1987 dalla passione della famiglia Marino per il mare e il pesce fresco. Ogni mattina selezioniamo personalmente il meglio del mercato ittico per portare sulle vostre tavole solo prodotti di prima qualità.
+<div class="page" id="page-guida">
+  <div class="wrap">
+    <div class="page-head">
+      <a class="back" href="#/guide">Tutte le guide</a>
+      <h1 id="gTitle"></h1>
+      <p id="gDesc"></p>
     </div>
-    <div class="info-strips">
-      <div class="info-strip"><div class="info-strip-icon">📍</div><div><div class="info-strip-label">Indirizzo</div><div class="info-strip-value">Via del Porto 12, Raffadali (AG)</div></div></div>
-      <div class="info-strip"><div class="info-strip-icon">🕐</div><div><div class="info-strip-label">Orari</div><div class="info-strip-value">Lun–Sab 6:00–13:30</div></div></div>
-      <div class="info-strip"><div class="info-strip-icon">📞</div><div><div class="info-strip-label">Telefono</div><div class="info-strip-value">+39 095 123 456</div></div></div>
-      <div class="info-strip"><div class="info-strip-icon">📦</div><div><div class="info-strip-label">Consegne</div><div class="info-strip-value">Su prenotazione</div></div></div>
-    </div>
+    <div class="page-body" id="gBody"></div>
   </div>
-  <footer><strong>Pescheria Sapore di Mare</strong> — Raffadali<br><span style="margin-top:.4rem;display:inline-block;">© 2025 · Tutti i diritti riservati</span></footer>
 </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <img src="img/logo.png" alt="Pescheria Sapore di Mare, Raffadali" width="800" height="602"/>
+    <span id="footText"></span>
+  </div>
+</footer>
 
 <script>
 // ══════════════════════════════════════════
-// DATA — sincronizzata con Admin Panel via localStorage
+// DATI — compatibili con l'Admin Panel (localStorage: sdm_recipes, sdm_guides)
 // ══════════════════════════════════════════
+const SHOP = {
+  indirizzo: 'Via del Porto 12, Raffadali (AG)',
+  orari: 'Lunedì–Sabato 6:00–13:30',
+  domenica: 'Domenica aperto la mattina, chiuso il pomeriggio',
+  telefono: '+39 095 123 456',
+  consegne: 'A domicilio, su prenotazione telefonica',
+  pulizia: 'Pulizia e sfilettatura gratuite',
+  prodotti: 'branzino, orata, gamberi rossi, polpo, seppie, astice (su ordinazione), pesce spada, tonno, vongole, cozze e ricci di mare'
+};
+
 function getDefaultRecipes() {
   return [
     { id: 1, emoji:'🦐', badge:'Ricetta Gourmet', cat:'Primi', top:true, title:'Linguine al Gambero Rosso', sub:'Burrata e Pistacchio di Bronte', time:'25 min', diff:'Media', people:'2', ingredients:['320g linguine','300g gamberi rossi freschi','1 burrata','40g pistacchi di Bronte','2 spicchi aglio','Olio EVO, sale, pepe','Scorza di limone','Prezzemolo fresco'], steps:['Sgusciate i gamberi tenendo qualcuno intero per decorare. Tritate grossolanamente i pistacchi.','In padella scaldate olio e aglio. Aggiungete i gamberi a fuoco vivo per 2 minuti, salate e pepate.','Cuocete le linguine al dente. Scolatele tenendo un bicchiere di acqua di cottura.','Mantecate la pasta con i gamberi, aggiungendo acqua di cottura per creare una cremina.','Impiattate, aggiungete straccetti di burrata, granella di pistacchio e scorza di limone grattugiata.'] },
@@ -404,307 +546,490 @@ function getDefaultRecipes() {
     { id: 8, emoji:'🐡', badge:'Ricetta', cat:'Zuppe', top:false, title:'Zuppa di Pesce Siciliana', sub:'Con crostoni di pane all\'aglio', time:'50 min', diff:'Media', people:'4', ingredients:['Mix pesce: scorfano, gallinella, gamberoni','400g pomodori pelati','1 cipolla, sedano, carota','100ml vino bianco','Olio EVO, aglio','Pane casereccio, peperoncino, prezzemolo'], steps:['Preparate un soffritto con cipolla, sedano, carota e aglio in olio.','Aggiungete i pomodori pelati schiacciati e il peperoncino. Cuocete 10 minuti.','Aggiungete i pesci più duri e il brodo. Cuocete 20 minuti.','Unite i pesci più delicati e i gamberoni. Cuocete altri 10 minuti.','Tostate il pane, strofinatelo con aglio. Servite la zuppa sui crostoni.'] }
   ];
 }
-
 function getDefaultGuides() {
   return [
-    { id: 101, icon:'🐟', color:'#1e5c6e', title:'Come Scegliere il Pesce Fresco', desc:'Guida completa per riconoscere la freschezza del pesce al mercato', sections:[{ title:'👁️ Guardare gli Occhi', items:[{t:'Occhi brillanti e sporgenti',d:'Il pesce fresco ha occhi vivaci, convessi e con pupilla nera brillante.'},{t:'Evita occhi opachi',d:'Occhi infossati o opachi indicano pesce non fresco.'}], tips:['Compra il pesce al mattino presto — è appena arrivato dal mercato ittico.','Non aver paura di chiedere al pescivendolo: da quanto è arrivato?'] },{ title:'✋ Toccare la Carne', items:[{t:'Polpa soda ed elastica',d:'Premi con il dito: la carne deve tornare subito su, senza lasciare l\'impronta.'},{t:'Superficie umida ma non viscida',d:'La pelle deve essere lucida e umida, non appiccicosa.'}], tips:[] }] },
-    { id: 102, icon:'🔪', color:'#c8962a', title:'Come Pulire e Sfilettare', desc:'Tecniche professionali per pulire ogni tipo di pesce', sections:[{ title:'🐟 Sfilettare il Branzino', items:[{t:'Attrezzi necessari',d:'Coltello flessibile da filetto, tagliere, pinzette per le spine.'},{t:'Rimozione delle spine',d:'Usa le pinzette per rimuovere le spine rimaste, passando le dita contropelo.'}], tips:['A Sapore di Mare la pulizia del pesce è GRATUITA — basta chiedere!','Le spine del branzino si trovano meglio passando il dito contropelo sul filetto.'] }] },
-    { id: 103, icon:'🍳', color:'#2a7a4a', title:'Metodi di Cottura del Pesce', desc:'Dalla griglia al vapore: come esaltare ogni tipo di pesce', sections:[{ title:'🔥 Al Forno', items:[{t:'Temperatura ideale',d:'Il pesce in forno vuole 180–200°C. Pesce intero: 25 min per 500g. Filetti: 12–15 min.'},{t:'Al cartoccio',d:'Isola il pesce con carta forno per trattenere vapore e aromi. Risultato succosissimo.'}], tips:['Il pesce è cotto quando la carne diventa opaca e si sfoglia facilmente.','L\'olio EVO va sempre aggiunto a crudo, dopo la cottura.'] }] },
-    { id: 104, icon:'❄️', color:'#6a3a8e', title:'Conservare il Pesce in Frigo', desc:'Tutto su tempi, temperature e metodi di conservazione', sections:[{ title:'⏱️ Tempi di Conservazione', items:[{t:'Pesce fresco intero',d:'Massimo 1–2 giorni in frigo dalla data di acquisto.'},{t:'Filetti e tranci',d:'Massimo 1 giorno. Cuocili preferibilmente il giorno stesso.'}], tips:['Non rimettere in frigo il pesce scongelato: cuocilo subito.','Odore di ammoniaca? Non è normale: il pesce va buttato.'] }] }
+    { id: 101, icon:'🐟', title:'Come scegliere il pesce fresco', desc:'Riconoscere la freschezza del pesce al banco', sections:[{ title:'Guardare gli occhi', items:[{t:'Occhi brillanti e sporgenti',d:'Il pesce fresco ha occhi vivaci, convessi e con pupilla nera brillante.'},{t:'Evita occhi opachi',d:'Occhi infossati o opachi indicano pesce non fresco.'}], tips:['Compra il pesce al mattino presto: è appena arrivato dal mercato ittico.','Non aver paura di chiedere al pescivendolo da quanto è arrivato.'] },{ title:'Toccare la carne', items:[{t:'Polpa soda ed elastica',d:'Premi con il dito: la carne deve tornare subito su, senza lasciare l\'impronta.'},{t:'Superficie umida ma non viscida',d:'La pelle deve essere lucida e umida, non appiccicosa.'}], tips:[] }] },
+    { id: 102, icon:'🔪', title:'Come pulire e sfilettare', desc:'Le tecniche per pulire ogni tipo di pesce', sections:[{ title:'Sfilettare il branzino', items:[{t:'Attrezzi necessari',d:'Coltello flessibile da filetto, tagliere, pinzette per le spine.'},{t:'Rimozione delle spine',d:'Usa le pinzette per rimuovere le spine rimaste, passando le dita contropelo.'}], tips:['Da Sapore di Mare la pulizia del pesce è gratuita, basta chiedere.','Le spine del branzino si trovano meglio passando il dito contropelo sul filetto.'] }] },
+    { id: 103, icon:'🍳', title:'Metodi di cottura del pesce', desc:'Dalla griglia al vapore: come esaltare ogni pesce', sections:[{ title:'Al forno', items:[{t:'Temperatura ideale',d:'Il pesce in forno vuole 180–200°C. Pesce intero: 25 min per 500g. Filetti: 12–15 min.'},{t:'Al cartoccio',d:'Chiudi il pesce nella carta forno per trattenere vapore e aromi. Il risultato è succosissimo.'}], tips:['Il pesce è cotto quando la carne diventa opaca e si sfoglia facilmente.','L\'olio EVO va sempre aggiunto a crudo, dopo la cottura.'] }] },
+    { id: 104, icon:'❄️', title:'Conservare il pesce in frigo', desc:'Tempi, temperature e metodi di conservazione', sections:[{ title:'Tempi di conservazione', items:[{t:'Pesce fresco intero',d:'Massimo 1–2 giorni in frigo dalla data di acquisto.'},{t:'Filetti e tranci',d:'Massimo 1 giorno. Cuocili preferibilmente il giorno stesso.'}], tips:['Non rimettere in frigo il pesce scongelato: cuocilo subito.','Se senti odore di ammoniaca il pesce non è più buono: va buttato.'] }] }
   ];
 }
-
-// Carica da localStorage (salvato dall'Admin Panel), con fallback ai dati default
-const RECIPES = (() => {
-  try {
-    const saved = localStorage.getItem('sdm_recipes');
-    return saved ? JSON.parse(saved) : getDefaultRecipes();
-  } catch(e) { return getDefaultRecipes(); }
-})();
-
-const GUIDES = (() => {
-  try {
-    const saved = localStorage.getItem('sdm_guides');
-    return saved ? JSON.parse(saved) : getDefaultGuides();
-  } catch(e) { return getDefaultGuides(); }
-})();
-
+function load(key, fallback) {
+  try { const s = localStorage.getItem(key); const v = s ? JSON.parse(s) : null; return Array.isArray(v) && v.length ? v : fallback(); }
+  catch (e) { return fallback(); }
+}
+const RECIPES = load('sdm_recipes', getDefaultRecipes);
+const GUIDES = load('sdm_guides', getDefaultGuides);
+const findRecipe = id => RECIPES.find(r => String(r.id) === String(id));
+const findGuide = id => GUIDES.find(g => String(g.id) === String(id));
 
 // ══════════════════════════════════════════
-// STATE
+// UTILITÀ
+// ══════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => /^(https?:|data:image\/|\.?\/?img\/)/i.test(String(u || '')) ? String(u) : '';
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const telHref = 'tel:' + SHOP.telefono.replace(/[^\d+]/g, '');
+const mapHref = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Pescheria Sapore di Mare, ' + SHOP.indirizzo);
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const heartSvg = '<svg aria-hidden="true"><use href="#cuore"/></svg>';
+
+// ══════════════════════════════════════════
+// PREFERITI (salvati sul dispositivo)
 // ══════════════════════════════════════════
 let favorites = new Set();
-let currentRecipeId = null;
-let previousPage = 'home';
-let currentCatHome = 'Tutti';
-let currentCatAll = 'Tutti';
-
-// ══════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════
-function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  window.scrollTo(0, 0);
-  if (id === 'preferiti') renderFavorites();
-  if (id === 'guide') renderGuides();
-  if (id === 'tutte-ricette') renderAllRecipes('Tutti');
+try { favorites = new Set(JSON.parse(localStorage.getItem('sdm_favorites') || '[]').map(String)); } catch (e) {}
+function saveFavs() { try { localStorage.setItem('sdm_favorites', JSON.stringify([...favorites])); } catch (e) {} }
+function toggleFav(id) {
+  id = String(id);
+  favorites.has(id) ? favorites.delete(id) : favorites.add(id);
+  saveFavs(); updateFavUI();
 }
-
-function nav(id) {
-  toggleMenu();
-  if (id === 'ai') { showPage('home'); setTimeout(() => document.getElementById('ai-section').scrollIntoView({behavior:'smooth'}), 100); }
-  else if (id === 'info') { showPage('home'); setTimeout(() => document.getElementById('info').scrollIntoView({behavior:'smooth'}), 100); }
-  else showPage(id);
-}
-
-// ══════════════════════════════════════════
-// RECIPE CARDS RENDER
-// ══════════════════════════════════════════
-function makeCard(r, fromPage) {
-  const isFav = favorites.has(r.id);
-  const imgHtml = r.photo
-    ? `<img src="${r.photo}" alt="${r.title}" onerror="this.remove()"/><span class="card-emoji">${r.emoji}</span>`
-    : r.emoji;
-  return `<div class="recipe-card" onclick="openRecipe(${r.id}, '${fromPage}')">
-    <div class="recipe-card-img">${imgHtml}
-      ${r.top ? `<span class="recipe-card-badge">Top Ricetta</span>` : ''}
-      <button class="recipe-card-fav ${isFav?'active':''}" onclick="event.stopPropagation();toggleCardFav(this,${r.id})">${isFav?'♥':'♡'}</button>
-    </div>
-    <div class="recipe-card-body">
-      <div class="recipe-card-title">${r.title}</div>
-      <div class="recipe-card-meta">⏱ ${r.time} · ${r.diff}</div>
-    </div>
-  </div>`;
-}
-
-function renderHomeCards(cat) {
-  const list = cat === 'Tutti' ? RECIPES : RECIPES.filter(r => r.cat === cat);
-  document.getElementById('homeCards').innerHTML = list.map(r => makeCard(r, 'home')).join('');
-}
-
-function renderAllRecipes(cat) {
-  const list = cat === 'Tutti' ? RECIPES : RECIPES.filter(r => r.cat === cat);
-  document.getElementById('allRecipesGrid').innerHTML = list.map(r => makeCard(r, 'tutte-ricette')).join('');
-}
-
-// ══════════════════════════════════════════
-// OPEN RECIPE
-// ══════════════════════════════════════════
-function openRecipe(id, from) {
-  previousPage = from;
-  currentRecipeId = id;
-  const r = RECIPES[id];
-  document.getElementById('recipeHeroEmoji').textContent = r.emoji;
-  document.getElementById('recipeHeroEmoji').className = 'hero-emoji';
-  // Show photo if available
-  const existingImg = document.querySelector('.recipe-hero img');
-  if (existingImg) existingImg.remove();
-  if (r.photo) {
-    const img = document.createElement('img');
-    img.src = r.photo; img.alt = r.title;
-    img.onerror = () => img.remove();
-    document.getElementById('recipeHeroImg').insertBefore(img, document.getElementById('recipeHeroImg').firstChild);
-  }
-  document.getElementById('recipeHeroBadge').textContent = r.badge;
-  document.getElementById('recipeDetailTitle').textContent = r.title;
-  document.getElementById('recipeDetailSub').textContent = r.sub;
-  document.getElementById('recipeMetaRow').innerHTML = `
-    <div class="recipe-meta-item"><span class="recipe-meta-val">⏱ ${r.time}</span><span class="recipe-meta-lbl">Tempo</span></div>
-    <div class="recipe-meta-item"><span class="recipe-meta-val">👤 ${r.people}</span><span class="recipe-meta-lbl">Persone</span></div>
-    <div class="recipe-meta-item"><span class="recipe-meta-val">⭐ ${r.diff}</span><span class="recipe-meta-lbl">Difficoltà</span></div>
-    <div class="recipe-meta-item"><span class="recipe-meta-val">🍽 ${r.cat}</span><span class="recipe-meta-lbl">Categoria</span></div>`;
-  document.getElementById('recipeIngredients').innerHTML = r.ingredients.map(i => `<li>${i}</li>`).join('');
-  document.getElementById('recipeSteps').innerHTML = r.steps.map(s => `<li class="step"><span class="step-num">${r.steps.indexOf(s)+1}</span><span class="step-text">${s}</span></li>`).join('');
-  updateDetailFavBtn();
-  document.getElementById('recipeBackBtn').onclick = () => showPage(previousPage);
-  document.getElementById('aiRecipeBtn').onclick = () => {
-    showPage('home');
-    setTimeout(() => {
-      document.getElementById('ai-section').scrollIntoView({behavior:'smooth'});
-      document.getElementById('chatInput').value = `Dammi varianti della ricetta: ${r.title}`;
-    }, 300);
-  };
-  showPage('recipe-detail');
-}
-
-function openRecipeById(id) { openRecipe(id, 'home'); }
-
-// ══════════════════════════════════════════
-// FAVORITES
-// ══════════════════════════════════════════
-function toggleCardFav(btn, id) {
-  if (favorites.has(id)) { favorites.delete(id); btn.textContent = '♡'; btn.classList.remove('active'); }
-  else { favorites.add(id); btn.textContent = '♥'; btn.classList.add('active'); }
-  updateFavBadge();
-}
-
-function toggleDetailFav() {
-  if (currentRecipeId === null) return;
-  if (favorites.has(currentRecipeId)) favorites.delete(currentRecipeId);
-  else favorites.add(currentRecipeId);
-  updateDetailFavBtn();
-  updateFavBadge();
-}
-
-function updateDetailFavBtn() {
-  const btn = document.getElementById('recipeHeroFav');
-  const isFav = favorites.has(currentRecipeId);
-  btn.textContent = isFav ? '♥' : '♡';
-  btn.style.color = isFav ? '#e05a5a' : '#666';
-}
-
-function updateFavBadge() {
-  const badge = document.getElementById('favBadge');
-  const n = favorites.size;
-  badge.textContent = n;
-  badge.classList.toggle('show', n > 0);
-}
-
-function renderFavorites() {
-  const el = document.getElementById('favContent');
-  if (favorites.size === 0) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">♡</div><p>Non hai ancora salvato nessuna ricetta.<br>Tocca il cuoricino sulle ricette per aggiungerle qui!</p></div>`;
-    return;
-  }
-  el.innerHTML = `<div class="recipes-grid">${[...favorites].map(id => makeCard(RECIPES[id], 'preferiti')).join('')}</div>`;
-}
-
-// ══════════════════════════════════════════
-// GUIDES
-// ══════════════════════════════════════════
-function renderGuides() {
-  document.getElementById('guideCards').innerHTML = GUIDES.map(g => `
-    <div class="guide-card" onclick="openGuide(${g.id})">
-      <div class="guide-card-color" style="background:${g.color}"></div>
-      <div class="guide-card-body">
-        <div class="guide-card-icon">${g.icon}</div>
-        <div class="guide-card-title">${g.title}</div>
-        <div class="guide-card-desc">${g.desc}</div>
-        <div class="guide-card-meta">📄 ${g.pages || (g.sections.length + ' sezioni')}</div>
-        ${g.pdfUrl ? `<a class="guide-pdf-btn" href="${g.pdfUrl}" target="_blank" onclick="event.stopPropagation()">📥 Scarica PDF</a>` : ''}
-      </div>
-      <div class="guide-card-arrow">›</div>
-    </div>`).join('');
-}
-
-function openGuide(id) {
-  const g = GUIDES.find(x => x.id === id) || GUIDES[id];
-  if (!g) return;
-  let html = `<div class="guide-detail-header" style="background:${g.color}">
-    <div style="font-size:2.5rem;margin-bottom:.5rem">${g.icon}</div>
-    <div class="guide-detail-title">${g.title}</div>
-    <div class="guide-detail-sub">${g.desc}</div>
-    ${g.pdfUrl ? `<a class="guide-pdf-btn" href="${g.pdfUrl}" target="_blank" style="margin-top:.8rem;display:inline-flex">📥 Scarica il PDF</a>` : ''}
-  </div><div class="guide-content">`;
-  g.sections.forEach(sec => {
-    html += `<div class="guide-section"><div class="guide-section-title">${sec.title}</div>`;
-    if (sec.items) sec.items.forEach(item => {
-      html += `<div class="guide-item"><strong>${item.t}</strong><br>${item.d}</div>`;
-    });
-    if (sec.tips) sec.tips.forEach(tip => {
-      html += `<div class="guide-tip">💡 ${tip}</div>`;
-    });
-    html += `</div>`;
+function updateFavUI() {
+  const n = [...favorites].filter(id => findRecipe(id)).length;
+  $('favCount').textContent = n;
+  document.querySelectorAll('[data-fav]').forEach(b => {
+    const on = favorites.has(String(b.dataset.fav));
+    b.setAttribute('aria-pressed', on);
+    if (b.classList.contains('save-btn')) b.lastChild.textContent = on ? ' Salvata' : ' Salva';
   });
-  html += `</div>`;
-  document.getElementById('guideDetailContent').innerHTML = html;
-  showPage('guide-detail');
 }
-
-// ══════════════════════════════════════════
-// HERO SLIDER
-// ══════════════════════════════════════════
-const slides = [
-  { badge:'Ricetta Gourmet', title:'Linguine Gambero Rosso', sub:'Burrata e Pistacchio di Bronte', emoji:'🦐', id:0 },
-  { badge:'Ricetta di Stagione', title:'Polpo alla Luciana', sub:'Pomodorini, olive e capperi', emoji:'🐙', id:1 },
-  { badge:'Ricetta Classica', title:'Orata al Cartoccio', sub:'Limone e erbe aromatiche', emoji:'🐠', id:4 },
-];
-let cur = 0;
-function goSlide(i) {
-  cur = i;
-  const s = slides[i];
-  document.getElementById('heroBadge').textContent = s.badge;
-  document.getElementById('heroTitle').textContent = s.title;
-  document.getElementById('heroSubtitle').textContent = s.sub;
-  document.getElementById('heroEmoji').textContent = s.emoji;
-  document.querySelector('.hero-btn').onclick = () => openRecipeById(s.id);
-  document.querySelectorAll('.hero-dot').forEach((d,j) => d.classList.toggle('active', j===i));
-}
-setInterval(() => goSlide((cur+1) % slides.length), 4500);
-
-// PILL FILTER
-document.getElementById('homePills').addEventListener('click', e => {
-  const p = e.target.closest('.pill'); if (!p) return;
-  document.querySelectorAll('#homePills .pill').forEach(x => x.classList.remove('active'));
-  p.classList.add('active');
-  renderHomeCards(p.dataset.cat);
-});
-document.getElementById('allPills').addEventListener('click', e => {
-  const p = e.target.closest('.pill'); if (!p) return;
-  document.querySelectorAll('#allPills .pill').forEach(x => x.classList.remove('active'));
-  p.classList.add('active');
-  renderAllRecipes(p.dataset.cat);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-fav]');
+  if (!b) return;
+  e.preventDefault();
+  toggleFav(b.dataset.fav);
+  if ($('page-preferiti').classList.contains('active') && !b.classList.contains('save-btn')) renderFavorites();
 });
 
 // ══════════════════════════════════════════
-// SIDE MENU
+// SCHEDE RICETTA
 // ══════════════════════════════════════════
-function toggleMenu() {
-  document.getElementById('sideMenu').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('open');
+function card(r) {
+  const photo = safeUrl(r.photo);
+  const art = photo
+    ? `<img src="${esc(photo)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'card-emoji',textContent:${esc(JSON.stringify(r.emoji || '🐟'))}}))"/>`
+    : `<span class="card-emoji" aria-hidden="true">${esc(r.emoji || '🐟')}</span>`;
+  return `<article class="card">
+    <a href="#/ricetta/${esc(r.id)}">
+      <div class="card-art">${art}${r.top ? '<span class="card-tag">Più richiesta</span>' : ''}</div>
+      <div class="card-body">
+        <h3>${esc(r.title)}</h3>
+        <p>${esc(r.sub)}</p>
+        <p class="card-meta">${esc(r.time)}, difficoltà ${esc(String(r.diff || '').toLowerCase())}</p>
+      </div>
+    </a>
+    <button class="heart-btn" data-fav="${esc(r.id)}" aria-pressed="false" aria-label="Salva ${esc(r.title)} tra i preferiti">${heartSvg}</button>
+  </article>`;
+}
+
+let currentCat = 'Tutte';
+function renderFilters() {
+  const cats = ['Tutte', ...new Set(RECIPES.map(r => r.cat).filter(Boolean))];
+  $('filters').innerHTML = cats.map(c => `<button class="filter" type="button" data-cat="${esc(c)}" aria-pressed="${c === currentCat}">${esc(c)}</button>`).join('');
+}
+function renderGrid() {
+  const list = currentCat === 'Tutte' ? RECIPES : RECIPES.filter(r => r.cat === currentCat);
+  $('recipeGrid').innerHTML = list.map(card).join('');
+  updateFavUI();
+}
+$('filters').addEventListener('click', e => {
+  const b = e.target.closest('.filter'); if (!b) return;
+  currentCat = b.dataset.cat;
+  document.querySelectorAll('.filter').forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderGrid();
+});
+
+// ══════════════════════════════════════════
+// PAGINA RICETTA
+// ══════════════════════════════════════════
+function renderRecipe(id) {
+  const r = findRecipe(id);
+  if (!r) { location.replace('#ricette'); return false; }
+  document.title = `${r.title}, Sapore di Mare`;
+  $('rEmoji').textContent = r.emoji || '';
+  $('rTitle').textContent = r.title;
+  $('rSub').textContent = r.sub || '';
+  const head = $('recipeHead');
+  head.querySelector('.recipe-photo')?.remove();
+  head.classList.remove('has-photo');
+  const photo = safeUrl(r.photo);
+  if (photo) {
+    const img = Object.assign(document.createElement('img'), { className: 'recipe-photo', src: photo, alt: '' });
+    img.onerror = () => { img.remove(); head.classList.remove('has-photo'); };
+    head.prepend(img); head.classList.add('has-photo');
+  }
+  $('rFacts').innerHTML = `
+    <li><span>Tempo</span><strong>${esc(r.time)}</strong></li>
+    <li><span>Persone</span><strong>${esc(r.people)}</strong></li>
+    <li><span>Difficoltà</span><strong>${esc(r.diff)}</strong></li>
+    <li><span>Portata</span><strong>${esc(r.cat)}</strong></li>
+    <li class="fav-li"><button class="btn btn-line save-btn" data-fav="${esc(r.id)}" aria-pressed="false">${heartSvg}<span> Salva</span></button></li>`;
+  $('rIng').innerHTML = (r.ingredients || []).map(i => `<li><label><input type="checkbox"/><span>${esc(i)}</span></label></li>`).join('');
+  $('rSteps').innerHTML = (r.steps || []).map(s => `<li><p>${esc(s)}</p></li>`).join('');
+  $('rOrderText').textContent = 'Vuoi che ti teniamo da parte il pesce per questa ricetta? Chiamaci e lo trovi pronto e pulito al banco.';
+  $('rOrderLink').href = telHref;
+  updateFavUI();
+  return true;
 }
 
 // ══════════════════════════════════════════
-// AI CHAT
+// PREFERITI E GUIDE
 // ══════════════════════════════════════════
-let chatMode = 'ricette';
-const systems = {
-  ricette: `Sei Marco, l'assistente virtuale della pescheria "Sapore di Mare" a Raffadali (AG), Sicilia. Sei esperto di cucina siciliana e mediterranea di mare. Dai ricette con pesce fresco (branzino, orata, gamberi, polpo, seppie, astice, pesce spada, tonno). Rispondi in italiano, in modo caldo, esperto e conciso. Max 3-4 frasi. Usa emoji con parsimonia.`,
-  info: `Sei Marco, l'assistente virtuale della pescheria "Sapore di Mare" a Raffadali (AG), Sicilia. Informazioni: Indirizzo: Via del Porto 12, Raffadali (AG). Orari: Lunedì–Sabato 6:00–13:30. Domenica mattina aperto, pomeriggio chiuso. Telefono: +39 095 123 456. Prodotti: branzino, orata, gamberi rossi, polpo, seppie, astice (su ordinazione), pesce spada, tonno, vongole, cozze, ricci di mare. Consegne a domicilio su prenotazione telefonica. Pulizia e sfilettatura gratuita. Rispondi in italiano, in modo gentile e preciso. Max 3-4 frasi.`
-};
-
-function setMode(m) {
-  chatMode = m;
-  document.getElementById('modeRicette').classList.toggle('active', m==='ricette');
-  document.getElementById('modeInfo').classList.toggle('active', m==='info');
-  const chips = m==='ricette'
-    ? ['Come cucino il branzino?','Ricetta con gamberi','Cosa faccio con il polpo?','Ricetta con seppie']
-    : ['Siete aperti domenica?','Fate consegne?','Cosa avete oggi?','Come vi contatto?'];
-  document.getElementById('chatChips').innerHTML = chips.map(c=>`<span class="chip" onclick="askChip(this)">${c}</span>`).join('');
+function renderFavorites() {
+  const list = [...favorites].map(findRecipe).filter(Boolean);
+  $('favBody').innerHTML = list.length
+    ? `<div class="grid">${list.map(card).join('')}</div>`
+    : `<div class="empty"><p>Non hai ancora salvato ricette.</p><p>Tocca il cuore su una ricetta per ritrovarla qui. <a href="#ricette">Vai alle ricette</a></p></div>`;
+  updateFavUI();
+}
+const guideLink = g => `<a class="guide" href="#/guida/${esc(g.id)}"><span class="guide-icon" aria-hidden="true">${esc(g.icon || '📖')}</span><span><strong>${esc(g.title)}</strong><span>${esc(g.desc)}</span></span></a>`;
+function renderGuideLists() {
+  $('guideListHome').innerHTML = GUIDES.map(guideLink).join('');
+  $('guideListAll').innerHTML = GUIDES.map(guideLink).join('');
+}
+function renderGuide(id) {
+  const g = findGuide(id);
+  if (!g) { location.replace('#/guide'); return false; }
+  document.title = `${g.title}, Sapore di Mare`;
+  $('gTitle').textContent = g.title;
+  $('gDesc').textContent = g.desc || '';
+  const pdf = safeUrl(g.pdfUrl);
+  $('gBody').innerHTML = (g.sections || []).map(sec => `
+    <section class="guide-section">
+      <h2>${esc(sec.title)}</h2>
+      ${(sec.items || []).map(it => `<div class="guide-item"><strong>${esc(it.t)}</strong><p>${esc(it.d)}</p></div>`).join('')}
+      ${(sec.tips || []).map(t => `<p class="tip">${esc(t)}</p>`).join('')}
+    </section>`).join('') + (pdf ? `<p style="margin-top:1.6rem"><a class="btn btn-solid" href="${esc(pdf)}" target="_blank" rel="noopener">Scarica il PDF</a></p>` : '');
+  return true;
 }
 
-function askChip(el) { document.getElementById('chatInput').value = el.textContent; sendMessage(); }
+// ══════════════════════════════════════════
+// NAVIGAZIONE (con il tasto indietro del browser)
+// ══════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + name));
+  window.dispatchEvent(new CustomEvent('sdm:page', { detail: name }));
+}
+function route() {
+  closeMenu();
+  const h = decodeURIComponent(location.hash || '');
+  let m;
+  document.title = 'Sapore di Mare, Pescheria a Raffadali';
+  if ((m = h.match(/^#\/ricetta\/(.+)$/))) { if (renderRecipe(m[1])) { showPage('recipe'); scrollTo(0, 0); } return; }
+  if (h === '#/preferiti') { renderFavorites(); showPage('preferiti'); scrollTo(0, 0); return; }
+  if (h === '#/guide') { showPage('guide'); scrollTo(0, 0); return; }
+  if ((m = h.match(/^#\/guida\/(.+)$/))) { if (renderGuide(m[1])) { showPage('guida'); scrollTo(0, 0); } return; }
+  const wasHome = $('page-home').classList.contains('active');
+  showPage('home');
+  const target = h.length > 1 && !h.startsWith('#/') ? document.getElementById(h.slice(1)) : null;
+  if (target) requestAnimationFrame(() => target.scrollIntoView({ behavior: wasHome && !reduceMotion ? 'smooth' : 'auto' }));
+  else if (!wasHome) scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+// Un clic su un link alla sezione in cui si è già: scorri comunque
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (a && a.getAttribute('href') === location.hash) { e.preventDefault(); route(); }
+});
 
-async function sendMessage() {
-  const inp = document.getElementById('chatInput');
-  const text = inp.value.trim(); if (!text) return;
-  inp.value = '';
-  appendMsg(text, 'user');
-  showTyping(true);
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:systems[chatMode], messages:[{role:'user',content:text}] })
+const menuBtn = $('menuBtn');
+function closeMenu() { $('barLinks').classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); }
+menuBtn.addEventListener('click', () => {
+  const open = $('barLinks').classList.toggle('open');
+  menuBtn.setAttribute('aria-expanded', open);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+
+// ══════════════════════════════════════════
+// ORARI E INDIRIZZO
+// ══════════════════════════════════════════
+$('factsList').innerHTML = `
+  <div><dt>Indirizzo</dt><dd><a href="${mapHref}" target="_blank" rel="noopener">${esc(SHOP.indirizzo)}</a></dd></div>
+  <div><dt>Orari</dt><dd>${esc(SHOP.orari)}<br>${esc(SHOP.domenica)}</dd></div>
+  <div><dt>Telefono</dt><dd><a href="${telHref}">${esc(SHOP.telefono)}</a></dd></div>
+  <div><dt>Consegne</dt><dd>${esc(SHOP.consegne)}</dd></div>
+  <div><dt>Al banco</dt><dd>${esc(SHOP.pulizia)}</dd></div>`;
+$('mapLink').href = mapHref;
+$('footText').textContent = `Pescheria Sapore di Mare, ${SHOP.indirizzo}. © ${new Date().getFullYear()}`;
+
+// ══════════════════════════════════════════
+// CHIEDI A MARCO — risposte immediate, senza connessione a servizi esterni
+// ══════════════════════════════════════════
+const CHIPS = ['Siete aperti domenica?', 'Fate consegne?', 'Come cucino il branzino?', 'Una ricetta con i gamberi', 'Cosa avete oggi?'];
+const STOP = new Set('come cucino cucinare ricetta ricette fare faccio cosa con della delle dello degli dammi vorrei posso una uno per il lo la le gli dei del che mi ti di da in su avete'.split(' '));
+const SYN = { gamberi:'gamber', gambero:'gamber', polipo:'polp', seppia:'seppi', calamari:'seppi', spigola:'branzin', pesce:'' };
+
+function marcoAnswer(q) {
+  const t = norm(q);
+  const has = re => re.test(t);
+  if (has(/orar|apert|chius|domenic|quando|sabato|lunedi/)) return { text: `Siamo aperti ${SHOP.orari.toLowerCase()}. ${SHOP.domenica}.` };
+  if (has(/consegn|domicil|portat|spedi/)) return { text: `Sì, consegniamo a domicilio su prenotazione telefonica. Chiama il ${SHOP.telefono}.`, links: [['Chiama ora', telHref]] };
+  if (has(/telefon|chiam|contatt|numero|whatsapp/)) return { text: `Puoi chiamarci al ${SHOP.telefono}, durante l'orario di apertura.`, links: [['Chiama ora', telHref]] };
+  if (has(/dove|indirizz|arriv|trov|mappa|parchegg/)) return { text: `Ci trovi in ${SHOP.indirizzo}.`, links: [['Apri nella mappa', mapHref]] };
+  if (has(/pulit|pulizi|sfilett|squam/)) return { text: `${SHOP.pulizia}: dicci come vuoi cucinarlo e te lo prepariamo noi.` };
+  if (has(/cosa avete|prodott|oggi|disponib|vendete|arrivat/)) return { text: `Di solito trovi ${SHOP.prodotti}. Il pescato cambia ogni mattina: chiamaci per sapere cosa è arrivato oggi.`, links: [['Chiama ora', telHref]] };
+
+  const words = t.split(/[^a-z]+/).filter(w => w.length > 3 && !STOP.has(w)).map(w => SYN[w] ?? w.slice(0, Math.max(4, w.length - 2))).filter(Boolean);
+  const scored = RECIPES.map(r => {
+    const hay = norm([r.title, r.sub, r.cat, ...(r.ingredients || [])].join(' '));
+    return { r, s: words.reduce((n, w) => n + (hay.includes(w) ? (norm(r.title).includes(w) ? 3 : 1) : 0), 0) };
+  }).filter(x => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 3);
+  if (scored.length) {
+    return { text: scored.length === 1 ? 'Ti consiglio questa:' : 'Ecco le ricette che fanno al caso tuo:', links: scored.map(x => [x.r.title, '#/ricetta/' + x.r.id]) };
+  }
+  return { text: `Posso aiutarti con orari, consegne, indirizzo e ricette. Prova a scrivere il nome di un pesce, per esempio "polpo". Per tutto il resto chiamaci al ${SHOP.telefono}.` };
+}
+function addMsg(text, who, links) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + who;
+  d.textContent = text;
+  if (links && links.length) {
+    const box = document.createElement('div'); box.className = 'msg-links';
+    links.forEach(([label, href]) => {
+      const a = Object.assign(document.createElement('a'), { textContent: label, href });
+      if (href.startsWith('http')) { a.target = '_blank'; a.rel = 'noopener'; }
+      box.appendChild(a);
     });
-    const data = await res.json();
-    const reply = data?.content?.[0]?.text || 'Scusa, riprova!';
-    showTyping(false); appendMsg(reply, 'bot');
-  } catch(e) { showTyping(false); appendMsg('Ops, errore di connessione 🐟', 'bot'); }
+    d.appendChild(box);
+  }
+  $('chatLog').appendChild(d);
+  $('chatLog').scrollTop = $('chatLog').scrollHeight;
 }
-
-function appendMsg(text, who) {
-  const box = document.getElementById('chatMessages');
-  const d = document.createElement('div'); d.className=`msg ${who}`;
-  d.innerHTML = text.replace(/\n/g,'<br>');
-  box.appendChild(d); box.scrollTop = box.scrollHeight;
+function ask(q) {
+  q = q.trim(); if (!q) return;
+  addMsg(q, 'user');
+  const a = marcoAnswer(q);
+  setTimeout(() => addMsg(a.text, 'bot', a.links), reduceMotion ? 0 : 350);
 }
-function showTyping(show) { document.getElementById('typingEl').classList.toggle('active', show); }
+$('chips').innerHTML = CHIPS.map(c => `<button class="chip" type="button">${esc(c)}</button>`).join('');
+$('chips').addEventListener('click', e => { const c = e.target.closest('.chip'); if (c) ask(c.textContent); });
+$('chatForm').addEventListener('submit', e => { e.preventDefault(); ask($('chatInput').value); $('chatInput').value = ''; });
+addMsg('Ciao, sono Marco della Pescheria Sapore di Mare. Chiedimi degli orari, delle consegne o cosa cucinare stasera.', 'bot');
 
 // ══════════════════════════════════════════
-// INIT
+// AVVIO
 // ══════════════════════════════════════════
-renderHomeCards('Tutti');
+renderFilters();
+renderGrid();
+renderGuideLists();
+route();
+</script>
+
+<!-- ══════════════ SCENA 3D: la lisca del logo che nuota ══════════════ -->
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COLORS = { lisca: 0x3B93BC, banco: 0x7DBEDC, bolle: 0xDFF4FF, abisso: 0x0F3347 };
+
+// Le linee del logo, in coordinate del disegno originale (x 200→840, y 180→440).
+const P = (x, y, z = 0) => new THREE.Vector3((x - 520) / 100, -(y - 312) / 100, z);
+function fishCurves() {
+  const list = [];
+  const add = (pts, closed = false) => list.push({ curve: new THREE.CatmullRomCurve3(pts, closed, 'centripetal'), closed, n: pts.length });
+  // Testa
+  add([P(215,318), P(250,262), P(320,214), P(395,193), P(440,188), P(418,250), P(406,312), P(418,378), P(446,436), P(392,424), P(318,398), P(250,366)], true);
+  // Spina dorsale
+  add([P(406,306), P(480,300), P(560,300), P(640,304), P(705,314)]);
+  // Costole: ognuna gira attorno al corpo, da un lato e dall'altro
+  [[492,194,424,.62], [552,198,418,.56], [606,214,402,.46], [656,240,376,.34]].forEach(([x, top, bottom, depth]) => {
+    for (const side of [1, -1]) {
+      const pts = [];
+      for (let i = 0; i <= 8; i++) {
+        const t = -1 + i / 4;                         // da sopra (-1) a sotto (1)
+        const y = (top + bottom) / 2 + t * (bottom - top) / 2;
+        const xx = x + 20 * t * t - 22;               // curva come nel logo
+        pts.push(P(xx, y, side * depth * Math.cos(t * Math.PI / 2)));
+      }
+      add(pts);
+    }
+  });
+  // Coda
+  add([P(705,314), P(748,282), P(792,246), P(832,214), P(810,264), P(770,316), P(806,364), P(826,410), P(786,378), P(746,346), P(705,318)]);
+  return list;
+}
+const CURVES = fishCurves();
+
+function swimMaterial(color, opacity) {
+  const uniforms = { uTime: { value: 0 } };
+  const m = new THREE.MeshStandardMaterial({
+    color, roughness: .42, metalness: .05, emissive: color, emissiveIntensity: .18,
+    transparent: opacity < 1, opacity, depthWrite: opacity >= 1
+  });
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uTime = uniforms.uTime;
+    sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      float k = clamp((transformed.x + 1.3) / 4.4, 0.0, 1.0);
+      transformed.z += sin(transformed.x * 1.5 - uTime * 3.0) * 0.38 * k * k;
+      transformed.y += sin(transformed.x * 0.9 - uTime * 1.5) * 0.04;`);
+  };
+  m.customProgramCacheKey = () => 'swim';
+  return { m, uniforms };
+}
+
+function buildFish(color, opacity = 1, radius = .075) {
+  const { m, uniforms } = swimMaterial(color, opacity);
+  const g = new THREE.Group();
+  CURVES.forEach(({ curve, closed, n }) => g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, n * 14, radius, 10, closed), m)));
+  const eye = new THREE.Mesh(new THREE.SphereGeometry(.2, 24, 16), m);
+  eye.scale.z = .7; eye.position.copy(P(332, 294, 0)); g.add(eye);
+  g.userData.uniforms = uniforms;
+  g.userData.phase = Math.random() * 10;
+  return g;
+}
+
+function bubbleTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const gr = x.createRadialGradient(32, 32, 4, 32, 32, 30);
+  gr.addColorStop(0, 'rgba(255,255,255,.05)'); gr.addColorStop(.7, 'rgba(255,255,255,.35)');
+  gr.addColorStop(.86, 'rgba(255,255,255,.95)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = gr; x.beginPath(); x.arc(32, 32, 30, 0, Math.PI * 2); x.fill();
+  return new THREE.CanvasTexture(c);
+}
+
+function createScene(container, { mini = false } = {}) {
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(COLORS.abisso, 10, 26);
+  const camera = new THREE.PerspectiveCamera(38, 1, .1, 80);
+  camera.position.set(0, 0, 10);
+
+  scene.add(new THREE.HemisphereLight(0xCDEFFF, COLORS.abisso, 1.5));
+  const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(-3, 6, 8); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x8FD8F5, 3); rim.position.set(4, -2, -6); scene.add(rim);
+
+  // Il pesce principale, nel colore del logo
+  const hero = buildFish(COLORS.lisca, 1, .08);
+  scene.add(hero);
+
+  // Un piccolo banco di lische in lontananza
+  const school = [];
+  for (let i = 0; i < (mini ? 3 : 7); i++) {
+    const f = buildFish(COLORS.banco, .45, .09);
+    const s = .28 + Math.random() * .28;
+    f.scale.setScalar(s);
+    f.position.set((Math.random() - .5) * 24, (Math.random() - .5) * 6, -4 - Math.random() * 8);
+    f.userData.speed = .5 + Math.random() * .7;
+    scene.add(f); school.push(f);
+  }
+
+  // Bolle che salgono
+  const N = mini ? 70 : 200;
+  const pos = new Float32Array(N * 3), spd = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    pos[i * 3] = (Math.random() - .5) * 22; pos[i * 3 + 1] = (Math.random() - .5) * 12; pos[i * 3 + 2] = -8 + Math.random() * 11;
+    spd[i] = .25 + Math.random() * .6;
+  }
+  const bGeo = new THREE.BufferGeometry(); bGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const bubbles = new THREE.Points(bGeo, new THREE.PointsMaterial({
+    map: bubbleTexture(), color: COLORS.bolle, size: .16, transparent: true, depthWrite: false, opacity: .75, sizeAttenuation: true
+  }));
+  scene.add(bubbles);
+
+  // Disposizione: su schermi larghi il pesce sta a destra, accanto al testo; sui telefoni in alto
+  let view = { w: 10, h: 6, wide: true };
+  const layout = () => {
+    const w = container.clientWidth, h = container.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    const vh = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
+    view = { w: vh * camera.aspect, h: vh, wide: camera.aspect > 1.15 };
+    if (mini) {
+      hero.scale.setScalar(Math.min(.62, view.w / 12));
+      hero.userData.base = new THREE.Vector3(view.wide ? view.w * .24 : view.w * .12, view.wide ? .15 : view.h * .22, 0);
+    } else if (view.wide) {
+      hero.scale.setScalar(Math.min(1.05, view.w / 13));
+      hero.userData.base = new THREE.Vector3(view.w * .2, .1, 0);
+    } else {
+      hero.scale.setScalar(Math.min(.95, view.w / 8.8));
+      hero.userData.base = new THREE.Vector3(-view.w * .03, view.h * .27, 0);
+    }
+    if (!running) draw(0);
+  };
+
+  // Il pesce guarda verso il cursore (o il dito)
+  const pointer = new THREE.Vector2(), aim = new THREE.Vector2();
+  if (!reduceMotion) {
+    addEventListener('pointermove', e => { pointer.set(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1); }, { passive: true });
+  }
+
+  const clock = new THREE.Clock();
+  let t = 0, running = false, visible = false, raf = 0;
+
+  function draw(dt) {
+    t += dt;
+    aim.lerp(pointer, Math.min(1, dt * 2.5));
+    const b = hero.userData.base || new THREE.Vector3();
+    hero.position.set(b.x + Math.sin(t * .45) * .25, b.y + Math.sin(t * .8) * .16, b.z);
+    hero.rotation.y = .32 + aim.x * .5 + Math.sin(t * .35) * .14;
+    hero.rotation.x = aim.y * .22;
+    hero.rotation.z = Math.sin(t * .7) * .05 - aim.y * .08;
+    hero.userData.uniforms.uTime.value = t;
+
+    school.forEach(f => {
+      f.position.x -= f.userData.speed * dt;
+      f.userData.uniforms.uTime.value = t * 1.4 + f.userData.phase;
+      const edge = view.w * 1.2 + 6;
+      if (f.position.x < -edge) { f.position.x = edge; f.position.y = (Math.random() - .5) * view.h; }
+    });
+
+    const p = bGeo.attributes.position.array;
+    for (let i = 0; i < N; i++) {
+      p[i * 3 + 1] += spd[i] * dt;
+      p[i * 3] += Math.sin(t * 1.3 + i) * .002;
+      if (p[i * 3 + 1] > 7) p[i * 3 + 1] = -7;
+    }
+    bGeo.attributes.position.needsUpdate = true;
+    renderer.render(scene, camera);
+  }
+
+  function loop() {
+    raf = requestAnimationFrame(loop);
+    draw(Math.min(clock.getDelta(), .05));
+  }
+  function update() {
+    const should = visible && !document.hidden && !reduceMotion;
+    if (should && !running) { running = true; clock.getDelta(); loop(); }
+    if (!should && running) { running = false; cancelAnimationFrame(raf); }
+  }
+
+  new ResizeObserver(layout).observe(container);
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) layout(); update(); }).observe(container);
+  document.addEventListener('visibilitychange', update);
+  layout();
+  draw(reduceMotion ? 1.2 : 0);
+}
+
+function webglOk() {
+  try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
+  catch (e) { return false; }
+}
+
+if (webglOk()) {
+  try {
+    createScene(document.getElementById('heroScene'));
+    document.getElementById('hero').classList.add('has-3d');
+    let recipeScene = false;
+    const mountRecipe = () => {
+      if (recipeScene || !document.getElementById('page-recipe').classList.contains('active')) return;
+      recipeScene = true;
+      createScene(document.getElementById('recipeScene'), { mini: true });
+    };
+    addEventListener('sdm:page', mountRecipe);
+    mountRecipe();
+  } catch (e) { console.warn('Scena 3D non disponibile:', e); }
+}
 </script>
 </body>
 </html>
