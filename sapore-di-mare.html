@@ -53,16 +53,12 @@
   /* ── Barra in alto ─────────────────────────────────── */
   .bar {
     position: sticky; top: 0; z-index: 50; height: var(--bar-h);
-    background: color-mix(in srgb, var(--crema) 94%, transparent);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    background: var(--crema);
     border-bottom: 1px solid var(--linea);
   }
   .bar .wrap { height: 100%; display: flex; align-items: center; gap: 1.2rem; }
   .brand { display: flex; align-items: center; gap: .7rem; text-decoration: none; color: var(--ardesia); margin-right: auto; }
-  .brand svg { width: 58px; height: auto; flex: none; }
-  .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
-  .brand-small { font-size: .62rem; font-weight: 600; letter-spacing: .22em; color: var(--lisca); }
-  .brand-name { font-size: 1.22rem; font-weight: 500; letter-spacing: -.01em; }
+  .brand img { height: 40px; width: auto; }
   .bar-links { display: flex; gap: .3rem; }
   .bar-links a { text-decoration: none; color: var(--ardesia); font-weight: 400; padding: .45rem .75rem; border-radius: 999px; }
   .bar-links a:hover { background: var(--schiuma); }
@@ -83,15 +79,12 @@
     .bar-links.open { transform: none; opacity: 1; pointer-events: auto; }
     .bar-links a { padding: .85rem .2rem; border-radius: 0; border-bottom: 1px solid var(--linea); font-size: var(--step-1); }
     .bar-links a:last-child { border-bottom: 0; }
-    .brand svg { width: 48px; }
-    .brand-name { font-size: 1.08rem; }
+    .brand img { height: 34px; }
   }
-  .brand-name { white-space: nowrap; }
   @media (max-width: 420px) {
-    .bar .wrap { gap: .6rem; }
-    .brand { gap: .5rem; }
-    .brand svg { width: 40px; }
-    .brand-name { font-size: .98rem; }
+    .bar .wrap { gap: .5rem; }
+    .brand { min-width: 0; }
+    .brand img { height: auto; max-height: 30px; width: 100%; max-width: 180px; object-fit: contain; object-position: left center; }
     .fav-link, .menu-btn { padding: .4rem .7rem; }
   }
 
@@ -113,11 +106,6 @@
   }
   .scene { position: absolute; inset: 0; z-index: 0; }
   .scene canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
-  .hero-fallback {
-    position: absolute; z-index: 0; right: 6%; top: 50%; width: min(52vw, 620px); transform: translateY(-50%);
-    color: #8CCBE6; opacity: .9;
-  }
-  .has-3d .hero-fallback { display: none; }
   .hero-copy { position: relative; z-index: 1; width: 100%; pointer-events: none; }
   .hero-copy .inner { max-width: 33rem; pointer-events: auto; }
   .hero h1 { font-size: clamp(2.5rem, 6.2vw, 4.7rem); font-weight: 500; line-height: 1.02; letter-spacing: -.03em; }
@@ -127,7 +115,6 @@
   @media (max-width: 760px) {
     .hero { align-items: flex-end; min-height: max(620px, 92svh); }
     .hero-copy { padding-bottom: 2.4rem; background: linear-gradient(180deg, transparent, rgba(15,51,71,.85) 35%); padding-top: 5rem; }
-    .hero-fallback { top: 30%; left: 50%; right: auto; width: 82vw; transform: translate(-50%, -50%); }
   }
 
   /* ── Pulsanti ──────────────────────────────────────── */
@@ -334,28 +321,15 @@
 </head>
 <body>
 
-<!-- Il pesce del logo, disegnato a linee: usato nella barra e come riserva se il 3D non è disponibile -->
+<!-- Icone -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="lisca" viewBox="196 176 650 274">
-    <g fill="none" stroke="currentColor" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M215 318 C240 270 330 200 440 188 C410 250 400 330 446 436 C345 425 250 378 215 318 Z"/>
-      <path d="M406 306 C500 298 620 300 705 314"/>
-      <path d="M492 194 C470 255 470 365 492 424"/>
-      <path d="M552 198 C531 258 531 360 552 418"/>
-      <path d="M606 214 C588 265 588 352 606 402"/>
-      <path d="M656 240 C641 280 641 340 656 376"/>
-      <path d="M705 314 C750 280 800 240 832 214 C805 270 782 300 770 316 C790 340 812 380 826 410 C780 375 740 340 705 318"/>
-    </g>
-    <circle cx="332" cy="294" r="19" fill="currentColor"/>
-  </symbol>
   <symbol id="cuore" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.4-9.3-9.2C1.4 7.7 3.7 4 7.4 4c2 0 3.6 1.1 4.6 2.6C13 5.1 14.6 4 16.6 4c3.7 0 6 3.7 4.7 7.3-1.8 4.8-9.3 9.2-9.3 9.2z" stroke-linejoin="round"/></symbol>
 </svg>
 
 <header class="bar">
   <div class="wrap">
     <a class="brand" href="#/" aria-label="Sapore di Mare, torna alla pagina principale">
-      <svg style="color:var(--lisca)" aria-hidden="true"><use href="#lisca"/></svg>
-      <span class="brand-text"><span class="brand-small">PESCHERIA</span><span class="brand-name">Sapore di Mare</span></span>
+      <img src="img/logo-barra.png" alt="Sapore di Mare" width="1419" height="240"/>
     </a>
     <nav class="bar-links" id="barLinks" aria-label="Sezioni">
       <a href="#ricette">Ricette</a>
@@ -375,7 +349,6 @@
 <div class="page" id="page-home">
   <section class="hero" id="hero" aria-label="Benvenuti">
     <div class="scene" id="heroScene" aria-hidden="true"></div>
-    <svg class="hero-fallback" aria-hidden="true"><use href="#lisca"/></svg>
     <div class="hero-copy">
       <div class="wrap">
         <div class="inner">
@@ -817,69 +790,147 @@ renderGuideLists();
 route();
 </script>
 
-<!-- ══════════════ SCENA 3D: la lisca del logo che nuota ══════════════ -->
+<!-- ══════════════ SCENA 3D: un banco di pesci e un polpo ══════════════ -->
 <script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const COLORS = { lisca: 0x3B93BC, banco: 0x7DBEDC, bolle: 0xDFF4FF, abisso: 0x0F3347 };
+const ABISSO = 0x0F3347;
+// Dorso dei pesci nei blu del logo, pancia color crema
+const FISH_TOPS = [0x3B93BC, 0x1B7A9C, 0x7CC0DE];
+const BELLY = new THREE.Color(0xFFF6E8);
+const OCTOPUS = 0xE7A08C;
 
-// Le linee del logo, in coordinate del disegno originale (x 200→840, y 180→440).
-const P = (x, y, z = 0) => new THREE.Vector3((x - 520) / 100, -(y - 312) / 100, z);
-function fishCurves() {
-  const list = [];
-  const add = (pts, closed = false) => list.push({ curve: new THREE.CatmullRomCurve3(pts, closed, 'centripetal'), closed, n: pts.length });
-  // Testa
-  add([P(215,318), P(250,262), P(320,214), P(395,193), P(440,188), P(418,250), P(406,312), P(418,378), P(446,436), P(392,424), P(318,398), P(250,366)], true);
-  // Spina dorsale
-  add([P(406,306), P(480,300), P(560,300), P(640,304), P(705,314)]);
-  // Costole: ognuna gira attorno al corpo, da un lato e dall'altro
-  [[492,194,424,.62], [552,198,418,.56], [606,214,402,.46], [656,240,376,.34]].forEach(([x, top, bottom, depth]) => {
-    for (const side of [1, -1]) {
-      const pts = [];
-      for (let i = 0; i <= 8; i++) {
-        const t = -1 + i / 4;                         // da sopra (-1) a sotto (1)
-        const y = (top + bottom) / 2 + t * (bottom - top) / 2;
-        const xx = x + 20 * t * t - 22;               // curva come nel logo
-        pts.push(P(xx, y, side * depth * Math.cos(t * Math.PI / 2)));
-      }
-      add(pts);
-    }
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// ── Pesce: corpo affusolato, coda biforcuta, pinne. Testa verso +z ──
+function fishGeometry(topHex) {
+  const top = new THREE.Color(topHex);
+  const fin = top.clone().lerp(new THREE.Color(0xffffff), .25);
+  const parts = [];
+  const paint = (g, colorFn) => {
+    g = g.index ? g.toNonIndexed() : g;
+    const pos = g.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) { colorFn(c, pos.getX(i), pos.getY(i), pos.getZ(i)); c.toArray(col, i * 3); }
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.deleteAttribute('uv');
+    return g;
+  };
+
+  const body = new THREE.SphereGeometry(1, 44, 26);
+  const p = body.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    let x = p.getX(i) * 1.5, y = p.getY(i) * .74, z = p.getZ(i) * .44;
+    if (x > 0) { const k = 1 - .66 * Math.pow(x / 1.5, 1.35); y *= k; z *= k; }
+    y += .07 * (1 - (x / 1.5) ** 2);
+    p.setXYZ(i, x, y, z);
+  }
+  body.computeVertexNormals();
+  parts.push(paint(body, (c, x, y) => c.copy(BELLY).lerp(top, smooth(-.12, .3, y))));
+
+  const tail = new THREE.Shape();
+  tail.moveTo(0, 0); tail.quadraticCurveTo(.35, .2, .78, .66); tail.quadraticCurveTo(.55, 0, .78, -.66); tail.quadraticCurveTo(.35, -.2, 0, 0);
+  const tg = new THREE.ExtrudeGeometry(tail, { depth: .04, bevelEnabled: true, bevelThickness: .02, bevelSize: .02, bevelSegments: 2, curveSegments: 14 });
+  tg.translate(1.28, 0, -.02);
+  parts.push(paint(tg, c => c.copy(fin)));
+
+  const dorsal = new THREE.Shape();
+  dorsal.moveTo(-.55, 0); dorsal.quadraticCurveTo(-.15, .5, .42, .34); dorsal.quadraticCurveTo(.3, .15, .5, 0); dorsal.lineTo(-.55, 0);
+  const dg = new THREE.ExtrudeGeometry(dorsal, { depth: .03, bevelEnabled: true, bevelThickness: .015, bevelSize: .015, bevelSegments: 1, curveSegments: 10 });
+  dg.translate(-.05, .62, -.015);
+  parts.push(paint(dg, c => c.copy(top)));
+
+  const pect = new THREE.Shape();
+  pect.moveTo(0, 0); pect.quadraticCurveTo(.28, -.02, .46, -.24); pect.quadraticCurveTo(.16, -.2, 0, 0);
+  [1, -1].forEach(side => {
+    const g = new THREE.ExtrudeGeometry(pect, { depth: .02, bevelEnabled: false, curveSegments: 8 });
+    g.rotateX(side * .55); g.translate(-.6, -.18, side * .36);
+    parts.push(paint(g, c => c.copy(fin)));
   });
-  // Coda
-  add([P(705,314), P(748,282), P(792,246), P(832,214), P(810,264), P(770,316), P(806,364), P(826,410), P(786,378), P(746,346), P(705,318)]);
-  return list;
+
+  const merged = mergeGeometries(parts);
+  merged.rotateY(Math.PI / 2);   // testa (-x) verso +z
+  return merged;
 }
-const CURVES = fishCurves();
 
-function swimMaterial(color, opacity) {
-  const uniforms = { uTime: { value: 0 } };
-  const m = new THREE.MeshStandardMaterial({
-    color, roughness: .42, metalness: .05, emissive: color, emissiveIntensity: .18,
-    transparent: opacity < 1, opacity, depthWrite: opacity >= 1
-  });
+// Nuoto: la coda ondeggia, la testa resta ferma; ogni pesce ha la sua fase
+function swimMaterial(uniforms) {
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .32, metalness: .12 });
   m.onBeforeCompile = sh => {
     sh.uniforms.uTime = uniforms.uTime;
-    sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-      float k = clamp((transformed.x + 1.3) / 4.4, 0.0, 1.0);
-      transformed.z += sin(transformed.x * 1.5 - uTime * 3.0) * 0.38 * k * k;
-      transformed.y += sin(transformed.x * 0.9 - uTime * 1.5) * 0.04;`);
+    sh.vertexShader = 'uniform float uTime;\nattribute float aPhase;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      float s = -transformed.z;
+      transformed.x += sin(s * 2.3 - uTime * 9.0 - aPhase) * 0.17 * smoothstep(-0.7, 2.1, s);`);
   };
-  m.customProgramCacheKey = () => 'swim';
-  return { m, uniforms };
+  m.customProgramCacheKey = () => 'pesce';
+  return m;
 }
 
-function buildFish(color, opacity = 1, radius = .075) {
-  const { m, uniforms } = swimMaterial(color, opacity);
+// ── Polpo: testa morbida, occhi, otto tentacoli che si muovono ──
+function buildOctopus(uniforms) {
   const g = new THREE.Group();
-  CURVES.forEach(({ curve, closed, n }) => g.add(new THREE.Mesh(new THREE.TubeGeometry(curve, n * 14, radius, 10, closed), m)));
-  const eye = new THREE.Mesh(new THREE.SphereGeometry(.2, 24, 16), m);
-  eye.scale.z = .7; eye.position.copy(P(332, 294, 0)); g.add(eye);
-  g.userData.uniforms = uniforms;
-  g.userData.phase = Math.random() * 10;
+  const mat = new THREE.MeshStandardMaterial({ color: OCTOPUS, roughness: .55, metalness: 0 });
+  mat.onBeforeCompile = sh => {
+    sh.uniforms.uTime = uniforms.uTime;
+    sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      float d = max(0.0, -transformed.y - 0.25);
+      float ph = atan(transformed.z, transformed.x) * 2.0;
+      transformed.x += sin(d * 2.1 - uTime * 1.9 + ph) * 0.16 * d;
+      transformed.z += cos(d * 1.8 - uTime * 1.6 + ph) * 0.16 * d;
+      transformed.y += sin(d * 1.5 - uTime * 1.3 + ph) * 0.06 * d;`);
+  };
+  mat.customProgramCacheKey = () => 'polpo';
+
+  const head = new THREE.SphereGeometry(1, 48, 32);
+  const hp = head.attributes.position;
+  for (let i = 0; i < hp.count; i++) {
+    const y = hp.getY(i);
+    const k = y > 0 ? 1 + .12 * y : 1 - .08 * y;
+    hp.setXYZ(i, hp.getX(i) * .92 * k, y > 0 ? y * 1.32 + .1 : y * .78 + .1, hp.getZ(i) * .92 * k - (y > .3 ? (y - .3) * .25 : 0));
+  }
+  head.computeVertexNormals();
+  g.add(new THREE.Mesh(head, mat));
+
+  for (let k = 0; k < 8; k++) {
+    const a = k / 8 * Math.PI * 2 + Math.PI / 8;
+    const pts = [];
+    for (let i = 0; i <= 8; i++) {
+      const u = i / 8;
+      const r = .45 + 1.55 * u - .35 * u * u * u;
+      const y = -.35 - 2.1 * u + 1.25 * u * u * u;
+      const a2 = a + .5 * u * u;   // la punta si arriccia
+      pts.push(new THREE.Vector3(Math.cos(a2) * r, y, Math.sin(a2) * r));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const segs = 70, radial = 12;
+    const tube = new THREE.TubeGeometry(curve, segs, .25, radial, false);
+    const tp = tube.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3();
+    for (let ring = 0; ring <= segs; ring++) {
+      curve.getPointAt(ring / segs, c);
+      const taper = 1 - .88 * (ring / segs);
+      for (let j = 0; j <= radial; j++) {
+        const idx = ring * (radial + 1) + j;
+        v.fromBufferAttribute(tp, idx).sub(c).multiplyScalar(taper).add(c);
+        tp.setXYZ(idx, v.x, v.y, v.z);
+      }
+    }
+    tube.computeVertexNormals();
+    g.add(new THREE.Mesh(tube, mat));
+  }
+
+  const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .2 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x14242E, roughness: .15 });
+  [1, -1].forEach(s => {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(.2, 24, 16), white); e.position.set(s * .4, .02, .78); g.add(e);
+    const pu = new THREE.Mesh(new THREE.SphereGeometry(.11, 20, 12), dark); pu.position.set(s * .43, .0, .95); g.add(pu);
+  });
   return g;
 }
 
@@ -900,44 +951,69 @@ function createScene(container, { mini = false } = {}) {
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(COLORS.abisso, 10, 26);
+  scene.fog = new THREE.Fog(ABISSO, 9, 24);
   const camera = new THREE.PerspectiveCamera(38, 1, .1, 80);
   camera.position.set(0, 0, 10);
 
-  scene.add(new THREE.HemisphereLight(0xCDEFFF, COLORS.abisso, 1.5));
-  const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(-3, 6, 8); scene.add(key);
-  const rim = new THREE.DirectionalLight(0x8FD8F5, 3); rim.position.set(4, -2, -6); scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0xD6F1FF, 0x5C8FA6, 1.7));
+  const under = new THREE.DirectionalLight(0xFFF1DE, .9); under.position.set(0, -6, 5); scene.add(under);
+  const key = new THREE.DirectionalLight(0xffffff, 2.6); key.position.set(-2, 7, 6); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x8FD8F5, 2.2); rim.position.set(3, -1, -7); scene.add(rim);
 
-  // Il pesce principale, nel colore del logo
-  const hero = buildFish(COLORS.lisca, 1, .08);
-  scene.add(hero);
+  const uniforms = { uTime: { value: 0 } };
 
-  // Un piccolo banco di lische in lontananza
-  const school = [];
-  for (let i = 0; i < (mini ? 3 : 7); i++) {
-    const f = buildFish(COLORS.banco, .45, .09);
-    const s = .28 + Math.random() * .28;
-    f.scale.setScalar(s);
-    f.position.set((Math.random() - .5) * 24, (Math.random() - .5) * 6, -4 - Math.random() * 8);
-    f.userData.speed = .5 + Math.random() * .7;
-    scene.add(f); school.push(f);
-  }
+  // Banco di pesci che gira in cerchio
+  const school = new THREE.Group();
+  scene.add(school);
+  const perColor = mini ? 5 : 9;
+  const fish = [];
+  const scleraGeo = new THREE.SphereGeometry(.12, 16, 10), pupilGeo = new THREE.SphereGeometry(.07, 12, 8);
+  const total = perColor * FISH_TOPS.length;
+  const sclera = new THREE.InstancedMesh(scleraGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .2 }), total * 2);
+  const pupils = new THREE.InstancedMesh(pupilGeo, new THREE.MeshStandardMaterial({ color: 0x14242E, roughness: .1 }), total * 2);
+  const meshes = FISH_TOPS.map(hex => {
+    const geo = fishGeometry(hex);
+    const phase = new Float32Array(perColor);
+    for (let i = 0; i < perColor; i++) phase[i] = Math.random() * 6.28;
+    geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phase, 1));
+    const m = new THREE.InstancedMesh(geo, swimMaterial(uniforms), perColor);
+    school.add(m);
+    return m;
+  });
+  meshes.forEach((m, ci) => {
+    for (let i = 0; i < perColor; i++) {
+      fish.push({
+        mesh: m, idx: i,
+        r: 1.5 + Math.random() * 1.9,
+        y: (Math.random() - .5) * 2.4,
+        a: Math.random() * Math.PI * 2,
+        v: .9 + Math.random() * .35,
+        s: .34 + Math.random() * .16,
+        wob: Math.random() * 6.28
+      });
+    }
+  });
+  school.add(sclera, pupils);
 
-  // Bolle che salgono
-  const N = mini ? 70 : 200;
+  // Polpo (solo nella scena grande)
+  let octopus = null;
+  if (!mini) { octopus = buildOctopus(uniforms); scene.add(octopus); }
+
+  // Bolle
+  const N = mini ? 70 : 180;
   const pos = new Float32Array(N * 3), spd = new Float32Array(N);
   for (let i = 0; i < N; i++) {
     pos[i * 3] = (Math.random() - .5) * 22; pos[i * 3 + 1] = (Math.random() - .5) * 12; pos[i * 3 + 2] = -8 + Math.random() * 11;
     spd[i] = .25 + Math.random() * .6;
   }
   const bGeo = new THREE.BufferGeometry(); bGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const bubbles = new THREE.Points(bGeo, new THREE.PointsMaterial({
-    map: bubbleTexture(), color: COLORS.bolle, size: .16, transparent: true, depthWrite: false, opacity: .75, sizeAttenuation: true
-  }));
-  scene.add(bubbles);
+  scene.add(new THREE.Points(bGeo, new THREE.PointsMaterial({
+    map: bubbleTexture(), color: 0xDFF4FF, size: .16, transparent: true, depthWrite: false, opacity: .75, sizeAttenuation: true
+  })));
 
-  // Disposizione: su schermi larghi il pesce sta a destra, accanto al testo; sui telefoni in alto
+  // Disposizione: schermo largo = animali a destra del testo; telefono = in alto
   let view = { w: 10, h: 6, wide: true };
+  const schoolBase = new THREE.Vector3(), octoBase = new THREE.Vector3();
   const layout = () => {
     const w = container.clientWidth, h = container.clientHeight;
     if (!w || !h) return;
@@ -946,58 +1022,81 @@ function createScene(container, { mini = false } = {}) {
     const vh = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
     view = { w: vh * camera.aspect, h: vh, wide: camera.aspect > 1.15 };
     if (mini) {
-      hero.scale.setScalar(Math.min(.62, view.w / 12));
-      hero.userData.base = new THREE.Vector3(view.wide ? view.w * .24 : view.w * .12, view.wide ? .15 : view.h * .22, 0);
+      school.scale.setScalar(Math.min(.62, view.w / 16));
+      schoolBase.set(view.wide ? view.w * .27 : view.w * .1, view.wide ? .2 : view.h * .2, 0);
     } else if (view.wide) {
-      hero.scale.setScalar(Math.min(1.05, view.w / 13));
-      hero.userData.base = new THREE.Vector3(view.w * .2, .1, 0);
+      school.scale.setScalar(Math.min(1, view.w / 15));
+      schoolBase.set(view.w * .17, view.h * .08, 0);
+      octopus.visible = true;
+      octopus.scale.setScalar(Math.min(.62, view.w / 24));
+      octoBase.set(view.w * .36, -view.h * .2, -.5);
     } else {
-      hero.scale.setScalar(Math.min(.95, view.w / 8.8));
-      hero.userData.base = new THREE.Vector3(-view.w * .03, view.h * .27, 0);
+      school.scale.setScalar(Math.min(.8, view.w / 8.4));
+      schoolBase.set(0, view.h * .27, 0);
+      octopus.visible = view.w > 5.5;
+      octopus.scale.setScalar(.38);
+      octoBase.set(view.w * .3, view.h * .38, -1);
     }
     if (!running) draw(0);
   };
 
-  // Il pesce guarda verso il cursore (o il dito)
+  // Gli animali si inclinano verso il cursore (o il dito)
   const pointer = new THREE.Vector2(), aim = new THREE.Vector2();
-  if (!reduceMotion) {
-    addEventListener('pointermove', e => { pointer.set(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1); }, { passive: true });
-  }
+  if (!reduceMotion) addEventListener('pointermove', e => pointer.set(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1), { passive: true });
+
+  const m4 = new THREE.Matrix4(), eyeM = new THREE.Matrix4(), q = new THREE.Quaternion();
+  const P = new THREE.Vector3(), T = new THREE.Vector3(), S = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+  const eyeOff = [new THREE.Vector3(.3, .16, 1.02), new THREE.Vector3(-.3, .16, 1.02)];
+  const pupOff = [new THREE.Vector3(.37, .17, 1.06), new THREE.Vector3(-.37, .17, 1.06)];
 
   const clock = new THREE.Clock();
   let t = 0, running = false, visible = false, raf = 0;
 
   function draw(dt) {
     t += dt;
+    uniforms.uTime.value = t;
     aim.lerp(pointer, Math.min(1, dt * 2.5));
-    const b = hero.userData.base || new THREE.Vector3();
-    hero.position.set(b.x + Math.sin(t * .45) * .25, b.y + Math.sin(t * .8) * .16, b.z);
-    hero.rotation.y = .32 + aim.x * .5 + Math.sin(t * .35) * .14;
-    hero.rotation.x = aim.y * .22;
-    hero.rotation.z = Math.sin(t * .7) * .05 - aim.y * .08;
-    hero.userData.uniforms.uTime.value = t;
 
-    school.forEach(f => {
-      f.position.x -= f.userData.speed * dt;
-      f.userData.uniforms.uTime.value = t * 1.4 + f.userData.phase;
-      const edge = view.w * 1.2 + 6;
-      if (f.position.x < -edge) { f.position.x = edge; f.position.y = (Math.random() - .5) * view.h; }
+    school.position.set(schoolBase.x + aim.x * .4, schoolBase.y - aim.y * .25, schoolBase.z);
+    school.rotation.set(.32 + aim.y * .18, aim.x * .3, -.06);
+
+    let e = 0;
+    fish.forEach(f => {
+      f.a += f.v / f.r * dt;
+      const yy = f.y + Math.sin(f.a * 1.7 + f.wob) * .28;
+      P.set(Math.cos(f.a) * f.r, yy, Math.sin(f.a) * f.r);
+      // direzione di nuoto: tangente al cerchio (verso senso antiorario visto dall'alto)
+      T.set(-Math.sin(f.a), Math.cos(f.a * 1.7 + f.wob) * .28 * 1.7 / f.r, Math.cos(f.a)).normalize().add(P);
+      m4.lookAt(T, P, up);
+      q.setFromRotationMatrix(m4);
+      m4.compose(P, q, S.setScalar(f.s));
+      f.mesh.setMatrixAt(f.idx, m4);
+      for (let k = 0; k < 2; k++) {
+        eyeM.makeTranslation(eyeOff[k].x, eyeOff[k].y, eyeOff[k].z).premultiply(m4); sclera.setMatrixAt(e, eyeM);
+        eyeM.makeTranslation(pupOff[k].x, pupOff[k].y, pupOff[k].z).premultiply(m4); pupils.setMatrixAt(e, eyeM);
+        e++;
+      }
     });
+    meshes.forEach(m => { m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); });
+    sclera.instanceMatrix.needsUpdate = pupils.instanceMatrix.needsUpdate = true;
+    sclera.computeBoundingSphere(); pupils.computeBoundingSphere();
 
-    const p = bGeo.attributes.position.array;
+    if (octopus) {
+      octopus.position.set(octoBase.x + Math.sin(t * .4) * .2, octoBase.y + Math.sin(t * .9) * .25, octoBase.z);
+      octopus.rotation.set(.12 + aim.y * .1, -.5 + aim.x * .35 + Math.sin(t * .3) * .15, Math.sin(t * .7) * .06);
+    }
+
+    const bp = bGeo.attributes.position.array;
     for (let i = 0; i < N; i++) {
-      p[i * 3 + 1] += spd[i] * dt;
-      p[i * 3] += Math.sin(t * 1.3 + i) * .002;
-      if (p[i * 3 + 1] > 7) p[i * 3 + 1] = -7;
+      bp[i * 3 + 1] += spd[i] * dt;
+      bp[i * 3] += Math.sin(t * 1.3 + i) * .002;
+      if (bp[i * 3 + 1] > 7) bp[i * 3 + 1] = -7;
     }
     bGeo.attributes.position.needsUpdate = true;
     renderer.render(scene, camera);
   }
 
-  function loop() {
-    raf = requestAnimationFrame(loop);
-    draw(Math.min(clock.getDelta(), .05));
-  }
+  function loop() { raf = requestAnimationFrame(loop); draw(Math.min(clock.getDelta(), .05)); }
   function update() {
     const should = visible && !document.hidden && !reduceMotion;
     if (should && !running) { running = true; clock.getDelta(); loop(); }
@@ -1005,10 +1104,10 @@ function createScene(container, { mini = false } = {}) {
   }
 
   new ResizeObserver(layout).observe(container);
-  new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) layout(); update(); }).observe(container);
+  new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible) layout(); update(); }).observe(container);
   document.addEventListener('visibilitychange', update);
   layout();
-  draw(reduceMotion ? 1.2 : 0);
+  draw(reduceMotion ? 2.5 : 0);
 }
 
 function webglOk() {
