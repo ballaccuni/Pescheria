@@ -92,7 +92,7 @@
   .page { display: none; }
   .page.active { display: block; }
 
-  /* ── Scena 3D (hero) ───────────────────────────────── */
+  /* ── Apertura con video ────────────────────────────── */
   .hero {
     position: relative; isolation: isolate; overflow: hidden; color: var(--bianco);
     min-height: clamp(560px, 88svh, 860px);
@@ -104,8 +104,13 @@
     background: repeating-linear-gradient(100deg, rgba(255,255,255,.07) 0 60px, transparent 60px 170px);
     -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%); mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
   }
-  .scene { position: absolute; inset: 0; z-index: 0; }
-  .scene canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+  /* Computer: il video verticale sta in una cornice accanto al titolo */
+  .hero-video {
+    position: absolute; z-index: 0; right: var(--gutter); top: 50%; transform: translateY(-50%);
+    height: min(84%, 720px); aspect-ratio: 9 / 16; object-fit: cover;
+    border-radius: 28px; background: var(--abisso);
+    box-shadow: 0 30px 80px rgba(5, 25, 36, .45);
+  }
   .hero-copy { position: relative; z-index: 1; width: 100%; pointer-events: none; }
   .hero-copy .inner { max-width: 33rem; pointer-events: auto; }
   .hero h1 { font-size: clamp(2.5rem, 6.2vw, 4.7rem); font-weight: 500; line-height: 1.02; letter-spacing: -.03em; }
@@ -113,8 +118,20 @@
   .hero-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.8rem; }
 
   @media (max-width: 760px) {
-    .hero { align-items: flex-end; min-height: max(620px, 92svh); }
-    .hero-copy { padding-bottom: 2.4rem; background: linear-gradient(180deg, transparent, rgba(15,51,71,.85) 35%); padding-top: 5rem; }
+    /* Telefono: il video riempie tutta l'apertura */
+    .hero { align-items: flex-end; min-height: calc(100svh - var(--bar-h)); }
+    .hero::before { display: none; }
+    .hero-video { inset: 0; top: 0; right: 0; transform: none; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+    .hero-copy { padding-bottom: 1.8rem; padding-top: 6rem; background: linear-gradient(180deg, transparent 0%, rgba(15,51,71,.25) 30%, rgba(15,51,71,.72) 78%, rgba(15,51,71,.85) 100%); }
+    .hero h1, .hero p { text-shadow: 0 2px 18px rgba(8,30,42,.55); }
+    .hero h1 { font-size: clamp(2.3rem, 10.5vw, 3rem); }
+    .hero p { margin-top: .8rem; }
+    .hero-actions { flex-wrap: nowrap; gap: .5rem; margin-top: 1.3rem; }
+    .hero-actions .btn { flex: 1 1 auto; padding: .7rem 1rem; font-size: .95rem; white-space: nowrap; }
+  }
+
+  @media (max-width: 370px) {
+    .hero-actions { flex-wrap: wrap; }
   }
 
   /* ── Pulsanti ──────────────────────────────────────── */
@@ -248,9 +265,9 @@
   .recipe-head {
     position: relative; isolation: isolate; overflow: hidden; color: var(--bianco);
     min-height: clamp(300px, 44vh, 440px); display: flex; align-items: flex-end;
-    background: linear-gradient(180deg, var(--raffadali) 0%, #145F80 45%, var(--abisso) 100%);
+    background: linear-gradient(180deg, rgba(27,122,156,.35) 0%, rgba(15,51,71,.7) 55%, var(--abisso) 100%),
+                url("img/ricetta-sfondo.jpg") center top / cover, var(--abisso);
   }
-  .recipe-head .scene { z-index: 0; }
   .recipe-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
   .recipe-head.has-photo::after { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(180deg, transparent 30%, rgba(15,51,71,.85)); }
   .recipe-head-copy { position: relative; z-index: 1; width: 100%; padding: 2rem 0; pointer-events: none; }
@@ -348,7 +365,10 @@
 <!-- ══════════════ HOME ══════════════ -->
 <div class="page" id="page-home">
   <section class="hero" id="hero" aria-label="Benvenuti">
-    <div class="scene" id="heroScene" aria-hidden="true"></div>
+    <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="auto" poster="img/apertura-poster.jpg" aria-hidden="true">
+      <source src="video/apertura-telefono.mp4" type="video/mp4"/>
+      <source src="video/apertura-telefono.webm" type="video/webm"/>
+    </video>
     <div class="hero-copy">
       <div class="wrap">
         <div class="inner">
@@ -420,7 +440,6 @@
 <!-- ══════════════ RICETTA ══════════════ -->
 <div class="page" id="page-recipe">
   <section class="recipe-head" id="recipeHead">
-    <div class="scene" id="recipeScene" aria-hidden="true"></div>
     <div class="recipe-head-copy">
       <div class="wrap">
         <a class="back" href="#ricette">Tutte le ricette</a>
@@ -790,345 +809,14 @@ renderGuideLists();
 route();
 </script>
 
-<!-- ══════════════ SCENA 3D: un banco di pesci e un polpo ══════════════ -->
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-} }
-</script>
-<script type="module">
-import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const ABISSO = 0x0F3347;
-// Dorso dei pesci nei blu del logo, pancia color crema
-const FISH_TOPS = [0x3B93BC, 0x1B7A9C, 0x7CC0DE];
-const BELLY = new THREE.Color(0xFFF6E8);
-const OCTOPUS = 0xE7A08C;
-
-const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-
-// ── Pesce: corpo affusolato, coda biforcuta, pinne. Testa verso +z ──
-function fishGeometry(topHex) {
-  const top = new THREE.Color(topHex);
-  const fin = top.clone().lerp(new THREE.Color(0xffffff), .25);
-  const parts = [];
-  const paint = (g, colorFn) => {
-    g = g.index ? g.toNonIndexed() : g;
-    const pos = g.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
-    for (let i = 0; i < pos.count; i++) { colorFn(c, pos.getX(i), pos.getY(i), pos.getZ(i)); c.toArray(col, i * 3); }
-    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    g.deleteAttribute('uv');
-    return g;
-  };
-
-  const body = new THREE.SphereGeometry(1, 44, 26);
-  const p = body.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    let x = p.getX(i) * 1.5, y = p.getY(i) * .74, z = p.getZ(i) * .44;
-    if (x > 0) { const k = 1 - .66 * Math.pow(x / 1.5, 1.35); y *= k; z *= k; }
-    y += .07 * (1 - (x / 1.5) ** 2);
-    p.setXYZ(i, x, y, z);
-  }
-  body.computeVertexNormals();
-  parts.push(paint(body, (c, x, y) => c.copy(BELLY).lerp(top, smooth(-.12, .3, y))));
-
-  const tail = new THREE.Shape();
-  tail.moveTo(0, 0); tail.quadraticCurveTo(.35, .2, .78, .66); tail.quadraticCurveTo(.55, 0, .78, -.66); tail.quadraticCurveTo(.35, -.2, 0, 0);
-  const tg = new THREE.ExtrudeGeometry(tail, { depth: .04, bevelEnabled: true, bevelThickness: .02, bevelSize: .02, bevelSegments: 2, curveSegments: 14 });
-  tg.translate(1.28, 0, -.02);
-  parts.push(paint(tg, c => c.copy(fin)));
-
-  const dorsal = new THREE.Shape();
-  dorsal.moveTo(-.55, 0); dorsal.quadraticCurveTo(-.15, .5, .42, .34); dorsal.quadraticCurveTo(.3, .15, .5, 0); dorsal.lineTo(-.55, 0);
-  const dg = new THREE.ExtrudeGeometry(dorsal, { depth: .03, bevelEnabled: true, bevelThickness: .015, bevelSize: .015, bevelSegments: 1, curveSegments: 10 });
-  dg.translate(-.05, .62, -.015);
-  parts.push(paint(dg, c => c.copy(top)));
-
-  const pect = new THREE.Shape();
-  pect.moveTo(0, 0); pect.quadraticCurveTo(.28, -.02, .46, -.24); pect.quadraticCurveTo(.16, -.2, 0, 0);
-  [1, -1].forEach(side => {
-    const g = new THREE.ExtrudeGeometry(pect, { depth: .02, bevelEnabled: false, curveSegments: 8 });
-    g.rotateX(side * .55); g.translate(-.6, -.18, side * .36);
-    parts.push(paint(g, c => c.copy(fin)));
-  });
-
-  const merged = mergeGeometries(parts);
-  merged.rotateY(Math.PI / 2);   // testa (-x) verso +z
-  return merged;
-}
-
-// Nuoto: la coda ondeggia, la testa resta ferma; ogni pesce ha la sua fase
-function swimMaterial(uniforms) {
-  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .32, metalness: .12 });
-  m.onBeforeCompile = sh => {
-    sh.uniforms.uTime = uniforms.uTime;
-    sh.vertexShader = 'uniform float uTime;\nattribute float aPhase;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-      float s = -transformed.z;
-      transformed.x += sin(s * 2.3 - uTime * 9.0 - aPhase) * 0.17 * smoothstep(-0.7, 2.1, s);`);
-  };
-  m.customProgramCacheKey = () => 'pesce';
-  return m;
-}
-
-// ── Polpo: testa morbida, occhi, otto tentacoli che si muovono ──
-function buildOctopus(uniforms) {
-  const g = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: OCTOPUS, roughness: .55, metalness: 0 });
-  mat.onBeforeCompile = sh => {
-    sh.uniforms.uTime = uniforms.uTime;
-    sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
-      float d = max(0.0, -transformed.y - 0.25);
-      float ph = atan(transformed.z, transformed.x) * 2.0;
-      transformed.x += sin(d * 2.1 - uTime * 1.9 + ph) * 0.16 * d;
-      transformed.z += cos(d * 1.8 - uTime * 1.6 + ph) * 0.16 * d;
-      transformed.y += sin(d * 1.5 - uTime * 1.3 + ph) * 0.06 * d;`);
-  };
-  mat.customProgramCacheKey = () => 'polpo';
-
-  const head = new THREE.SphereGeometry(1, 48, 32);
-  const hp = head.attributes.position;
-  for (let i = 0; i < hp.count; i++) {
-    const y = hp.getY(i);
-    const k = y > 0 ? 1 + .12 * y : 1 - .08 * y;
-    hp.setXYZ(i, hp.getX(i) * .92 * k, y > 0 ? y * 1.32 + .1 : y * .78 + .1, hp.getZ(i) * .92 * k - (y > .3 ? (y - .3) * .25 : 0));
-  }
-  head.computeVertexNormals();
-  g.add(new THREE.Mesh(head, mat));
-
-  for (let k = 0; k < 8; k++) {
-    const a = k / 8 * Math.PI * 2 + Math.PI / 8;
-    const pts = [];
-    for (let i = 0; i <= 8; i++) {
-      const u = i / 8;
-      const r = .45 + 1.55 * u - .35 * u * u * u;
-      const y = -.35 - 2.1 * u + 1.25 * u * u * u;
-      const a2 = a + .5 * u * u;   // la punta si arriccia
-      pts.push(new THREE.Vector3(Math.cos(a2) * r, y, Math.sin(a2) * r));
-    }
-    const curve = new THREE.CatmullRomCurve3(pts);
-    const segs = 70, radial = 12;
-    const tube = new THREE.TubeGeometry(curve, segs, .25, radial, false);
-    const tp = tube.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3();
-    for (let ring = 0; ring <= segs; ring++) {
-      curve.getPointAt(ring / segs, c);
-      const taper = 1 - .88 * (ring / segs);
-      for (let j = 0; j <= radial; j++) {
-        const idx = ring * (radial + 1) + j;
-        v.fromBufferAttribute(tp, idx).sub(c).multiplyScalar(taper).add(c);
-        tp.setXYZ(idx, v.x, v.y, v.z);
-      }
-    }
-    tube.computeVertexNormals();
-    g.add(new THREE.Mesh(tube, mat));
-  }
-
-  const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .2 });
-  const dark = new THREE.MeshStandardMaterial({ color: 0x14242E, roughness: .15 });
-  [1, -1].forEach(s => {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(.2, 24, 16), white); e.position.set(s * .4, .02, .78); g.add(e);
-    const pu = new THREE.Mesh(new THREE.SphereGeometry(.11, 20, 12), dark); pu.position.set(s * .43, .0, .95); g.add(pu);
-  });
-  return g;
-}
-
-function bubbleTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 64;
-  const x = c.getContext('2d');
-  const gr = x.createRadialGradient(32, 32, 4, 32, 32, 30);
-  gr.addColorStop(0, 'rgba(255,255,255,.05)'); gr.addColorStop(.7, 'rgba(255,255,255,.35)');
-  gr.addColorStop(.86, 'rgba(255,255,255,.95)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
-  x.fillStyle = gr; x.beginPath(); x.arc(32, 32, 30, 0, Math.PI * 2); x.fill();
-  return new THREE.CanvasTexture(c);
-}
-
-function createScene(container, { mini = false } = {}) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
-  container.appendChild(renderer.domElement);
-
-  const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(ABISSO, 9, 24);
-  const camera = new THREE.PerspectiveCamera(38, 1, .1, 80);
-  camera.position.set(0, 0, 10);
-
-  scene.add(new THREE.HemisphereLight(0xD6F1FF, 0x5C8FA6, 1.7));
-  const under = new THREE.DirectionalLight(0xFFF1DE, .9); under.position.set(0, -6, 5); scene.add(under);
-  const key = new THREE.DirectionalLight(0xffffff, 2.6); key.position.set(-2, 7, 6); scene.add(key);
-  const rim = new THREE.DirectionalLight(0x8FD8F5, 2.2); rim.position.set(3, -1, -7); scene.add(rim);
-
-  const uniforms = { uTime: { value: 0 } };
-
-  // Banco di pesci che gira in cerchio
-  const school = new THREE.Group();
-  scene.add(school);
-  const perColor = mini ? 5 : 9;
-  const fish = [];
-  const scleraGeo = new THREE.SphereGeometry(.12, 16, 10), pupilGeo = new THREE.SphereGeometry(.07, 12, 8);
-  const total = perColor * FISH_TOPS.length;
-  const sclera = new THREE.InstancedMesh(scleraGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .2 }), total * 2);
-  const pupils = new THREE.InstancedMesh(pupilGeo, new THREE.MeshStandardMaterial({ color: 0x14242E, roughness: .1 }), total * 2);
-  const meshes = FISH_TOPS.map(hex => {
-    const geo = fishGeometry(hex);
-    const phase = new Float32Array(perColor);
-    for (let i = 0; i < perColor; i++) phase[i] = Math.random() * 6.28;
-    geo.setAttribute('aPhase', new THREE.InstancedBufferAttribute(phase, 1));
-    const m = new THREE.InstancedMesh(geo, swimMaterial(uniforms), perColor);
-    school.add(m);
-    return m;
-  });
-  meshes.forEach((m, ci) => {
-    for (let i = 0; i < perColor; i++) {
-      fish.push({
-        mesh: m, idx: i,
-        r: 1.5 + Math.random() * 1.9,
-        y: (Math.random() - .5) * 2.4,
-        a: Math.random() * Math.PI * 2,
-        v: .9 + Math.random() * .35,
-        s: .34 + Math.random() * .16,
-        wob: Math.random() * 6.28
-      });
-    }
-  });
-  school.add(sclera, pupils);
-
-  // Polpo (solo nella scena grande)
-  let octopus = null;
-  if (!mini) { octopus = buildOctopus(uniforms); scene.add(octopus); }
-
-  // Bolle
-  const N = mini ? 70 : 180;
-  const pos = new Float32Array(N * 3), spd = new Float32Array(N);
-  for (let i = 0; i < N; i++) {
-    pos[i * 3] = (Math.random() - .5) * 22; pos[i * 3 + 1] = (Math.random() - .5) * 12; pos[i * 3 + 2] = -8 + Math.random() * 11;
-    spd[i] = .25 + Math.random() * .6;
-  }
-  const bGeo = new THREE.BufferGeometry(); bGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  scene.add(new THREE.Points(bGeo, new THREE.PointsMaterial({
-    map: bubbleTexture(), color: 0xDFF4FF, size: .16, transparent: true, depthWrite: false, opacity: .75, sizeAttenuation: true
-  })));
-
-  // Disposizione: schermo largo = animali a destra del testo; telefono = in alto
-  let view = { w: 10, h: 6, wide: true };
-  const schoolBase = new THREE.Vector3(), octoBase = new THREE.Vector3();
-  const layout = () => {
-    const w = container.clientWidth, h = container.clientHeight;
-    if (!w || !h) return;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h; camera.updateProjectionMatrix();
-    const vh = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
-    view = { w: vh * camera.aspect, h: vh, wide: camera.aspect > 1.15 };
-    if (mini) {
-      school.scale.setScalar(Math.min(.62, view.w / 16));
-      schoolBase.set(view.wide ? view.w * .27 : view.w * .1, view.wide ? .2 : view.h * .2, 0);
-    } else if (view.wide) {
-      school.scale.setScalar(Math.min(1, view.w / 15));
-      schoolBase.set(view.w * .17, view.h * .08, 0);
-      octopus.visible = true;
-      octopus.scale.setScalar(Math.min(.62, view.w / 24));
-      octoBase.set(view.w * .36, -view.h * .2, -.5);
-    } else {
-      school.scale.setScalar(Math.min(.8, view.w / 8.4));
-      schoolBase.set(0, view.h * .27, 0);
-      octopus.visible = view.w > 5.5;
-      octopus.scale.setScalar(.38);
-      octoBase.set(view.w * .3, view.h * .38, -1);
-    }
-    if (!running) draw(0);
-  };
-
-  // Gli animali si inclinano verso il cursore (o il dito)
-  const pointer = new THREE.Vector2(), aim = new THREE.Vector2();
-  if (!reduceMotion) addEventListener('pointermove', e => pointer.set(e.clientX / innerWidth * 2 - 1, e.clientY / innerHeight * 2 - 1), { passive: true });
-
-  const m4 = new THREE.Matrix4(), eyeM = new THREE.Matrix4(), q = new THREE.Quaternion();
-  const P = new THREE.Vector3(), T = new THREE.Vector3(), S = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-  const eyeOff = [new THREE.Vector3(.3, .16, 1.02), new THREE.Vector3(-.3, .16, 1.02)];
-  const pupOff = [new THREE.Vector3(.37, .17, 1.06), new THREE.Vector3(-.37, .17, 1.06)];
-
-  const clock = new THREE.Clock();
-  let t = 0, running = false, visible = false, raf = 0;
-
-  function draw(dt) {
-    t += dt;
-    uniforms.uTime.value = t;
-    aim.lerp(pointer, Math.min(1, dt * 2.5));
-
-    school.position.set(schoolBase.x + aim.x * .4, schoolBase.y - aim.y * .25, schoolBase.z);
-    school.rotation.set(.32 + aim.y * .18, aim.x * .3, -.06);
-
-    let e = 0;
-    fish.forEach(f => {
-      f.a += f.v / f.r * dt;
-      const yy = f.y + Math.sin(f.a * 1.7 + f.wob) * .28;
-      P.set(Math.cos(f.a) * f.r, yy, Math.sin(f.a) * f.r);
-      // direzione di nuoto: tangente al cerchio (verso senso antiorario visto dall'alto)
-      T.set(-Math.sin(f.a), Math.cos(f.a * 1.7 + f.wob) * .28 * 1.7 / f.r, Math.cos(f.a)).normalize().add(P);
-      m4.lookAt(T, P, up);
-      q.setFromRotationMatrix(m4);
-      m4.compose(P, q, S.setScalar(f.s));
-      f.mesh.setMatrixAt(f.idx, m4);
-      for (let k = 0; k < 2; k++) {
-        eyeM.makeTranslation(eyeOff[k].x, eyeOff[k].y, eyeOff[k].z).premultiply(m4); sclera.setMatrixAt(e, eyeM);
-        eyeM.makeTranslation(pupOff[k].x, pupOff[k].y, pupOff[k].z).premultiply(m4); pupils.setMatrixAt(e, eyeM);
-        e++;
-      }
-    });
-    meshes.forEach(m => { m.instanceMatrix.needsUpdate = true; m.computeBoundingSphere(); });
-    sclera.instanceMatrix.needsUpdate = pupils.instanceMatrix.needsUpdate = true;
-    sclera.computeBoundingSphere(); pupils.computeBoundingSphere();
-
-    if (octopus) {
-      octopus.position.set(octoBase.x + Math.sin(t * .4) * .2, octoBase.y + Math.sin(t * .9) * .25, octoBase.z);
-      octopus.rotation.set(.12 + aim.y * .1, -.5 + aim.x * .35 + Math.sin(t * .3) * .15, Math.sin(t * .7) * .06);
-    }
-
-    const bp = bGeo.attributes.position.array;
-    for (let i = 0; i < N; i++) {
-      bp[i * 3 + 1] += spd[i] * dt;
-      bp[i * 3] += Math.sin(t * 1.3 + i) * .002;
-      if (bp[i * 3 + 1] > 7) bp[i * 3 + 1] = -7;
-    }
-    bGeo.attributes.position.needsUpdate = true;
-    renderer.render(scene, camera);
-  }
-
-  function loop() { raf = requestAnimationFrame(loop); draw(Math.min(clock.getDelta(), .05)); }
-  function update() {
-    const should = visible && !document.hidden && !reduceMotion;
-    if (should && !running) { running = true; clock.getDelta(); loop(); }
-    if (!should && running) { running = false; cancelAnimationFrame(raf); }
-  }
-
-  new ResizeObserver(layout).observe(container);
-  new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible) layout(); update(); }).observe(container);
-  document.addEventListener('visibilitychange', update);
-  layout();
-  draw(reduceMotion ? 2.5 : 0);
-}
-
-function webglOk() {
-  try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
-  catch (e) { return false; }
-}
-
-if (webglOk()) {
-  try {
-    createScene(document.getElementById('heroScene'));
-    document.getElementById('hero').classList.add('has-3d');
-    let recipeScene = false;
-    const mountRecipe = () => {
-      if (recipeScene || !document.getElementById('page-recipe').classList.contains('active')) return;
-      recipeScene = true;
-      createScene(document.getElementById('recipeScene'), { mini: true });
-    };
-    addEventListener('sdm:page', mountRecipe);
-    mountRecipe();
-  } catch (e) { console.warn('Scena 3D non disponibile:', e); }
-}
+<script>
+// Video di apertura: fermo se chi visita preferisce meno movimento, in pausa quando non si vede
+(() => {
+  const v = document.getElementById('heroVideo');
+  if (!v) return;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { v.removeAttribute('autoplay'); v.pause(); return; }
+  new IntersectionObserver(([e]) => { e.isIntersecting ? v.play().catch(() => {}) : v.pause(); }).observe(v);
+})();
 </script>
 </body>
 </html>
