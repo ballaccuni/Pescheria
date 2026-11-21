@@ -1,6 +1,7 @@
 // Sapore di Mare: conserva il sito sul telefono, così le ricette si aprono anche senza internet.
-// Quando cambi il sito, aumenta il numero di VERSIONE: i telefoni scaricheranno la versione nuova.
-const VERSIONE = 'sdm-v3';
+// Si aggiorna da solo: con internet scarica sempre la versione nuova della pagina,
+// e le immagini salvate vengono rinnovate in sottofondo. Non serve cambiare niente qui.
+const VERSIONE = 'sdm';
 const FILE_BASE = [
   "./",
   "./sapore-di-mare.html",
@@ -41,18 +42,19 @@ self.addEventListener('fetch', e => {
   // Pagine: prima la rete (contenuti aggiornati), senza rete la copia salvata
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(r => { const copia = r.clone(); caches.open(VERSIONE).then(c => c.put(req, copia)); return r; })
+      fetch(req, { cache: 'no-cache' }).then(r => { const copia = r.clone(); caches.open(VERSIONE).then(c => c.put(req, copia)); return r; })
         .catch(() => caches.match(req).then(r => r || caches.match('./sapore-di-mare.html')))
     );
     return;
   }
 
-  // Immagini e file del sito: prima la copia salvata (veloce), altrimenti la rete
+  // Immagini e file del sito: subito la copia salvata (veloce) e intanto si scarica quella aggiornata
   if (url.origin === location.origin) {
     e.respondWith(
-      caches.match(req).then(r => r || fetch(req).then(res => {
-        if (res.ok) { const copia = res.clone(); caches.open(VERSIONE).then(c => c.put(req, copia)); }
-        return res;
+      caches.open(VERSIONE).then(c => c.match(req).then(salvata => {
+        const dallaRete = fetch(req, { cache: 'no-cache' }).then(res => { if (res.ok) c.put(req, res.clone()); return res; }).catch(() => salvata);
+        if (salvata) { e.waitUntil(dallaRete.catch(() => {})); return salvata; }
+        return dallaRete;
       }))
     );
     return;
