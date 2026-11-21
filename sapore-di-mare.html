@@ -52,8 +52,9 @@
   /* ── Testata ───────────────────────────────────────── */
   .top { background: var(--bianco); border-bottom: 1px solid var(--linea); position: sticky; top: 0; z-index: 50; }
   .top .wrap { display: grid; grid-template-columns: auto auto auto 1fr auto; align-items: center; gap: 1.2rem; padding-top: .7rem; padding-bottom: .7rem; }
-  .brand { display: block; }
+  .brand { display: flex; align-items: center; gap: 7px; text-decoration: none; }
   .brand img { height: 52px; width: auto; }
+  .brand-pesce { transform-origin: 30% 50%; }
   .menu-btn {
     display: inline-flex; align-items: center; gap: .5rem; background: transparent; border: 0; cursor: pointer;
     color: var(--ardesia); font-weight: 600; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; padding: .55rem .4rem;
@@ -72,9 +73,9 @@
   .menu-panel.open { transform: none; opacity: 1; visibility: visible; }
   .menu-panel h2 { font-size: .74rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--testo-2); padding: .9rem 1.5rem .4rem; }
   .menu-panel ul { list-style: none; margin: 0; padding: 0; }
-  .menu-panel a { display: flex; justify-content: space-between; align-items: center; padding: .75rem 1.5rem; color: var(--ardesia); text-decoration: none; font-weight: 400; font-size: 1.05rem; }
+  .menu-panel a { display: flex; justify-content: space-between; align-items: center; padding: .75rem 1.5rem; color: var(--ardesia); text-decoration: none; font-weight: 600; font-size: 1.08rem; letter-spacing: -.005em; }
   .menu-panel a:hover, .menu-panel a[aria-current="page"] { background: var(--schiuma); color: var(--raffadali); }
-  .menu-panel a small { color: var(--testo-2); font-size: .85rem; }
+  .menu-panel a small { color: var(--testo-2); font-size: .85rem; font-weight: 400; }
   .menu-overlay { position: fixed; inset: 0; z-index: 45; background: rgba(20, 40, 52, .35); opacity: 0; visibility: hidden; transition: opacity .18s, visibility .18s; }
   .menu-overlay.open { opacity: 1; visibility: visible; }
   .search { position: relative; max-width: 560px; width: 100%; justify-self: center; }
@@ -102,6 +103,7 @@
   @media (max-width: 760px) {
     .top .wrap { grid-template-columns: auto 1fr auto; gap: .6rem .8rem; padding-top: .55rem; padding-bottom: .7rem; }
     .brand img { height: 42px; }
+    .brand { gap: 5.5px; }
     .menu-btn span, .ric-btn { display: none; }
     .menu-btn { padding: .4rem .2rem; }
     .search { grid-column: 1 / -1; grid-row: 2; max-width: none; }
@@ -283,6 +285,15 @@
   .shop dd { margin: 0; font-weight: 400; }
   .shop dd a { color: var(--crema); }
   .shop .ico { width: 22px; height: 22px; color: #8CCBE6; margin-top: .1rem; }
+  .orari { display: grid; gap: .15rem; margin-top: .45rem; }
+  .orari > span { color: #C9D9E1; font-weight: 300; }
+  .orari .fascia { white-space: nowrap; }
+  .orari b { color: var(--crema); font-weight: 500; margin-right: .3rem; }
+  .orari .oggi, .orari .oggi b { color: var(--bianco); font-weight: 600; }
+  .stato-negozio, .stato { display: inline-flex; align-items: center; gap: .45rem; font-weight: 600; }
+  .stato-negozio::before, .stato::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #9FB3BD; flex: none; }
+  .stato-negozio.aperto::before, .stato.aperto::before { background: #5CC8A0; box-shadow: 0 0 0 3px rgba(92, 200, 160, .25); }
+  .shop-note .stato { color: var(--ardesia); font-size: .92rem; }
   @media (max-width: 760px) {
     .shop .wrap { grid-template-columns: 1fr; }
     .shop dl div { grid-template-columns: 2rem 1fr; }
@@ -531,7 +542,7 @@
 <header class="top">
   <div class="wrap">
     <button class="menu-btn" type="button" id="menuBtn" aria-expanded="false" aria-controls="menuPanel"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg><span>Menu</span></button>
-    <a class="brand" href="#/" aria-label="Sapore di Mare, pagina principale"><img src="img/logo-barra.png" alt="Sapore di Mare" width="1052" height="270"/></a>
+    <a class="brand" href="#/" id="brand" aria-label="Sapore di Mare, pagina principale"><img class="brand-pesce" src="img/logo-pesce.png" alt="" width="391" height="160"/><img src="img/logo-testo.png" alt="Sapore di Mare" width="211" height="160"/></a>
     <button class="ric-btn" type="button" id="ricBtn" aria-controls="menuPanel">Ricette<svg class="ico" aria-hidden="true"><use href="#i-giu"/></svg></button>
     <form class="search" id="searchForm" role="search">
       <label class="sr-only" for="q">Cerca una ricetta</label>
@@ -588,7 +599,7 @@
           <dl class="facts" id="rFacts"></dl>
           <div class="shop-note">
             <strong>Il pesce te lo prepariamo noi</strong>
-            <p>Chiamaci e lo trovi pronto e pulito al banco, oppure te lo portiamo a casa su prenotazione.</p>
+            <p>Chiamaci e lo trovi pronto e pulito al banco. <span class="stato" id="rStato"></span></p>
             <a id="rCall"><svg class="ico" aria-hidden="true"><use href="#i-telefono"/></svg><span id="rCallText"></span></a>
           </div>
         </div>
@@ -628,7 +639,7 @@
 
 <footer>
   <div class="wrap">
-    <img src="img/logo-barra.png" alt="Sapore di Mare" width="1052" height="270"/>
+    <img src="img/logo-barra.png" alt="Sapore di Mare" width="623" height="160"/>
     <nav aria-label="Collegamenti"><a href="#/ricette">Ricette</a><a href="#/guide">Consigli del banco</a><a href="#negozio">Orari e indirizzo</a><a href="#/preferiti">Preferiti</a></nav>
     <span id="footText"></span>
   </div>
@@ -648,12 +659,25 @@
 
 <script>
 const SHOP = {
-  indirizzo: 'Via del Porto 12, Raffadali (AG)',
-  orari: 'Lunedì–Sabato 6:00–13:30',
-  domenica: 'Domenica aperto la mattina, chiuso il pomeriggio',
-  telefono: '+39 095 123 456',
-  consegne: 'A domicilio, su prenotazione telefonica',
-  pulizia: 'Pulizia e sfilettatura gratuite'
+  indirizzo: 'Via Porta Agrigento 160, Raffadali (AG)',
+  telefono: '0922 475361',
+  pulizia: 'Pulizia e sfilettatura gratuite',
+  // Orari per giorno (0 = domenica). Ogni fascia: [apertura, chiusura] in "ore:minuti"
+  orario: {
+    1: [['17:30', '20:00']],
+    2: [['8:00', '13:30'], ['17:30', '20:00']],
+    3: [['8:00', '13:30'], ['17:30', '20:00']],
+    4: [['8:00', '13:30'], ['17:30', '20:00']],
+    5: [['8:00', '13:30'], ['17:30', '20:00']],
+    6: [['8:00', '13:00']],
+    0: []
+  },
+  orariTesto: [
+    ['Lunedì', '17:30–20:00'],
+    ['Martedì–Venerdì', '8:00–13:30 e 17:30–20:00'],
+    ['Sabato', '8:00–13:00'],
+    ['Domenica', 'Chiuso']
+  ]
 };
 
 function getDefaultRecipes() {
@@ -696,9 +720,9 @@ const pesce = dir => `<svg class="pesce-ico${dir > 0 ? ' gira' : ''}" viewBox="0
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 // Bollicine che salgono da un elemento (solo per momenti rari: salvare, finire gli ingredienti)
-function bollicine(el, n = 7) {
+function bollicine(el, n = 7, punto) {
   if (REDUCE || !el) return;
-  const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const r = el.getBoundingClientRect(), cx = punto ? r.left + r.width * punto[0] : r.left + r.width / 2, cy = punto ? r.top + r.height * punto[1] : r.top + r.height / 2;
   for (let k = 0; k < n; k++) {
     const b = document.createElement('span');
     b.className = 'bolla';
@@ -713,6 +737,22 @@ function bollicine(el, n = 7) {
     ], { duration: 600 + Math.random() * 250, delay: k * 35, easing: EASE_OUT, fill: 'both' }).finished.then(() => b.remove());
   }
 }
+// Logo: toccandolo per tornare alla home, il pesce guizza in avanti e fa le bollicine
+document.addEventListener('click', e => {
+  const brand = e.target.closest('#brand'); if (!brand) return;
+  if (location.hash === '#/' || location.hash === '') { e.preventDefault(); scrollTo({ top: 0, behavior: REDUCE ? 'auto' : 'smooth' }); }
+  if (REDUCE) return;
+  const fish = brand.querySelector('.brand-pesce');
+  fish.getAnimations().forEach(a => a.cancel());
+  fish.animate([
+    { transform: 'translateX(0) rotate(0)' },
+    { transform: 'translateX(-5px) rotate(-8deg)', offset: .18 },
+    { transform: 'translateX(-11px) rotate(7deg)', offset: .4 },
+    { transform: 'translateX(-8px) rotate(-4deg)', offset: .62 },
+    { transform: 'translateX(0) rotate(0)' }
+  ], { duration: 520, easing: EASE_OUT });
+  bollicine(fish, 5, [.06, .4]);
+});
 // Tocco sul telefono: onda nel pulsante e scatto del pesciolino
 let ondaLink = 0;
 document.addEventListener('pointerdown', e => {
@@ -741,7 +781,28 @@ document.addEventListener('click', e => {
   setTimeout(() => { if (location.hash === href) route(); else location.hash = href; }, 170);
 }, true);
 const icon = (id, cls = 'ico') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
-const telHref = 'tel:' + SHOP.telefono.replace(/[^\d+]/g, '');
+const telHref = 'tel:+39' + SHOP.telefono.replace(/\D/g, '');
+// Aperto o chiuso adesso (ora italiana)
+const GIORNI = ['domenica', 'lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato'];
+const minuti = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+function oraItaliana() {
+  const parti = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+  const v = k => parti.find(x => x.type === k).value;
+  return { giorno: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(v('weekday')), min: +v('hour') * 60 + +v('minute') };
+}
+function statoNegozio() {
+  const { giorno, min } = oraItaliana();
+  const oggi = SHOP.orario[giorno] || [];
+  const aperta = oggi.find(([a, c]) => min >= minuti(a) && min < minuti(c));
+  if (aperta) return { aperto: true, testo: `Aperto ora, chiude alle ${aperta[1]}` };
+  const piuTardi = oggi.find(([a]) => minuti(a) > min);
+  if (piuTardi) return { aperto: false, testo: `Chiuso ora, riapre oggi alle ${piuTardi[0]}` };
+  for (let k = 1; k <= 7; k++) {
+    const g = (giorno + k) % 7, fasce = SHOP.orario[g] || [];
+    if (fasce.length) return { aperto: false, testo: `Chiuso ora, riapre ${k === 1 ? 'domani' : GIORNI[g]} alle ${fasce[0][0]}` };
+  }
+  return { aperto: false, testo: 'Chiuso' };
+}
 const mapHref = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Pescheria Sapore di Mare, ' + SHOP.indirizzo);
 const ORDER = ['Antipasti', 'Primi', 'Secondi', 'Zuppe', 'Grigliata'];
 const CATS = [...new Set(RECIPES.map(r => r.cat).filter(Boolean))].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
@@ -1031,6 +1092,7 @@ function renderRecipe(id) {
   $('rFav').dataset.fav = r.id;
   $('rCall').href = telHref;
   $('rCallText').textContent = 'Chiama ' + SHOP.telefono;
+  const st = statoNegozio(); $('rStato').textContent = st.testo + '.'; $('rStato').classList.toggle('aperto', st.aperto);
   renderIngredients();
   $('rSteps').innerHTML = (r.steps || []).map(s => `<li><p>${esc(s)}</p></li>`).join('');
   const same = RECIPES.filter(x => x !== r && x.cat === r.cat);
@@ -1172,12 +1234,20 @@ $('searchForm').addEventListener('submit', e => {
 // ══════════════════════════════════════════
 $('shopFacts').innerHTML = [
   ['luogo', 'Indirizzo', `<a href="${mapHref}" target="_blank" rel="noopener">${esc(SHOP.indirizzo)}</a>`],
-  ['tempo', 'Orari', `${esc(SHOP.orari)}<br>${esc(SHOP.domenica)}`],
+  ['tempo', 'Orari', `<span class="stato-negozio" id="shopStato"></span><span class="orari">${SHOP.orariTesto.map(([g, o]) => `<span data-giorni="${esc(g)}"><b>${esc(g)}</b> ${o.split(' e ').map(f => `<span class="fascia">${esc(f)}</span>`).join(' e ')}</span>`).join('')}</span>`],
   ['telefono', 'Telefono', `<a href="${telHref}">${esc(SHOP.telefono)}</a>`],
-  ['furgone', 'Consegne', esc(SHOP.consegne)],
   ['coltello', 'Al banco', esc(SHOP.pulizia)]
 ].map(([i, k, v]) => `<div>${icon(i)}<dt>${k}</dt><dd>${v}</dd></div>`).join('');
 $('mapLink').href = mapHref;
+function aggiornaStato() {
+  const st = statoNegozio(), el = $('shopStato');
+  el.textContent = st.testo; el.classList.toggle('aperto', st.aperto);
+  // evidenzia la riga di oggi
+  const g = oraItaliana().giorno;
+  const riga = g === 0 ? 'Domenica' : g === 1 ? 'Lunedì' : g === 6 ? 'Sabato' : 'Martedì–Venerdì';
+  document.querySelectorAll('.orari [data-giorni]').forEach(x => x.classList.toggle('oggi', x.dataset.giorni === riga));
+}
+aggiornaStato(); setInterval(aggiornaStato, 60000);
 $('footText').textContent = `Pescheria Sapore di Mare, ${SHOP.indirizzo}. © ${new Date().getFullYear()}`;
 
 // ══════════════════════════════════════════
