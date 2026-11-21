@@ -9,7 +9,7 @@
 <link rel="icon" href="img/icon.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
   /* ── Colori presi dal logo ─────────────────────────── */
   :root {
@@ -29,7 +29,7 @@
   }
   *, *::before, *::after { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--crema); color: var(--ardesia); font-family: var(--font); font-weight: 300; line-height: 1.6; overflow-x: hidden; }
+  body { margin: 0; background: var(--bianco); color: var(--ardesia); font-family: var(--font); font-weight: 300; line-height: 1.6; overflow-x: hidden; }
   h1, h2, h3 { margin: 0; font-weight: 500; line-height: 1.2; letter-spacing: -.01em; }
   p { margin: 0; }
   a { color: var(--raffadali); }
@@ -41,8 +41,8 @@
   .ico { width: 1.1em; height: 1.1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
   /* ── Testata ───────────────────────────────────────── */
-  .top { background: var(--crema); border-bottom: 1px solid var(--linea); position: sticky; top: 0; z-index: 50; }
-  .top .wrap { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 1.4rem; padding-top: .7rem; padding-bottom: .7rem; }
+  .top { background: var(--bianco); border-bottom: 1px solid var(--linea); position: sticky; top: 0; z-index: 50; }
+  .top .wrap { display: grid; grid-template-columns: auto auto auto 1fr auto; align-items: center; gap: 1.2rem; padding-top: .7rem; padding-bottom: .7rem; }
   .brand { display: block; }
   .brand img { height: 52px; width: auto; }
   .menu-btn {
@@ -50,6 +50,9 @@
     color: var(--ardesia); font-weight: 600; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; padding: .55rem .4rem;
   }
   .menu-btn .ico { width: 26px; height: 26px; stroke-width: 2.2; }
+  .ric-btn { display: inline-flex; align-items: center; gap: .35rem; background: var(--schiuma); color: var(--ardesia); border: 0; border-radius: 999px; padding: .55rem 1rem; cursor: pointer; font-weight: 500; }
+  .ric-btn .ico { width: 16px; height: 16px; stroke-width: 2.4; }
+  .ric-btn:hover { background: #D6E9F1; }
   .menu-btn:hover { color: var(--raffadali); }
   .menu-panel {
     position: absolute; top: 100%; left: 0; z-index: 60; width: min(380px, 100%); max-height: calc(100svh - 130px); overflow-y: auto;
@@ -90,7 +93,7 @@
   @media (max-width: 760px) {
     .top .wrap { grid-template-columns: auto 1fr auto; gap: .6rem .8rem; padding-top: .55rem; padding-bottom: .7rem; }
     .brand img { height: 42px; }
-    .menu-btn span { display: none; }
+    .menu-btn span, .ric-btn { display: none; }
     .menu-btn { padding: .4rem .2rem; }
     .search { grid-column: 1 / -1; grid-row: 2; max-width: none; }
     .search input { padding-top: .6rem; padding-bottom: .6rem; }
@@ -117,13 +120,14 @@
 
   /* Schede ricetta */
   .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 22px; }
-  .card { position: relative; }
-  .card > a { display: block; text-decoration: none; color: inherit; }
+  .card { position: relative; background: var(--bianco); border: 1px solid var(--linea); border-radius: var(--radius); overflow: hidden; }
+  .card > a { display: block; text-decoration: none; color: inherit; height: 100%; }
+  .card .pic { border-radius: 0; }
   .card > a:hover img { transform: scale(1.04); }
   .card > a:hover h3 { color: var(--raffadali); }
-  .card-body { padding-top: .75rem; }
+  .card-body { padding: .75rem .9rem .95rem; }
   .card-cat { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--raffadali); }
-  .card h3 { font-size: 1.12rem; margin-top: .15rem; transition: color .2s; }
+  .card h3 { font-size: 1.08rem; font-weight: 600; margin-top: .2rem; transition: color .2s; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-meta { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin-top: .45rem; color: var(--testo-2); font-size: .88rem; }
   .card-meta span { display: inline-flex; align-items: center; gap: .35rem; }
   .heart {
@@ -141,21 +145,102 @@
   }
 
   /* ── Home ──────────────────────────────────────────── */
-  .section { padding: clamp(32px, 5vw, 56px) 0; }
-  .section + .section { border-top: 1px solid var(--linea); }
-  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 1.4rem; }
-  .sec-head h2 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); }
-  .sec-head a { font-weight: 600; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; white-space: nowrap; }
-  .sec-head a:hover { text-decoration: underline; }
+  .section { padding: clamp(28px, 4.5vw, 48px) 0; }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
+  .sec-head h2 { font-size: clamp(1.15rem, 2.2vw, 1.55rem); font-weight: 700; text-transform: uppercase; letter-spacing: .01em; }
+  .sec-tools { display: flex; align-items: center; gap: .5rem; flex: none; }
+  .pill-link { font-weight: 600; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; color: var(--raffadali); background: var(--schiuma); padding: .55rem .95rem; border-radius: 999px; white-space: nowrap; }
+  .pill-link:hover { background: #D6E9F1; }
+  .round-btn { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--linea); background: var(--bianco); color: var(--raffadali); display: grid; place-items: center; cursor: pointer; }
+  .round-btn.pieno { background: var(--raffadali); border-color: var(--raffadali); color: var(--bianco); }
+  .round-btn .ico { width: 18px; height: 18px; stroke-width: 2.4; }
 
-  .feature { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 56px); align-items: center; }
-  .feature .pic { display: block; aspect-ratio: 16 / 11; border-radius: 20px; text-decoration: none; }
-  .feature .pic:hover img { transform: scale(1.03); }
-  .feature-label { display: inline-block; background: var(--schiuma); color: var(--raffadali); font-weight: 600; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; padding: .35rem .8rem; border-radius: 6px; }
-  .feature h1 { font-size: clamp(2rem, 4.4vw, 3.3rem); letter-spacing: -.025em; margin-top: 1rem; line-height: 1.06; }
-  .feature h1 a { color: inherit; text-decoration: none; }
-  .feature-sub { color: var(--testo-2); font-size: 1.15rem; margin-top: .6rem; }
-  .feature .card-meta { font-size: .98rem; margin-top: 1.1rem; }
+  /* File di schede che si scorrono */
+  .row { display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 3 * 20px) / 4); gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 2px 2px 6px; }
+  .row::-webkit-scrollbar { display: none; }
+  .row > * { scroll-snap-align: start; }
+  @media (max-width: 1000px) { .row { grid-auto-columns: calc((100% - 2 * 16px) / 3); gap: 16px; } }
+  @media (max-width: 700px) {
+    .row { grid-auto-columns: 66%; gap: 12px; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); scroll-padding-inline: var(--gutter); }
+    .sec-tools .round-btn { display: none; }
+  }
+
+  /* Carosello di apertura: si scorre con il dito, l'immagine attiva si ingrandisce piano */
+  .hero { position: relative; padding-top: 20px; --dur: 6s; }
+  .slides {
+    --sw: min(1140px, calc(100% - 150px));
+    position: relative; display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    padding-inline: calc((100% - var(--sw)) / 2); overscroll-behavior-x: contain;
+  }
+  .slides::-webkit-scrollbar { display: none; }
+  .slide {
+    flex: 0 0 var(--sw); scroll-snap-align: center; scroll-snap-stop: always;
+    display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; gap: 20px; height: clamp(400px, 37vw, 520px);
+  }
+  .slide .tile:first-child { grid-row: 1 / 3; }
+  .slide.solo { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  .slide.solo .tile:first-child { grid-row: auto; }
+  .tile { position: relative; overflow: hidden; border-radius: 14px; background: var(--schiuma); }
+  .tile-link { position: absolute; inset: 0; display: block; color: var(--bianco); text-decoration: none; }
+  .tile-img { position: absolute; inset: 0; overflow: hidden; }
+  .tile-img img, .tile-img .ph { width: 100%; height: 100%; object-fit: cover; transform: scale(1); transition: transform 7s cubic-bezier(.2, .6, .3, 1); }
+  .slide.is-active .tile-img img, .slide.is-active .tile-img .ph { transform: scale(1.13); }
+  .tile-link::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15, 51, 71, 0) 40%, rgba(15, 51, 71, .82) 100%); }
+  .tile-text { position: absolute; z-index: 1; left: 22px; right: 22px; bottom: 20px; }
+  .tile-label { display: inline-block; background: var(--crema); color: var(--raffadali); font-weight: 600; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; padding: .32rem .7rem; border-radius: 6px; margin-bottom: .6rem; }
+  .tile h2 { font-size: clamp(1.25rem, 1.9vw, 1.65rem); font-weight: 700; line-height: 1.08; letter-spacing: -.01em; text-shadow: 0 2px 14px rgba(10, 35, 48, .45); }
+  .tile:first-child h2 { font-size: clamp(2rem, 3.6vw, 3.1rem); letter-spacing: -.02em; }
+  .tile .card-meta { color: #E8F2F6; margin-top: .55rem; }
+  .tile .heart { top: 14px; right: 14px; background: rgba(255, 255, 255, .92); }
+  .slider-arrow {
+    position: absolute; top: calc(50% + 10px); transform: translateY(-50%); z-index: 4; width: 48px; height: 48px; border-radius: 50%;
+    border: 0; background: var(--bianco); color: var(--raffadali); display: grid; place-items: center; cursor: pointer; box-shadow: 0 6px 18px rgba(15, 51, 71, .25);
+  }
+  .slider-arrow .ico { width: 22px; height: 22px; stroke-width: 2.4; }
+  .slider-arrow.prev { left: max(12px, calc((100% - min(1140px, calc(100% - 150px))) / 2 - 24px)); }
+  .slider-arrow.next { right: max(12px, calc((100% - min(1140px, calc(100% - 150px))) / 2 - 24px)); }
+  .slider-arrow:hover { background: var(--crema); }
+  /* Barrette di avanzamento: visibili su telefono, sul computer regolano solo il tempo */
+  .bars { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: 18px; display: flex; gap: 6px; opacity: 0; pointer-events: none; }
+  .bars span { flex: 1; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .5); overflow: hidden; }
+  .bars i { display: block; width: 0; height: 100%; background: var(--crema); }
+  .bars span.on i { animation: avanza var(--dur) linear forwards; }
+  .hero.ferma .bars span.on i { animation-play-state: paused; }
+  @keyframes avanza { to { width: 100%; } }
+  @media (max-width: 760px) {
+    .hero { padding-top: 0; }
+    .slides { --sw: 100%; padding-inline: 0; gap: 0; }
+    .slide { grid-template-columns: 1fr; grid-template-rows: 1fr; gap: 0; height: auto; aspect-ratio: 1 / 1.1; }
+    .tile { border-radius: 0; }
+    .slide .tile:first-child { grid-row: auto; }
+    .tile:first-child h2 { font-size: clamp(1.9rem, 8.6vw, 2.6rem); }
+    .tile-text { left: 20px; right: 20px; bottom: 40px; }
+    .bars { opacity: 1; }
+    .slider-arrow { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile-img img, .tile-img .ph { transition: none; }
+    .slide.is-active .tile-img img, .slide.is-active .tile-img .ph { transform: none; }
+  }
+
+  /* Blocco categorie */
+  .cat-block { background: var(--crema); border-top: 1px solid var(--linea); border-bottom: 1px solid var(--linea); padding: clamp(24px, 4vw, 40px) 0; margin-top: 20px; }
+  .cat-cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 28px; }
+  .cat-col h3 { display: flex; align-items: center; gap: .55rem; font-size: 1.1rem; font-weight: 700; }
+  .cat-col h3 a { color: var(--ardesia); text-decoration: none; }
+  .cat-col h3 .ico { width: 26px; height: 26px; color: var(--lisca); stroke-width: 1.7; }
+  .cat-col ul { list-style: none; margin: .5rem 0 0; padding: 0; }
+  .cat-col li a { display: block; padding: .3rem 0; color: var(--ardesia); text-decoration: none; font-weight: 400; font-size: .95rem; }
+  .cat-col li a:hover { color: var(--raffadali); }
+  .cat-col li.tutti a { color: var(--raffadali); font-weight: 600; font-size: .78rem; letter-spacing: .07em; text-transform: uppercase; margin-top: .2rem; }
+  @media (max-width: 760px) { .hero + .cat-block { margin-top: 0; } .cat-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* Fascia colorata */
+  .band { background: var(--schiuma); border-radius: 20px; padding: clamp(18px, 3vw, 30px); }
+  .band .tip-card { border-color: transparent; }
+  @media (max-width: 700px) { .band { border-radius: 0; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); } }
+
+  /* Pulsanti */
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-height: 48px; padding: .75rem 1.5rem;
     border-radius: 10px; border: 1.5px solid transparent; font-weight: 600; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase;
@@ -165,8 +250,6 @@
   .btn-pieno:hover { background: var(--raffadali-scuro); }
   .btn-linea { background: var(--bianco); border-color: var(--linea); color: var(--ardesia); }
   .btn-linea:hover { border-color: var(--lisca); }
-  .feature .btn { margin-top: 1.6rem; }
-  @media (max-width: 760px) { .feature { grid-template-columns: 1fr; } .feature .pic { aspect-ratio: 4 / 3; } }
 
   /* Consigli (guide) */
   .tips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
@@ -294,6 +377,13 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-cuore" viewBox="0 0 24 24"><path class="ico-heart" d="M12 20.5s-7.5-4.4-9.3-9.2C1.4 7.7 3.7 4 7.4 4c2 0 3.6 1.1 4.6 2.6C13 5.1 14.6 4 16.6 4c3.7 0 6 3.7 4.7 7.3-1.8 4.8-9.3 9.2-9.3 9.2z"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  <symbol id="i-sinistra" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-destra" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-giu" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-conchiglia" viewBox="0 0 24 24"><path d="M12 20c-5 0-8-3-8-7a8 8 0 0 1 16 0c0 4-3 7-8 7z"/><path d="M12 20V6M8 19l2-12M16 19l-2-12M5 15l4-6M19 15l-4-6"/></symbol>
+  <symbol id="i-pasta" viewBox="0 0 24 24"><path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M7 12c0-3 2-3 2-6M11 12c0-3 2-3 2-6M15 12c0-3 2-3 2-6"/></symbol>
+  <symbol id="i-pesce" viewBox="0 0 24 24"><path d="M3 12c3-5 9-6 13-3l4-3v12l-4-3c-4 3-10 2-13-3z"/><circle cx="8" cy="11" r=".9" fill="currentColor"/></symbol>
+  <symbol id="i-ciotola" viewBox="0 0 24 24"><path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M9 4c-1 1.5 1 2.5 0 4M13 3c-1 1.5 1 2.5 0 4"/></symbol>
   <symbol id="i-chiudi" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></symbol>
   <symbol id="i-cerca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
   <symbol id="i-tempo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
@@ -313,6 +403,7 @@
   <div class="wrap">
     <button class="menu-btn" type="button" id="menuBtn" aria-expanded="false" aria-controls="menuPanel"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg><span>Menu</span></button>
     <a class="brand" href="#/" aria-label="Sapore di Mare, pagina principale"><img src="img/logo-barra.png" alt="Sapore di Mare" width="1052" height="270"/></a>
+    <button class="ric-btn" type="button" id="ricBtn" aria-controls="menuPanel">Ricette<svg class="ico" aria-hidden="true"><use href="#i-giu"/></svg></button>
     <form class="search" id="searchForm" role="search">
       <label class="sr-only" for="q">Cerca una ricetta</label>
       <input id="q" type="search" placeholder="Cerca: polpo, gamberi, orata…" autocomplete="off"/>
@@ -327,16 +418,14 @@
 
 <main>
   <div class="page" id="page-home">
-    <section class="section"><div class="wrap" id="feature"></div></section>
-    <section class="section"><div class="wrap">
-      <div class="sec-head"><h2>Le più richieste</h2><a href="#/ricette">Tutte le ricette</a></div>
-      <div class="grid" id="topGrid"></div>
-    </div></section>
-    <div id="catSections"></div>
-    <section class="section"><div class="wrap">
-      <div class="sec-head"><h2>I consigli del banco</h2><a href="#/guide">Tutte le guide</a></div>
-      <div class="tips" id="tipsHome"></div>
-    </div></section>
+    <section class="hero" id="hero" aria-roledescription="carosello" aria-label="Ricette in evidenza">
+      <div class="slides" id="slides"></div>
+      <div class="bars" id="slideBars" aria-hidden="true"></div>
+      <button class="slider-arrow prev" type="button" id="slidePrev" aria-label="Indietro"><svg class="ico" aria-hidden="true"><use href="#i-sinistra"/></svg></button>
+      <button class="slider-arrow next" type="button" id="slideNext" aria-label="Avanti"><svg class="ico" aria-hidden="true"><use href="#i-destra"/></svg></button>
+    </section>
+    <section class="cat-block" aria-label="Categorie di ricette"><div class="wrap cat-cols" id="catCols"></div></section>
+    <div id="homeRows"></div>
     <section class="shop" id="negozio"><div class="wrap">
       <div class="shop-intro">
         <h2>Il pesce per queste ricette lo trovi da noi</h2>
@@ -533,29 +622,115 @@ function weekNumber(d = new Date()) {
   const start = new Date(d.getFullYear(), 0, 1);
   return Math.floor(((d - start) / 86400000 + start.getDay()) / 7);
 }
+const CAT_ICON = { Antipasti: 'conchiglia', Primi: 'pasta', Secondi: 'pesce', Zuppe: 'ciotola', Grigliata: 'pesce' };
+const CAT_ALL = { Antipasti: 'Tutti gli antipasti', Primi: 'Tutti i primi', Secondi: 'Tutti i secondi', Zuppe: 'Tutte le zuppe', Grigliata: 'Tutte le grigliate' };
+let HERO = [];
+function rowSection(id, title, href, items) {
+  return `<section class="section"><div class="wrap">
+    <div class="sec-head"><h2>${esc(title)}</h2><div class="sec-tools">
+      <a class="pill-link" href="${href}">Scopri tutte</a>
+      <button class="round-btn" type="button" data-row="${id}" data-dir="-1" aria-label="Indietro">${icon('sinistra')}</button>
+      <button class="round-btn pieno" type="button" data-row="${id}" data-dir="1" aria-label="Avanti">${icon('destra')}</button>
+    </div></div>
+    <div class="row" id="${id}">${items}</div>
+  </div></section>`;
+}
 function renderHome() {
   const tops = RECIPES.filter(r => r.top);
   const pool = tops.length ? tops : RECIPES;
   const f = pool[weekNumber() % pool.length];
-  $('feature').innerHTML = `<div class="feature">
-    <a class="pic" href="#/ricetta/${esc(f.id)}" aria-hidden="true" tabindex="-1">${picture(f, true)}</a>
-    <div>
-      <span class="feature-label">La ricetta della settimana</span>
-      <h1><a href="#/ricetta/${esc(f.id)}">${esc(f.title)}</a></h1>
-      <p class="feature-sub">${esc(f.sub)}</p>
-      <p class="card-meta"><span>${icon('cappello')}${esc(f.diff)}</span><span>${icon('tempo')}${esc(f.time)}</span><span>${icon('persone')}${esc(f.people)} persone</span></p>
-      <a class="btn btn-pieno" href="#/ricetta/${esc(f.id)}">Vai alla ricetta</a>
-    </div>
-  </div>`;
-  $('topGrid').innerHTML = grid([...tops, ...RECIPES.filter(r => !r.top)].slice(0, 4));
-  $('catSections').innerHTML = CATS.map(c => {
+  HERO = [f, ...tops.filter(r => r !== f), ...RECIPES.filter(r => !r.top)].slice(0, 6);
+  buildSlides();
+  $('catCols').innerHTML = CATS.map(c => {
     const list = RECIPES.filter(r => r.cat === c);
-    return `<section class="section"><div class="wrap">
-      <div class="sec-head"><h2>${esc(catTitle(c))}</h2>${list.length > 4 ? `<a href="${catHref(c)}">Vedi tutti (${list.length})</a>` : `<a href="${catHref(c)}">Vedi tutti</a>`}</div>
-      <div class="grid">${grid(list.slice(0, 4))}</div>
-    </div></section>`;
+    return `<div class="cat-col"><h3>${icon(CAT_ICON[c] || 'piatto')}<a href="${catHref(c)}">${esc(c)}</a></h3><ul>
+      ${list.slice(0, 5).map(r => `<li><a href="#/ricetta/${esc(r.id)}">${esc(r.title)}</a></li>`).join('')}
+      <li class="tutti"><a href="${catHref(c)}">${esc(CAT_ALL[c] || 'Vedi tutte')}</a></li></ul></div>`;
   }).join('');
-  $('tipsHome').innerHTML = GUIDES.slice(0, 4).map(tipCard).join('');
+  $('homeRows').innerHTML =
+    rowSection('rowTop', 'Le più richieste', '#/ricette', grid([...tops, ...RECIPES.filter(r => !r.top)].slice(0, 8))) +
+    CATS.map(c => rowSection('row-' + c, catTitle(c), catHref(c), grid(RECIPES.filter(r => r.cat === c)))).join('') +
+    `<section class="section"><div class="wrap"><div class="band">
+      <div class="sec-head"><h2>I consigli del banco</h2><div class="sec-tools"><a class="pill-link" href="#/guide">Scopri tutti</a>
+        <button class="round-btn" type="button" data-row="rowTips" data-dir="-1" aria-label="Indietro">${icon('sinistra')}</button>
+        <button class="round-btn pieno" type="button" data-row="rowTips" data-dir="1" aria-label="Avanti">${icon('destra')}</button></div></div>
+      <div class="row" id="rowTips">${GUIDES.map(tipCard).join('')}</div>
+    </div></div></section>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-row]'); if (!b) return;
+  const row = $(b.dataset.row);
+  row.scrollBy({ left: +b.dataset.dir * row.clientWidth * .9, behavior: 'smooth' });
+});
+
+// ── Carosello di apertura
+const mqTel = matchMedia('(max-width: 760px)');
+let slider = null;
+function heroTile(r, first) {
+  return `<div class="tile">
+    <a class="tile-link" href="#/ricetta/${esc(r.id)}">
+      <div class="tile-img">${picture(r, true)}</div>
+      <div class="tile-text">
+        ${first ? '<span class="tile-label">La ricetta della settimana</span>' : ''}
+        <h2>${esc(r.title)}</h2>
+        <p class="card-meta"><span>${icon('cappello')}${esc(r.diff)}</span><span>${icon('tempo')}${esc(r.time)}</span></p>
+      </div>
+    </a>
+    <button class="heart" type="button" data-fav="${esc(r.id)}" aria-pressed="false" aria-label="Salva ${esc(r.title)} nei preferiti">${icon('cuore')}</button>
+  </div>`;
+}
+function buildSlides() {
+  const per = mqTel.matches ? 1 : 3;
+  const pages = [];
+  for (let i = 0; i < HERO.length; i += per) {
+    const page = HERO.slice(i, i + per);
+    while (page.length < per && HERO.length >= per) page.push(HERO[(i + page.length) % HERO.length]);
+    pages.push(page);
+  }
+  $('slides').innerHTML = pages.map((page, i) =>
+    `<div class="slide${page.length === 1 ? ' solo' : ''}${i === 0 ? ' is-active' : ''}" role="group" aria-roledescription="pagina" aria-label="${i + 1} di ${pages.length}">${page.map((r, k) => heroTile(r, i === 0 && k === 0)).join('')}</div>`).join('');
+  $('slideBars').innerHTML = pages.map(() => '<span><i></i></span>').join('');
+  slider?.abort();
+  slider = new AbortController();
+  initSlider(slider.signal);
+  updateFavUI();
+}
+mqTel.addEventListener('change', buildSlides);
+
+function initSlider(signal) {
+  const hero = $('hero'), track = $('slides'), slides = [...track.children], bars = [...$('slideBars').children];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let active = 0, resume = 0;
+  const on = (el, ev, fn, opt = {}) => el.addEventListener(ev, fn, { ...opt, signal });
+  const setActive = i => {
+    if (i === active && slides[i].classList.contains('is-active') && bars[i].classList.contains('on')) return;
+    active = i;
+    slides.forEach((el, k) => el.classList.toggle('is-active', k === i));
+    bars.forEach(b => b.classList.remove('on'));
+    if (!reduce && slides.length > 1) { void bars[i].offsetWidth; bars[i].classList.add('on'); }
+  };
+  const goTo = i => {
+    i = (i + slides.length) % slides.length;
+    const el = slides[i];
+    track.scrollTo({ left: el.offsetLeft - (track.clientWidth - el.clientWidth) / 2, behavior: reduce ? 'auto' : 'smooth' });
+    setActive(i);
+  };
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting && e.intersectionRatio >= .6) setActive(slides.indexOf(e.target)); }), { root: track, threshold: [.6] });
+  slides.forEach(el => io.observe(el));
+  signal.addEventListener('abort', () => io.disconnect());
+  // Quando la barretta si riempie, passa alla ricetta successiva
+  on($('slideBars'), 'animationend', () => goTo(active + 1));
+  const pause = () => { clearTimeout(resume); hero.classList.add('ferma'); };
+  const play = (delay = 0) => { clearTimeout(resume); resume = setTimeout(() => hero.classList.remove('ferma'), delay); };
+  on(track, 'touchstart', pause, { passive: true });
+  on(track, 'touchend', () => play(2500), { passive: true });
+  on(hero, 'mouseenter', () => { if (!mqTel.matches) pause(); });
+  on(hero, 'mouseleave', () => play());
+  on($('slidePrev'), 'click', () => goTo(active - 1));
+  on($('slideNext'), 'click', () => goTo(active + 1));
+  on(window, 'resize', () => { const el = slides[active]; track.scrollTo({ left: el.offsetLeft - (track.clientWidth - el.clientWidth) / 2 }); });
+  track.scrollLeft = 0;
+  active = -1; setActive(0);
 }
 const tipCard = g => `<a class="tip-card" href="#/guida/${esc(g.id)}"><span class="tip-icon" aria-hidden="true">${esc(g.icon || '📖')}</span><strong>${esc(g.title)}</strong><span>${esc(g.desc)}</span></a>`;
 
@@ -686,6 +861,7 @@ function setMenu(open) {
 }
 $('menuBtn').addEventListener('click', () => setMenu(!$('menuPanel').classList.contains('open')));
 $('menuOverlay').addEventListener('click', () => setMenu(false));
+$('ricBtn').addEventListener('click', () => setMenu(!$('menuPanel').classList.contains('open')));
 $('menuNav').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 
