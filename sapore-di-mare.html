@@ -7,6 +7,12 @@
 <meta name="description" content="Ricette di pesce facili e golose dalla Pescheria Sapore di Mare di Raffadali: primi, secondi, antipasti e zuppe, con dosi, tempi e preparazione passo passo."/>
 <meta name="theme-color" content="#1B7A9C"/>
 <link rel="icon" href="img/icon.png"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="img/app/apple-touch-icon.png"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Sapore di Mare"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -385,6 +391,33 @@
   footer nav a { color: var(--testo-2); text-decoration: none; }
   footer nav a:hover { color: var(--raffadali); }
 
+  /* ── App installabile ──────────────────────────────── */
+  .install-bar {
+    position: fixed; z-index: 70; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); margin: 0 auto; max-width: 520px;
+    display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: .8rem;
+    background: var(--bianco); border: 1px solid var(--linea); border-radius: 16px; padding: .8rem .8rem .8rem 1rem;
+    box-shadow: 0 14px 40px rgba(15, 51, 71, .22);
+    transform: translateY(calc(100% + 24px)); transition: transform 300ms var(--ease-out);
+  }
+  .install-bar.visibile { transform: none; }
+  .install-bar[hidden] { display: none; }
+  .install-bar img { width: 44px; height: 44px; border-radius: 10px; }
+  .install-bar p { font-size: .9rem; line-height: 1.35; color: var(--testo-2); }
+  .install-bar strong { display: block; color: var(--ardesia); font-weight: 600; }
+  .install-bar .btn { min-height: 40px; padding: .5rem 1rem; font-size: .74rem; }
+  .install-chiudi { width: 36px; height: 36px; border: 0; background: transparent; border-radius: 50%; color: var(--testo-2); cursor: pointer; display: grid; place-items: center; }
+  .install-chiudi .ico { width: 18px; height: 18px; }
+  @media (max-width: 420px) { .install-bar { grid-template-columns: auto 1fr auto; } .install-bar .btn { grid-column: 2 / 4; grid-row: 2; } }
+  .install-dlg { border: 0; border-radius: 20px; padding: 1.6rem 1.5rem 1.3rem; max-width: 380px; width: calc(100% - 32px); color: var(--ardesia); box-shadow: 0 24px 60px rgba(15, 51, 71, .3); }
+  .install-dlg::backdrop { background: rgba(20, 40, 52, .45); }
+  .install-dlg[open] { animation: dlg 220ms var(--ease-out); }
+  @keyframes dlg { from { opacity: 0; transform: scale(.96); } }
+  .install-dlg h2 { font-size: 1.3rem; font-weight: 700; }
+  .install-dlg ol { margin: 1rem 0 1.2rem; padding-left: 1.3rem; }
+  .install-dlg li { margin: .5rem 0; }
+  .install-dlg .btn { width: 100%; }
+  .ios-share { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -.2em; color: var(--raffadali); }
+
   /* ── Animazioni dei pulsanti ───────────────────────── */
   /* Risposta al tocco: si rimpiccioliscono appena, come un tasto vero */
   .btn, .pill-link, .round-btn, .slider-arrow, .heart, .doses button, .menu-btn, .ric-btn, .filter {
@@ -448,6 +481,9 @@
     border: 1.5px solid var(--lisca); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.95) 0 22%, rgba(230,241,246,.55) 23% 100%); }
 
   @media (prefers-reduced-motion: reduce) {
+    .install-bar { transition: opacity 200ms ease; transform: none; opacity: 0; }
+    .install-bar.visibile { opacity: 1; }
+    .install-dlg[open] { animation: none; }
     .btn::before, .pill-link::before { transition: none; animation: none; }
     .pesce-ico, .spunta, .ing-testo::after { transition: none; }
     .pill-link:hover .coda, .round-btn:hover .coda, .slider-arrow:hover .coda { animation: none; }
@@ -455,6 +491,7 @@
   }
 
   @media print {
+    .install-bar { display: none !important; }
     .cats, .search, .fav-link, .recipe-actions, .similar, footer, .shop-note, .heart { display: none !important; }
     body { background: #fff; }
     .recipe-cols { grid-template-columns: 1fr 1.6fr; }
@@ -597,6 +634,17 @@
   </div>
 </footer>
 <div class="toast" id="toast" role="status"></div>
+<div class="install-bar" id="installBar" hidden role="region" aria-label="Installa l'app">
+  <img src="img/app/icona-192.png" alt="" width="44" height="44"/>
+  <p><strong>Sapore di Mare sul telefono</strong>Aggiungila alla schermata Home: le ricette si aprono anche senza internet.</p>
+  <button class="btn btn-pieno" type="button" id="installSi">Installa</button>
+  <button class="install-chiudi" type="button" id="installNo" aria-label="Non ora"><svg class="ico" aria-hidden="true"><use href="#i-chiudi"/></svg></button>
+</div>
+<dialog class="install-dlg" id="installDlg" aria-labelledby="installTitolo">
+  <h2 id="installTitolo">Aggiungi alla schermata Home</h2>
+  <ol id="installPassi"></ol>
+  <form method="dialog"><button class="btn btn-pieno">Ho capito</button></form>
+</dialog>
 
 <script>
 const SHOP = {
@@ -719,8 +767,14 @@ function toggleFav(id) {
   updateFavUI();
   toast(added ? 'Ricetta salvata nei preferiti' : 'Ricetta tolta dai preferiti');
 }
+let favPrima = null;
 function updateFavUI() {
-  $('favCount').textContent = [...favorites].filter(findRecipe).length;
+  const n = [...favorites].filter(findRecipe).length;
+  $('favCount').textContent = n;
+  if (favPrima !== null && n > favPrima && !REDUCE) {
+    $('favCount').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)', offset: .4 }, { transform: 'scale(1)' }], { duration: 300, easing: EASE_OUT });
+  }
+  favPrima = n;
   document.querySelectorAll('[data-fav]').forEach(b => {
     const on = favorites.has(String(b.dataset.fav));
     b.setAttribute('aria-pressed', on);
@@ -1025,7 +1079,7 @@ function renderMenu(active) {
   $('menuNav').innerHTML =
     `<h2>Ricette</h2><ul>${li('#/', 'Home', 'home')}${li('#/ricette', 'Tutte le ricette', 'ricette', `<small>${RECIPES.length}</small>`)}` +
     CATS.map(c => li(catHref(c), catTitle(c), 'cat:' + c, `<small>${RECIPES.filter(r => r.cat === c).length}</small>`)).join('') + '</ul>' +
-    `<h2>La pescheria</h2><ul>${li('#/guide', 'Consigli del banco', 'guide')}${li('#negozio', 'Orari e negozio', 'negozio')}${li('#/preferiti', 'I tuoi preferiti', 'preferiti')}</ul>`;
+    `<h2>La pescheria</h2><ul>${li('#/guide', 'Consigli del banco', 'guide')}${li('#negozio', 'Orari e negozio', 'negozio')}${li('#/preferiti', 'I tuoi preferiti', 'preferiti')}${standalone() ? '' : `<li><a href="#installa" data-installa><span>Installa l'app</span></a></li>`}</ul>`;
 }
 function setMenu(open) {
   $('menuPanel').classList.toggle('open', open);
@@ -1040,8 +1094,24 @@ $('ricBtn').addEventListener('click', () => setMenu(!$('menuPanel').classList.co
 $('menuNav').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 
+let paginaPrima = null;
+// Entrata delle pagine: una sola entrata per contenitore (regola della skill "choreograph")
+function entrata(page) {
+  if (REDUCE || paginaPrima === null) return;
+  const anim = (el, delay, dist) => el.animate([{ opacity: 0, transform: `translateY(${dist}px)` }, { opacity: 1, transform: 'none' }], { duration: 260, delay, easing: EASE_OUT, fill: 'backwards' });
+  if (page === 'elenco') {
+    // Titolo per primo, poi le schede a onda: intervalli che si accorciano, solo le prime 8
+    anim(document.querySelector('#page-elenco .list-head'), 0, 10);
+    const gap = [40, 75, 105, 130, 150, 165, 178, 188];
+    [...$('listBody').querySelectorAll('.card, .tip-card, .empty')].slice(0, 8).forEach((el, i) => anim(el, gap[i], 12 - i));
+  } else {
+    $('page-' + page).animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: EASE_OUT });
+  }
+}
 function show(page, active) {
   document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + page));
+  if (page !== paginaPrima || page === 'elenco') entrata(page);
+  paginaPrima = page;
   renderCatNav(active);
   renderMenu(active);
   setMenu(false);
@@ -1109,6 +1179,51 @@ $('shopFacts').innerHTML = [
 ].map(([i, k, v]) => `<div>${icon(i)}<dt>${k}</dt><dd>${v}</dd></div>`).join('');
 $('mapLink').href = mapHref;
 $('footText').textContent = `Pescheria Sapore di Mare, ${SHOP.indirizzo}. © ${new Date().getFullYear()}`;
+
+// ══════════════════════════════════════════
+// APP INSTALLABILE E USO SENZA INTERNET
+// ══════════════════════════════════════════
+function standalone() { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let promptInstall = null;
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+const installChiuso = () => { try { return localStorage.getItem('sdm_install_chiuso') === '1'; } catch (e) { return false; } };
+function mostraBarra() {
+  if (standalone() || installChiuso()) return;
+  const bar = $('installBar'); bar.hidden = false;
+  requestAnimationFrame(() => requestAnimationFrame(() => bar.classList.add('visibile')));
+}
+function nascondiBarra(ricorda) {
+  const bar = $('installBar'); bar.classList.remove('visibile');
+  setTimeout(() => { bar.hidden = true; }, 320);
+  if (ricorda) { try { localStorage.setItem('sdm_install_chiuso', '1'); } catch (e) {} }
+}
+// Android e computer: il browser offre l'installazione
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); promptInstall = e; setTimeout(mostraBarra, 4000); });
+addEventListener('appinstalled', () => { promptInstall = null; nascondiBarra(true); toast('App installata: la trovi nella schermata Home'); });
+// iPhone: niente pulsante automatico, mostriamo come fare con Safari
+if (isIOS && !standalone() && location.protocol.startsWith('http')) setTimeout(mostraBarra, 4000);
+async function installa() {
+  if (promptInstall) {
+    promptInstall.prompt();
+    const scelta = await promptInstall.userChoice.catch(() => null);
+    promptInstall = null;
+    nascondiBarra(scelta && scelta.outcome === 'accepted');
+    return;
+  }
+  const condividi = '<svg class="ios-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+  $('installPassi').innerHTML = isIOS
+    ? `<li>Apri questa pagina con <strong>Safari</strong>.</li><li>Tocca il pulsante Condividi ${condividi} in basso.</li><li>Scegli <strong>Aggiungi alla schermata Home</strong>, poi <strong>Aggiungi</strong>.</li>`
+    : `<li>Apri il menu del browser (i tre puntini in alto a destra).</li><li>Scegli <strong>Installa app</strong> oppure <strong>Aggiungi a schermata Home</strong>.</li><li>Conferma con <strong>Installa</strong>.</li>`;
+  $('installDlg').showModal();
+}
+$('installSi').addEventListener('click', installa);
+$('installNo').addEventListener('click', () => nascondiBarra(true));
+document.addEventListener('click', e => { if (e.target.closest('[data-installa]')) { e.preventDefault(); setMenu(false); installa(); } });
+addEventListener('offline', () => toast('Sei senza internet: le ricette già aperte restano disponibili'));
+addEventListener('online', () => toast('Di nuovo online'));
 
 $('slidePrev').innerHTML = pesce(-1);
 $('slideNext').innerHTML = pesce(1);
