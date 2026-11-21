@@ -26,6 +26,8 @@
     --gutter: clamp(16px, 3.5vw, 40px);
     --max: 1200px;
     --radius: 14px;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   }
   *, *::before, *::after { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -123,7 +125,7 @@
   .card { position: relative; background: var(--bianco); border: 1px solid var(--linea); border-radius: var(--radius); overflow: hidden; }
   .card > a { display: block; text-decoration: none; color: inherit; height: 100%; }
   .card .pic { border-radius: 0; }
-  .card > a:hover img { transform: scale(1.04); }
+  @media (hover: hover) and (pointer: fine) { .card > a:hover img { transform: scale(1.04); } }
   .card > a:hover h3 { color: var(--raffadali); }
   .card-body { padding: .75rem .9rem .95rem; }
   .card-cat { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--raffadali); }
@@ -322,8 +324,23 @@
   .ingredients { list-style: none; margin: 0; padding: 0; }
   .ingredients li { border-top: 1px solid var(--linea); }
   .ingredients label { display: flex; gap: .75rem; align-items: center; padding: .65rem 0; cursor: pointer; }
-  .ingredients input { width: 20px; height: 20px; accent-color: var(--raffadali); flex: none; }
-  .ingredients input:checked + span { text-decoration: line-through; color: var(--testo-2); }
+  .ingredients input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .ingredients label { position: relative; }
+  .box { flex: none; width: 22px; height: 22px; border: 1.5px solid #B9C8D0; border-radius: 6px; display: grid; place-items: center; background: var(--bianco); transition: background-color 160ms ease, border-color 160ms ease; }
+  .box svg { width: 16px; height: 16px; fill: none; stroke: var(--bianco); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .spunta { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 220ms var(--ease-out) 40ms; }
+  .ingredients input:checked + .box { background: var(--raffadali); border-color: var(--raffadali); }
+  .ingredients input:checked + .box .spunta { stroke-dashoffset: 0; }
+  .ingredients input:focus-visible + .box { outline: 3px solid var(--lisca); outline-offset: 2px; }
+  .ing-testo { position: relative; transition: color 200ms ease; }
+  .ing-testo::after { content: ""; position: absolute; left: 0; right: 0; top: 52%; height: 1.5px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 240ms var(--ease-out); }
+  .ingredients input:checked ~ .ing-testo { color: var(--testo-2); }
+  .ingredients input:checked ~ .ing-testo::after { transform: scaleX(1); }
+  .pronto { display: flex; align-items: center; gap: .5rem; margin: .4rem 0 .6rem; padding: .7rem .9rem; border-radius: 10px; background: var(--schiuma); color: var(--raffadali); font-weight: 600;
+    opacity: 0; transform: translateY(6px); transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out); }
+  .pronto.visibile { opacity: 1; transform: none; }
+  .pronto[hidden] { display: none; }
+  .doses output { display: inline-block; }
   .steps { list-style: none; margin: 0; padding: 0; counter-reset: passo; }
   .steps li { counter-increment: passo; display: grid; grid-template-columns: 2.6rem 1fr; gap: 1rem; padding: 1.1rem 0; border-top: 1px solid var(--linea); }
   .steps li:first-child { border-top: 0; padding-top: 0; }
@@ -362,12 +379,77 @@
   footer nav a { color: var(--testo-2); text-decoration: none; }
   footer nav a:hover { color: var(--raffadali); }
 
+  /* ── Animazioni dei pulsanti ───────────────────────── */
+  /* Risposta al tocco: si rimpiccioliscono appena, come un tasto vero */
+  .btn, .pill-link, .round-btn, .slider-arrow, .heart, .doses button, .menu-btn, .ric-btn, .filter {
+    transition: transform 160ms var(--ease-out), background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+  .btn:active, .pill-link:active, .round-btn:active, .doses button:active, .menu-btn:active, .ric-btn:active { transform: scale(.97); }
+  .heart:active, .slider-arrow:active { transform: scale(.92); }
+  .slider-arrow:active { transform: translateY(-50%) scale(.92); }
+
+  /* Pulsante che si riempie d'acqua (solo con il mouse) */
+  .btn, .pill-link { position: relative; overflow: hidden; isolation: isolate; }
+  .btn { --onda: var(--abisso); --onda-testo: var(--bianco); }
+  .btn-linea { --onda: var(--schiuma); --onda-testo: var(--raffadali); }
+  .shop-intro .btn { --onda: var(--lisca); --onda-testo: var(--bianco); }
+  .pill-link { --onda: var(--raffadali); --onda-testo: var(--bianco); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn::before, .pill-link::before {
+      content: ""; position: absolute; z-index: -1; left: -40px; top: 0; width: calc(100% + 80px); height: calc(100% + 14px);
+      background: var(--onda); pointer-events: none;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12'%3E%3Cpath d='M0 6 Q10 0 20 6 T40 6 V12 H0Z'/%3E%3C/svg%3E") 0 0 / 40px 12px repeat-x, linear-gradient(#000 0 0) 0 11px / 100% 100% no-repeat;
+              mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12'%3E%3Cpath d='M0 6 Q10 0 20 6 T40 6 V12 H0Z'/%3E%3C/svg%3E") 0 0 / 40px 12px repeat-x, linear-gradient(#000 0 0) 0 11px / 100% 100% no-repeat;
+      translate: 0 100%; transition: translate 280ms var(--ease-out);
+      animation: onda 900ms linear infinite paused;
+    }
+    .btn:hover::before, .pill-link:hover::before { translate: 0 -14px; animation-play-state: running; }
+    .btn:hover, .pill-link:hover { color: var(--onda-testo); }
+    .btn-linea:hover { border-color: var(--lisca); }
+    .btn-pieno:hover, .pill-link:hover, .shop-intro .btn:hover { background-color: inherit; }
+    .btn-pieno:hover { background-color: var(--raffadali); }
+    .pill-link:hover { background-color: var(--schiuma); }
+    .shop-intro .btn:hover { background-color: var(--crema); }
+  }
+  @keyframes onda { to { transform: translateX(40px); } }
+
+  /* Pesciolino che nuota (al posto delle frecce) */
+  .pesce-ico { width: 26px; height: 16px; flex: none; overflow: visible; transition: translate 220ms var(--ease-out); }
+  .pesce-ico .corpo { fill: currentColor; }
+  .pesce-ico .occhio { fill: var(--bianco); }
+  .round-btn.pieno .pesce-ico .occhio, .pill-link .pesce-ico .occhio { fill: var(--raffadali); }
+  .pesce-ico .coda { fill: currentColor; transform-box: fill-box; transform-origin: 0% 50%; }
+  .pesce-ico.gira { transform: scaleX(-1); } /* il disegno guarda a sinistra: per "avanti" lo giriamo */
+  .pill-link { display: inline-flex; align-items: center; gap: .45rem; }
+  .pill-link .pesce-ico { width: 20px; height: 12px; }
+  .round-btn .pesce-ico { width: 22px; height: 14px; }
+  .slider-arrow .pesce-ico { width: 26px; height: 16px; }
+  @media (hover: hover) and (pointer: fine) {
+    .pill-link:hover .pesce-ico, .round-btn[data-dir="1"]:hover .pesce-ico, .slider-arrow.next:hover .pesce-ico { translate: 4px 0; }
+    .round-btn[data-dir="-1"]:hover .pesce-ico, .slider-arrow.prev:hover .pesce-ico { translate: -4px 0; }
+    .pill-link:hover .coda, .round-btn:hover .coda, .slider-arrow:hover .coda { animation: coda 260ms linear infinite alternate; }
+  }
+  .round-btn:active .pesce-ico { translate: calc(var(--d, 1) * 4px) 0; }
+  .round-btn[data-dir="-1"] { --d: -1; }
+  @keyframes coda { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
+
+  /* Bollicine (cuore salvato, ingredienti pronti) */
+  .bolla { position: fixed; z-index: 80; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; pointer-events: none;
+    border: 1.5px solid var(--lisca); background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.95) 0 22%, rgba(230,241,246,.55) 23% 100%); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn::before, .pill-link::before { transition: none; animation: none; }
+    .pesce-ico, .spunta, .ing-testo::after { transition: none; }
+    .pill-link:hover .coda, .round-btn:hover .coda, .slider-arrow:hover .coda { animation: none; }
+    .pronto { transform: none; }
+  }
+
   @media print {
     .cats, .search, .fav-link, .recipe-actions, .similar, footer, .shop-note, .heart { display: none !important; }
     body { background: #fff; }
     .recipe-cols { grid-template-columns: 1fr 1.6fr; }
     .ingredients-box { position: static; border: 0; padding: 0; }
-    .ingredients input { display: none; }
+    .box { display: none; }
   }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
 </style>
@@ -421,8 +503,8 @@
     <section class="hero" id="hero" aria-roledescription="carosello" aria-label="Ricette in evidenza">
       <div class="slides" id="slides"></div>
       <div class="bars" id="slideBars" aria-hidden="true"></div>
-      <button class="slider-arrow prev" type="button" id="slidePrev" aria-label="Indietro"><svg class="ico" aria-hidden="true"><use href="#i-sinistra"/></svg></button>
-      <button class="slider-arrow next" type="button" id="slideNext" aria-label="Avanti"><svg class="ico" aria-hidden="true"><use href="#i-destra"/></svg></button>
+      <button class="slider-arrow prev" type="button" id="slidePrev" aria-label="Indietro"></button>
+      <button class="slider-arrow next" type="button" id="slideNext" aria-label="Avanti"></button>
     </section>
     <section class="cat-block" aria-label="Categorie di ricette"><div class="wrap cat-cols" id="catCols"></div></section>
     <div id="homeRows"></div>
@@ -475,6 +557,7 @@
             <span id="dLabel">persone</span>
           </div>
           <ul class="ingredients" id="rIng"></ul>
+          <p class="pronto" id="rPronto" role="status" hidden>Tutto pronto, si cucina!</p>
         </section>
         <section aria-labelledby="stepsTitle">
           <h2 class="box-title" id="stepsTitle">Preparazione</h2>
@@ -551,6 +634,27 @@ const $ = id => document.getElementById(id);
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const safeUrl = u => /^(https?:|data:image\/|\.?\/?img\/)/i.test(String(u || '')) ? String(u) : '';
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const pesce = dir => `<svg class="pesce-ico${dir > 0 ? ' gira' : ''}" viewBox="0 0 28 16" aria-hidden="true"><path class="coda" d="M18 8 L26 2.5 Q24 8 26 13.5Z"/><path class="corpo" d="M1.5 8 C5 2 13 1.5 19 6.2 L19 9.8 C13 14.5 5 14 1.5 8Z"/><circle class="occhio" cx="6.2" cy="7.1" r="1.3"/></svg>`;
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+// Bollicine che salgono da un elemento (solo per momenti rari: salvare, finire gli ingredienti)
+function bollicine(el, n = 7) {
+  if (REDUCE || !el) return;
+  const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  for (let k = 0; k < n; k++) {
+    const b = document.createElement('span');
+    b.className = 'bolla';
+    const size = 6 + Math.random() * 7;
+    Object.assign(b.style, { left: cx + 'px', top: cy + 'px', width: size + 'px', height: size + 'px', margin: `${-size / 2}px 0 0 ${-size / 2}px` });
+    document.body.appendChild(b);
+    const dx = (Math.random() - .5) * 46, dy = -(34 + Math.random() * 44);
+    b.animate([
+      { transform: 'translate(0, 0) scale(.6)', opacity: 0 },
+      { transform: `translate(${dx * .3}px, ${dy * .3}px) scale(1)`, opacity: 1, offset: .25 },
+      { transform: `translate(${dx}px, ${dy}px) scale(.9)`, opacity: 0 }
+    ], { duration: 600 + Math.random() * 250, delay: k * 35, easing: EASE_OUT, fill: 'both' }).finished.then(() => b.remove());
+  }
+}
 const icon = (id, cls = 'ico') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
 const telHref = 'tel:' + SHOP.telefono.replace(/[^\d+]/g, '');
 const mapHref = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Pescheria Sapore di Mare, ' + SHOP.indirizzo);
@@ -589,6 +693,11 @@ function updateFavUI() {
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-fav]'); if (!b) return;
   e.preventDefault(); toggleFav(b.dataset.fav);
+  if (favorites.has(String(b.dataset.fav)) && !REDUCE) {
+    const h = b.querySelector('svg');
+    h.animate([{ transform: 'scale(.7)' }, { transform: 'scale(1.18)', offset: .55 }, { transform: 'scale(1)' }], { duration: 380, easing: EASE_OUT });
+    bollicine(b);
+  }
   if (location.hash === '#/preferiti' && !b.id) route();
 });
 
@@ -628,9 +737,9 @@ let HERO = [];
 function rowSection(id, title, href, items) {
   return `<section class="section"><div class="wrap">
     <div class="sec-head"><h2>${esc(title)}</h2><div class="sec-tools">
-      <a class="pill-link" href="${href}">Scopri tutte</a>
-      <button class="round-btn" type="button" data-row="${id}" data-dir="-1" aria-label="Indietro">${icon('sinistra')}</button>
-      <button class="round-btn pieno" type="button" data-row="${id}" data-dir="1" aria-label="Avanti">${icon('destra')}</button>
+      <a class="pill-link" href="${href}">Scopri tutte${pesce(1)}</a>
+      <button class="round-btn" type="button" data-row="${id}" data-dir="-1" aria-label="Indietro">${pesce(-1)}</button>
+      <button class="round-btn pieno" type="button" data-row="${id}" data-dir="1" aria-label="Avanti">${pesce(1)}</button>
     </div></div>
     <div class="row" id="${id}">${items}</div>
   </div></section>`;
@@ -651,9 +760,9 @@ function renderHome() {
     rowSection('rowTop', 'Le più richieste', '#/ricette', grid([...tops, ...RECIPES.filter(r => !r.top)].slice(0, 8))) +
     CATS.map(c => rowSection('row-' + c, catTitle(c), catHref(c), grid(RECIPES.filter(r => r.cat === c)))).join('') +
     `<section class="section"><div class="wrap"><div class="band">
-      <div class="sec-head"><h2>I consigli del banco</h2><div class="sec-tools"><a class="pill-link" href="#/guide">Scopri tutti</a>
-        <button class="round-btn" type="button" data-row="rowTips" data-dir="-1" aria-label="Indietro">${icon('sinistra')}</button>
-        <button class="round-btn pieno" type="button" data-row="rowTips" data-dir="1" aria-label="Avanti">${icon('destra')}</button></div></div>
+      <div class="sec-head"><h2>I consigli del banco</h2><div class="sec-tools"><a class="pill-link" href="#/guide">Scopri tutti${pesce(1)}</a>
+        <button class="round-btn" type="button" data-row="rowTips" data-dir="-1" aria-label="Indietro">${pesce(-1)}</button>
+        <button class="round-btn pieno" type="button" data-row="rowTips" data-dir="1" aria-label="Avanti">${pesce(1)}</button></div></div>
       <div class="row" id="rowTips">${GUIDES.map(tipCard).join('')}</div>
     </div></div></section>`;
 }
@@ -770,14 +879,43 @@ function scaleIngredient(text) {
   const n = parseFloat(m[1].replace(',', '.')) * doses / baseDoses;
   return fmtQty(n, m[3]) + m[2] + m[3];
 }
+const spunta = '<span class="box" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="spunta" pathLength="1" d="M5 12.5l4.2 4.2L19 7"/></svg></span>';
 function renderIngredients() {
   $('dCount').textContent = doses;
   $('dLabel').textContent = doses === 1 ? 'persona' : 'persone';
   $('dMinus').disabled = doses <= 1;
-  $('rIng').innerHTML = (current.ingredients || []).map(i => `<li><label><input type="checkbox"/><span>${esc(scaleIngredient(i))}</span></label></li>`).join('');
+  $('rIng').innerHTML = (current.ingredients || []).map(i => `<li><label><input type="checkbox"/>${spunta}<span class="ing-testo">${esc(scaleIngredient(i))}</span></label></li>`).join('');
+  $('rPronto').classList.remove('visibile'); $('rPronto').hidden = true;
 }
-$('dMinus').addEventListener('click', () => { if (doses > 1) { doses--; renderIngredients(); } });
-$('dPlus').addEventListener('click', () => { if (doses < 20) { doses++; renderIngredients(); } });
+// Cambiando le dosi: il numero scorre e le quantità cambiate si illuminano un attimo
+function cambiaDosi(dir) {
+  const prima = [...$('rIng').querySelectorAll('.ing-testo')].map(x => x.textContent);
+  const spuntati = [...$('rIng').querySelectorAll('input')].map(x => x.checked);
+  doses += dir;
+  renderIngredients();
+  [...$('rIng').querySelectorAll('input')].forEach((x, k) => { x.checked = spuntati[k]; });
+  aggiornaPronto(false);
+  if (REDUCE) return;
+  $('dCount').animate([{ transform: `translateY(${dir * 70}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 200, easing: EASE_OUT });
+  $('rIng').querySelectorAll('.ing-testo').forEach((x, k) => {
+    if (x.textContent !== prima[k]) x.animate([{ color: '#1B7A9C' }, { color: getComputedStyle(x).color }], { duration: 700, easing: 'ease' });
+  });
+}
+$('dMinus').addEventListener('click', () => { if (doses > 1) cambiaDosi(-1); });
+$('dPlus').addEventListener('click', () => { if (doses < 20) cambiaDosi(1); });
+// Tutti gli ingredienti spuntati: "Tutto pronto, si cucina!"
+function aggiornaPronto(festeggia = true) {
+  const boxes = [...$('rIng').querySelectorAll('input')], tutti = boxes.length > 0 && boxes.every(x => x.checked);
+  const el = $('rPronto'), eraVisibile = el.classList.contains('visibile');
+  if (tutti) {
+    el.hidden = false;
+    requestAnimationFrame(() => el.classList.add('visibile'));
+    if (festeggia && !eraVisibile) bollicine(el, 10);
+  } else {
+    el.classList.remove('visibile'); el.hidden = true;
+  }
+}
+$('rIng').addEventListener('change', () => aggiornaPronto());
 
 function renderRecipe(id) {
   const r = findRecipe(id);
@@ -935,6 +1073,8 @@ $('shopFacts').innerHTML = [
 $('mapLink').href = mapHref;
 $('footText').textContent = `Pescheria Sapore di Mare, ${SHOP.indirizzo}. © ${new Date().getFullYear()}`;
 
+$('slidePrev').innerHTML = pesce(-1);
+$('slideNext').innerHTML = pesce(1);
 renderHome();
 route();
 updateFavUI();
