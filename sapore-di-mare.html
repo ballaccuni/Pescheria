@@ -37,6 +37,7 @@
   a { color: var(--raffadali); }
   img { max-width: 100%; display: block; }
   button { font: inherit; color: inherit; }
+  a, button, label { -webkit-tap-highlight-color: transparent; }
   :focus-visible { outline: 3px solid var(--lisca); outline-offset: 2px; border-radius: 6px; }
   .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -394,15 +395,19 @@
   .btn-linea { --onda: var(--schiuma); --onda-testo: var(--raffadali); }
   .shop-intro .btn { --onda: var(--lisca); --onda-testo: var(--bianco); }
   .pill-link { --onda: var(--raffadali); --onda-testo: var(--bianco); }
-  @media (hover: hover) and (pointer: fine) {
-    .btn::before, .pill-link::before {
+  .btn::before, .pill-link::before {
       content: ""; position: absolute; z-index: -1; left: -40px; top: 0; width: calc(100% + 80px); height: calc(100% + 14px);
       background: var(--onda); pointer-events: none;
       -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12'%3E%3Cpath d='M0 6 Q10 0 20 6 T40 6 V12 H0Z'/%3E%3C/svg%3E") 0 0 / 40px 12px repeat-x, linear-gradient(#000 0 0) 0 11px / 100% 100% no-repeat;
               mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='12'%3E%3Cpath d='M0 6 Q10 0 20 6 T40 6 V12 H0Z'/%3E%3C/svg%3E") 0 0 / 40px 12px repeat-x, linear-gradient(#000 0 0) 0 11px / 100% 100% no-repeat;
       translate: 0 100%; transition: translate 280ms var(--ease-out);
       animation: onda 900ms linear infinite paused;
-    }
+  }
+  /* Telefono: al tocco l'acqua riempie il pulsante in un lampo, poi si ritira */
+  .btn.tocco::before, .pill-link.tocco::before { translate: 0 -14px; transition-duration: 200ms; animation-play-state: running; }
+  .btn.tocco, .pill-link.tocco { color: var(--onda-testo); }
+  .btn-linea.tocco { border-color: var(--lisca); }
+  @media (hover: hover) and (pointer: fine) {
     .btn:hover::before, .pill-link:hover::before { translate: 0 -14px; animation-play-state: running; }
     .btn:hover, .pill-link:hover { color: var(--onda-testo); }
     .btn-linea:hover { border-color: var(--lisca); }
@@ -655,6 +660,33 @@ function bollicine(el, n = 7) {
     ], { duration: 600 + Math.random() * 250, delay: k * 35, easing: EASE_OUT, fill: 'both' }).finished.then(() => b.remove());
   }
 }
+// Tocco sul telefono: onda nel pulsante e scatto del pesciolino
+let ondaLink = 0;
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'touch' || REDUCE) return;
+  const w = e.target.closest('.btn, .pill-link');
+  if (w && !w.disabled) {
+    w.classList.add('tocco');
+    clearTimeout(w._onda); w._onda = setTimeout(() => w.classList.remove('tocco'), 420);
+    if (w.matches('a[href^="#"]')) ondaLink = Date.now();
+  }
+  const f = e.target.closest('.round-btn, .slider-arrow, .pill-link');
+  const fish = f && f.querySelector('.pesce-ico');
+  if (fish) {
+    const d = (f.dataset.dir === '-1' || f.classList.contains('prev')) ? -1 : 1;
+    fish.animate([{ translate: '0 0' }, { translate: `${d * 7}px 0`, offset: .35 }, { translate: '0 0' }], { duration: 380, easing: EASE_OUT });
+    fish.querySelector('.coda').animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-22deg)' }, { transform: 'rotate(22deg)' }, { transform: 'rotate(0)' }], { duration: 300, easing: 'linear' });
+  }
+}, { passive: true });
+// Per i pulsanti che cambiano pagina, si aspetta un istante così l'onda si vede
+document.addEventListener('click', e => {
+  const a = e.target.closest('a.btn[href^="#"], a.pill-link[href^="#"]');
+  if (!a || Date.now() - ondaLink > 700) return;
+  ondaLink = 0;
+  e.preventDefault(); e.stopPropagation();
+  const href = a.getAttribute('href');
+  setTimeout(() => { if (location.hash === href) route(); else location.hash = href; }, 170);
+}, true);
 const icon = (id, cls = 'ico') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
 const telHref = 'tel:' + SHOP.telefono.replace(/[^\d+]/g, '');
 const mapHref = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Pescheria Sapore di Mare, ' + SHOP.indirizzo);
