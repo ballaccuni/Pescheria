@@ -1,0 +1,17 @@
+{
+  "name": "Sapore di Mare, ricette di mare",
+  "short_name": "Sapore di Mare",
+  "description": "Le ricette di mare della Pescheria Sapore di Mare di Raffadali, anche senza internet.",
+  "lang": "it",
+  "start_url": "./sapore-di-mare.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1B7A9C",
+  "icons": [
+    { "src": "img/app/icona-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/app/icona-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/app/icona-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
