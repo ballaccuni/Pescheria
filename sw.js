@@ -13,14 +13,14 @@ const FILE_BASE = [
   "./img/app/icona-192.png",
   "./img/app/icona-512.png",
   "./img/app/apple-touch-icon.png",
-  "./img/ricette/astice-alla-catalana.svg",
-  "./img/ricette/branzino-al-sale.svg",
-  "./img/ricette/linguine-gambero-rosso.svg",
-  "./img/ricette/orata-al-cartoccio.svg",
+  "./img/ricette/astice-alla-catalana.jpg",
+  "./img/ricette/branzino-al-sale.jpg",
+  "./img/ricette/linguine-gambero-rosso.jpg",
+  "./img/ricette/orata-al-cartoccio.jpg",
   "./img/ricette/polpo-alla-luciana.jpg",
-  "./img/ricette/risotto-nero-di-seppia.svg",
-  "./img/ricette/vongole-alla-marinara.svg",
-  "./img/ricette/zuppa-di-pesce-siciliana.svg"
+  "./img/ricette/risotto-nero-di-seppia.jpg",
+  "./img/ricette/vongole-alla-marinara.jpg",
+  "./img/ricette/zuppa-di-pesce-siciliana.jpg"
 ];
 
 self.addEventListener('install', e => {
