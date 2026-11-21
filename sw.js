@@ -1,6 +1,6 @@
 // Sapore di Mare: conserva il sito sul telefono, così le ricette si aprono anche senza internet.
 // Quando cambi il sito, aumenta il numero di VERSIONE: i telefoni scaricheranno la versione nuova.
-const VERSIONE = 'sdm-v2';
+const VERSIONE = 'sdm-v3';
 const FILE_BASE = [
   "./",
   "./sapore-di-mare.html",

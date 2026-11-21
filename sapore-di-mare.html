@@ -720,7 +720,7 @@ const pesce = dir => `<svg class="pesce-ico${dir > 0 ? ' gira' : ''}" viewBox="0
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
 // Bollicine che salgono da un elemento (solo per momenti rari: salvare, finire gli ingredienti)
-function bollicine(el, n = 7, punto) {
+function bollicine(el, n = 7, punto, lentezza = 1) {
   if (REDUCE || !el) return;
   const r = el.getBoundingClientRect(), cx = punto ? r.left + r.width * punto[0] : r.left + r.width / 2, cy = punto ? r.top + r.height * punto[1] : r.top + r.height / 2;
   for (let k = 0; k < n; k++) {
@@ -734,7 +734,7 @@ function bollicine(el, n = 7, punto) {
       { transform: 'translate(0, 0) scale(.6)', opacity: 0 },
       { transform: `translate(${dx * .3}px, ${dy * .3}px) scale(1)`, opacity: 1, offset: .25 },
       { transform: `translate(${dx}px, ${dy}px) scale(.9)`, opacity: 0 }
-    ], { duration: 600 + Math.random() * 250, delay: k * 35, easing: EASE_OUT, fill: 'both' }).finished.then(() => b.remove());
+    ], { duration: (600 + Math.random() * 250) * lentezza, delay: k * 35 * lentezza, easing: EASE_OUT, fill: 'both' }).finished.then(() => b.remove());
   }
 }
 // Logo: toccandolo per tornare alla home, il pesce guizza in avanti e fa le bollicine
@@ -744,14 +744,15 @@ document.addEventListener('click', e => {
   if (REDUCE) return;
   const fish = brand.querySelector('.brand-pesce');
   fish.getAnimations().forEach(a => a.cancel());
+  // Nuotata lenta: due colpi di coda morbidi e ritorno al suo posto
   fish.animate([
     { transform: 'translateX(0) rotate(0)' },
-    { transform: 'translateX(-5px) rotate(-8deg)', offset: .18 },
-    { transform: 'translateX(-11px) rotate(7deg)', offset: .4 },
-    { transform: 'translateX(-8px) rotate(-4deg)', offset: .62 },
+    { transform: 'translateX(-4px) rotate(-6deg)', offset: .2 },
+    { transform: 'translateX(-9px) rotate(5deg)', offset: .45 },
+    { transform: 'translateX(-7px) rotate(-3deg)', offset: .7 },
     { transform: 'translateX(0) rotate(0)' }
-  ], { duration: 520, easing: EASE_OUT });
-  bollicine(fish, 5, [.06, .4]);
+  ], { duration: 950, easing: 'cubic-bezier(0.77, 0, 0.175, 1)' });
+  bollicine(fish, 5, [.06, .4], 1.6);
 });
 // Tocco sul telefono: onda nel pulsante e scatto del pesciolino
 let ondaLink = 0;
