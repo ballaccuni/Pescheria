@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etichette Pescheria</title>
+<style>
+@page { size: 100mm 150mm; margin: 0; }
+* { box-sizing: border-box; }
+:root {
+  --bg: #eef2f4; --panel: #fff; --ink: #14212b; --muted: #5b6b77; --line: #cfd8de; --accent: #0d5c7a;
+  --label-font: "Arial Black", "Inter Display", "Helvetica Neue", Arial, sans-serif;
+  --text-font: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--text-font); font-size: 15px; }
+header { background: var(--accent); color: #fff; padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+header h1 { margin: 0; font-size: 20px; }
+header p { margin: 0; opacity: .85; font-size: 13px; }
+main { display: grid; grid-template-columns: minmax(320px, 460px) 1fr; gap: 20px; padding: 20px; align-items: start; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+.panel h2 { margin: 0 0 12px; font-size: 15px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.field label { font-size: 13px; font-weight: bold; }
+.field small { color: var(--muted); font-size: 12px; }
+input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); width: 100%; }
+input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+button { font: inherit; font-weight: bold; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--accent); background: #fff; color: var(--accent); cursor: pointer; }
+button.primary { background: var(--accent); color: #fff; }
+button.danger { border-color: #a33; color: #a33; }
+button:hover { filter: brightness(.95); }
+.hidden { display: none !important; }
+.preview-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.preview-wrap .sheet { box-shadow: 0 4px 18px rgba(0,0,0,.15); }
+.queue { margin-top: 16px; }
+.queue ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.queue li { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+.queue li span { min-width: 0; overflow-wrap: anywhere; }
+.queue li button { padding: 4px 10px; font-size: 13px; }
+.empty { color: var(--muted); font-size: 13px; }
+.hint { font-size: 12px; color: var(--muted); max-width: 380px; text-align: center; }
+
+/* ---------- ETICHETTA 100x150 mm ---------- */
+.sheet { width: 100mm; height: 150mm; background: #fff; color: #000; padding: 4mm; display: flex; overflow: hidden; }
+.frame { flex: 1; border: 0.8mm solid #000; border-radius: 3mm; padding: 4mm; display: flex; flex-direction: column; min-width: 0; }
+.l-name { font-family: var(--label-font); font-weight: 900; line-height: 1; text-align: center; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+.l-latin { text-align: center; font-family: var(--text-font); font-style: italic; font-weight: bold; font-size: 5.4mm; margin-top: 1.5mm; }
+.l-price { margin-top: 3.5mm; border-top: 0.6mm solid #000; border-bottom: 0.6mm solid #000; padding: 2.5mm 0; display: flex; align-items: baseline; justify-content: center; gap: 2mm; white-space: nowrap; }
+.fitme { display: inline-block; }
+.l-price .pin { display: inline-flex; align-items: baseline; gap: 2mm; }
+.l-price .eur { font-family: var(--label-font); font-weight: 900; font-size: 7mm; }
+.l-price .val { font-family: var(--label-font); font-weight: 900; line-height: .95; }
+.l-price .kg { font-family: var(--label-font); font-weight: 900; font-size: 4.6mm; }
+.l-info { margin: 3.5mm 0 0; display: grid; grid-template-columns: auto 1fr; column-gap: 3mm; row-gap: 2.6mm; align-items: baseline; font-family: var(--text-font); }
+.l-info dt { font-size: 2.8mm; text-transform: uppercase; letter-spacing: .2mm; }
+.l-info dd { margin: 0; font-weight: bold; font-size: 4.2mm; overflow-wrap: anywhere; }
+.l-foot { margin-top: auto; text-align: center; font-family: var(--text-font); font-size: 2.8mm; font-weight: bold; border-top: 0.3mm solid #000; padding-top: 2mm; }
+
+#printArea { display: none; }
+@media print {
+  html, body { background: #fff; margin: 0; }
+  header, main { display: none !important; }
+  #printArea { display: block; }
+  #printArea .sheet { page-break-after: always; break-after: page; }
+  #printArea .sheet:last-child { page-break-after: auto; break-after: auto; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Etichette Pescheria · 100×150 mm</h1>
+  <p>Compila a sinistra, controlla l'anteprima, poi premi Stampa.</p>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Dati del prodotto</h2>
+
+    <div class="field">
+      <label for="preset">Scegli un pesce dall'elenco (facoltativo)</label>
+      <select id="preset"></select>
+      <small>Riempie nome e nome latino. Poi puoi cambiare tutto.</small>
+    </div>
+
+    <div class="field">
+      <label for="nome">Denominazione commerciale</label>
+      <input id="nome" value="Orata">
+    </div>
+    <div class="field">
+      <label for="latino">Nome scientifico (latino)</label>
+      <input id="latino" value="Sparus aurata">
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="prezzo">Prezzo (€)</label>
+        <input id="prezzo" inputmode="decimal" value="13,00">
+      </div>
+      <div class="field">
+        <label for="unita">Unità</label>
+        <select id="unita">
+          <option value="AL KG">al kg</option>
+          <option value="AL PEZZO">al pezzo</option>
+          <option value="ALL'ETTO">all'etto</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="metodo">Metodo di produzione</label>
+      <select id="metodo">
+        <option value="allevato">Allevato</option>
+        <option value="mare">Pescato (in mare)</option>
+        <option value="dolce">Pescato in acque dolci</option>
+      </select>
+    </div>
+
+    <div class="field" id="f-paese">
+      <label for="paese">Paese di allevamento / di cattura</label>
+      <input id="paese" list="paesi" value="Italia">
+      <datalist id="paesi">
+        <option value="Italia"><option value="Grecia"><option value="Spagna"><option value="Turchia"><option value="Croazia"><option value="Norvegia"><option value="Francia"><option value="Albania"><option value="Tunisia"><option value="Paesi Bassi"><option value="Irlanda"><option value="Scozia (Regno Unito)">
+      </datalist>
+    </div>
+
+    <div class="field hidden" id="f-zona">
+      <label for="zona">Zona di cattura (FAO)</label>
+      <input id="zona" list="zone" value="FAO 37.2.1 Mar Adriatico">
+      <datalist id="zone">
+        <option value="FAO 37.1.1 Mare delle Baleari">
+        <option value="FAO 37.1.2 Golfo del Leone">
+        <option value="FAO 37.1.3 Mare di Sardegna">
+        <option value="FAO 37.2.1 Mar Adriatico">
+        <option value="FAO 37.2.2 Mar Ionio">
+        <option value="FAO 37.3.1 Mar Egeo">
+        <option value="FAO 37.3.2 Mar di Levante">
+        <option value="FAO 37.4.2 Mar Nero">
+        <option value="FAO 37 Mar Mediterraneo">
+        <option value="FAO 27 Atlantico nord-orientale">
+        <option value="FAO 21 Atlantico nord-occidentale">
+        <option value="FAO 34 Atlantico centro-orientale">
+        <option value="FAO 41 Atlantico sud-occidentale">
+        <option value="FAO 47 Atlantico sud-orientale">
+        <option value="FAO 51 Oceano Indiano occidentale">
+        <option value="FAO 57 Oceano Indiano orientale">
+        <option value="FAO 61 Pacifico nord-occidentale">
+        <option value="FAO 87 Pacifico sud-orientale">
+      </datalist>
+      <small>Puoi scegliere dall'elenco o scrivere quello che c'è sulla fattura.</small>
+    </div>
+
+    <div class="field hidden" id="f-attrezzo">
+      <label for="attrezzo">Attrezzo di pesca</label>
+      <select id="attrezzo">
+        <option>Reti da traino</option>
+        <option>Reti da imbrocco e reti analoghe</option>
+        <option>Reti da circuizione e reti da raccolta</option>
+        <option>Ami e palangari</option>
+        <option>Sciabiche</option>
+        <option>Draghe</option>
+        <option>Nasse e trappole</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="stato">Stato</label>
+        <select id="stato">
+          <option>Fresco</option>
+          <option>Decongelato</option>
+          <option>Congelato</option>
+          <option>Surgelato</option>
+          <option>Vivo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="conserv">Conservazione</label>
+        <input id="conserv" value="da 0 °C a +4 °C">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="extra">Nota aggiuntiva (facoltativa)</label>
+      <input id="extra" placeholder="es. Lotto 1234 · Pulito · Prodotto decongelato, non ricongelare">
+    </div>
+
+    <div class="buttons">
+      <button class="primary" id="btnPrint">Stampa questa etichetta</button>
+      <button id="btnAdd">Aggiungi alla lista</button>
+    </div>
+
+    <div class="queue">
+      <h2>Lista da stampare</h2>
+      <ul id="queueList"></ul>
+      <p class="empty" id="queueEmpty">Nessuna etichetta in lista. Usa "Aggiungi alla lista" per stamparne tante insieme.</p>
+      <div class="buttons">
+        <button class="primary" id="btnPrintAll">Stampa tutta la lista</button>
+        <button class="danger" id="btnClear">Svuota lista</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="preview-wrap">
+    <div id="preview"></div>
+    <p class="hint">Stampa: formato carta 100×150 mm, margini "Nessuno", scala 100%. La lista resta salvata su questo computer anche se chiudi la pagina.</p>
+  </section>
+</main>
+
+<div id="printArea"></div>
+
+<script>
+const PESCI = [
+  ["Orata","Sparus aurata"],["Spigola (Branzino)","Dicentrarchus labrax"],["Sarago maggiore","Diplodus sargus"],
+  ["Dentice","Dentex dentex"],["Pagello fragolino","Pagellus erythrinus"],["Ricciola","Seriola dumerili"],
+  ["Lampuga","Coryphaena hippurus"],["Triglia di scoglio","Mullus surmuletus"],["Triglia di fango","Mullus barbatus"],
+  ["Sogliola","Solea solea"],["Rombo chiodato","Scophthalmus maximus"],["Nasello","Merluccius merluccius"],
+  ["Merluzzo bianco","Gadus morhua"],["Sgombro","Scomber scombrus"],["Lanzardo","Scomber colias"],
+  ["Alice (Acciuga)","Engraulis encrasicolus"],["Sardina","Sardina pilchardus"],["Cefalo (Muggine)","Mugil cephalus"],
+  ["Gallinella (Cappone)","Chelidonichthys lucerna"],["Rana pescatrice","Lophius piscatorius"],["Scorfano rosso","Scorpaena scrofa"],
+  ["Pesce spada","Xiphias gladius"],["Tonno rosso","Thunnus thynnus"],["Tonno pinna gialla","Thunnus albacares"],
+  ["Salmone atlantico","Salmo salar"],["Trota iridea","Oncorhynchus mykiss"],["Palombo","Mustelus mustelus"],
+  ["Calamaro","Loligo vulgaris"],["Totano","Todarodes sagittatus"],["Seppia","Sepia officinalis"],
+  ["Polpo","Octopus vulgaris"],["Moscardino bianco","Eledone cirrhosa"],["Moscardino muschiato","Eledone moschata"],
+  ["Gambero rosa","Parapenaeus longirostris"],["Gambero rosso","Aristaeomorpha foliacea"],["Gambero viola","Aristeus antennatus"],
+  ["Mazzancolla","Penaeus kerathurus"],["Scampo","Nephrops norvegicus"],["Canocchia (Pannocchia)","Squilla mantis"],
+  ["Cozza (Mitilo)","Mytilus galloprovincialis"],["Vongola verace","Ruditapes decussatus"],["Vongola verace filippina","Ruditapes philippinarum"],
+  ["Vongola (Lupino)","Chamelea gallina"],["Ostrica concava","Crassostrea gigas"],["Cannolicchio","Ensis siliqua"]
+];
+const $ = id => document.getElementById(id);
+const FIELDS = ["nome","latino","prezzo","unita","metodo","paese","zona","attrezzo","stato","conserv","extra"];
+
+// elenco pesci
+const sel = $("preset");
+sel.add(new Option("— scegli —", ""));
+PESCI.forEach(([n,l], i) => sel.add(new Option(`${n} (${l})`, i)));
+sel.addEventListener("change", () => {
+  if (sel.value === "") return;
+  const [n,l] = PESCI[sel.value];
+  $("nome").value = n; $("latino").value = l;
+  if (/Cozza|Vongola|Ostrica|Cannolicchio/.test(n)) $("stato").value = "Vivo";
+  render();
+});
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function formatPrezzo(p){
+  const n = parseFloat(String(p).replace(/\s|€/g,"").replace(",", "."));
+  return isNaN(n) ? String(p) : n.toFixed(2).replace(".", ",");
+}
+function read(){ const d = {}; FIELDS.forEach(f => d[f] = $(f).value.trim()); return d; }
+
+function labelHTML(d){
+  const rows = [];
+  if (d.metodo === "allevato") {
+    rows.push(["Metodo di produzione","ALLEVATO"]);
+    rows.push(["Paese di allevamento", d.paese]);
+  } else if (d.metodo === "mare") {
+    rows.push(["Metodo di produzione","PESCATO"]);
+    rows.push(["Zona di cattura", d.zona]);
+    rows.push(["Attrezzo di pesca", d.attrezzo]);
+  } else {
+    rows.push(["Metodo di produzione","PESCATO IN ACQUE DOLCI"]);
+    rows.push(["Paese di cattura", d.paese]);
+    rows.push(["Attrezzo di pesca", d.attrezzo]);
+  }
+  rows.push(["Stato", d.stato]);
+  if (d.conserv) rows.push(["Conservazione", d.conserv]);
+  const info = rows.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v).toUpperCase()}</dd>`).join("");
+  return `<div class="sheet"><div class="frame">
+    <div class="l-name"><span class="fitme">${esc(d.nome)}</span></div>
+    <div class="l-latin">(${esc(d.latino)})</div>
+    <div class="l-price"><span class="fitme pin"><span class="eur">€</span><span class="val">${esc(formatPrezzo(d.prezzo))}</span><span class="kg">${esc(d.unita)}</span></span></div>
+    <dl class="l-info">${info}</dl>
+    <div class="l-foot">${d.extra ? esc(d.extra) + "<br>" : ""}Prodotto della pesca · Reg. (UE) 1379/2013</div>
+  </div></div>`;
+}
+
+// adatta le scritte grandi alla larghezza dell'etichetta
+function fit(container){
+  container.querySelectorAll(".sheet").forEach(sheet => {
+    const name = sheet.querySelector(".l-name"), nIn = name.querySelector(".fitme");
+    let size = 22; name.style.fontSize = size + "mm";
+    name.style.whiteSpace = ""; nIn.style.display = "";
+    while (nIn.offsetWidth > name.clientWidth && size > 13) { size -= 0.5; name.style.fontSize = size + "mm"; }
+    if (nIn.offsetWidth > name.clientWidth) {
+      // nome lungo: va su due righe
+      name.style.whiteSpace = "normal"; nIn.style.display = "block";
+      size = 16; name.style.fontSize = size + "mm";
+      const twoLines = () => nIn.offsetHeight <= parseFloat(getComputedStyle(name).fontSize) * 2.1 && nIn.scrollWidth <= name.clientWidth;
+      while (!twoLines() && size > 7) { size -= 0.5; name.style.fontSize = size + "mm"; }
+    }
+    const price = sheet.querySelector(".l-price"), pIn = price.querySelector(".pin"), val = price.querySelector(".val");
+    size = 21; val.style.fontSize = size + "mm";
+    while (pIn.offsetWidth > price.clientWidth && size > 10) { size -= 0.5; val.style.fontSize = size + "mm"; }
+  });
+}
+
+function toggleFields(){
+  const m = $("metodo").value;
+  $("f-paese").classList.toggle("hidden", m === "mare");
+  $("f-zona").classList.toggle("hidden", m !== "mare");
+  $("f-attrezzo").classList.toggle("hidden", m === "allevato");
+  $("f-paese").querySelector("label").textContent = m === "allevato" ? "Paese di allevamento" : "Paese di cattura";
+}
+
+function render(){
+  toggleFields();
+  const p = $("preview");
+  p.innerHTML = labelHTML(read());
+  fit(p);
+}
+FIELDS.forEach(f => { $(f).addEventListener("input", render); $(f).addEventListener("change", render); });
+
+// lista di stampa (salvata nel browser)
+let queue = [];
+try { queue = JSON.parse(localStorage.getItem("etichette-lista") || "[]"); } catch(e) { queue = []; }
+function saveQueue(){ try { localStorage.setItem("etichette-lista", JSON.stringify(queue)); } catch(e) {} }
+function renderQueue(){
+  const ul = $("queueList"); ul.innerHTML = "";
+  $("queueEmpty").classList.toggle("hidden", queue.length > 0);
+  queue.forEach((d, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span><b>${esc(d.nome)}</b> · € ${esc(formatPrezzo(d.prezzo))} ${esc(d.unita.toLowerCase())}</span>`;
+    const edit = document.createElement("button"); edit.textContent = "Modifica";
+    edit.onclick = () => { FIELDS.forEach(f => $(f).value = d[f] ?? ""); render(); window.scrollTo(0,0); };
+    const del = document.createElement("button"); del.textContent = "Togli"; del.className = "danger";
+    del.onclick = () => { queue.splice(i,1); saveQueue(); renderQueue(); };
+    const box = document.createElement("div"); box.style.display = "flex"; box.style.gap = "6px";
+    box.append(edit, del); li.append(box); ul.append(li);
+  });
+}
+function printLabels(list){
+  const area = $("printArea");
+  area.innerHTML = list.map(labelHTML).join("");
+  area.style.display = "block"; fit(area); area.style.display = "";
+  window.print();
+}
+$("btnAdd").onclick = () => { queue.push(read()); saveQueue(); renderQueue(); };
+$("btnPrint").onclick = () => printLabels([read()]);
+$("btnPrintAll").onclick = () => { if (queue.length) printLabels(queue); };
+$("btnClear").onclick = () => { queue = []; saveQueue(); renderQueue(); };
+
+render(); renderQueue();
+</script>
+</body>
+</html>
