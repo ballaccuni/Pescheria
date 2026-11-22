@@ -26,7 +26,7 @@
     --crema: #FFFAF0;
     --schiuma: #E6F1F6;
     --linea: #E3E9EC;
-    --testo-2: #5D707D;
+    --testo-2: #526570;
     --bianco: #ffffff;
     --font: 'Lexend', system-ui, sans-serif;
     --gutter: clamp(16px, 3.5vw, 40px);
@@ -45,6 +45,10 @@
   button { font: inherit; color: inherit; }
   a, button, label { -webkit-tap-highlight-color: transparent; }
   :focus-visible { outline: 3px solid var(--lisca); outline-offset: 2px; border-radius: 6px; }
+  a, button { touch-action: manipulation; }
+  html { scroll-padding-top: calc(var(--top-h, 72px) + 12px); }
+  .salta { position: fixed; z-index: 100; left: 12px; top: 12px; padding: .7rem 1.1rem; border-radius: 10px; background: var(--ardesia); color: var(--bianco); font-weight: 600; text-decoration: none; transform: translateY(-160%); }
+  .salta:focus { transform: none; }
   .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .ico { width: 1.1em; height: 1.1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -56,6 +60,7 @@
   .brand img { height: 52px; width: auto; }
   .brand-pesce { transform-origin: 30% 50%; }
   .menu-btn {
+    min-width: 44px; min-height: 44px; justify-content: center;
     display: inline-flex; align-items: center; gap: .5rem; background: transparent; border: 0; cursor: pointer;
     color: var(--ardesia); font-weight: 600; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; padding: .55rem .4rem;
   }
@@ -88,7 +93,9 @@
     position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%;
     border: 0; background: var(--raffadali); color: var(--bianco); display: grid; place-items: center; cursor: pointer;
   }
-  .fav-link { display: inline-flex; align-items: center; gap: .45rem; text-decoration: none; color: var(--raffadali); font-weight: 400; white-space: nowrap; }
+  .fav-link { display: inline-flex; align-items: center; gap: .45rem; min-height: 44px; padding: 0 .25rem; text-decoration: none; color: var(--raffadali); font-weight: 400; white-space: nowrap; }
+  .brand { min-height: 44px; }
+  .search button::after, .heart::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; }
   .fav-link .ico { width: 22px; height: 22px; }
   .fav-count { background: var(--raffadali); color: var(--bianco); font-size: .75rem; font-weight: 600; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center; }
 
@@ -135,10 +142,10 @@
   .card > a { display: block; text-decoration: none; color: inherit; height: 100%; }
   .card .pic { border-radius: 0; }
   @media (hover: hover) and (pointer: fine) { .card > a:hover img { transform: scale(1.04); } }
-  .card > a:hover h3 { color: var(--raffadali); }
+  .card > a:hover h2, .card > a:hover h3 { color: var(--raffadali); }
   .card-body { padding: .75rem .9rem .95rem; }
   .card-cat { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--raffadali); }
-  .card h3 { font-size: 1.08rem; font-weight: 600; margin-top: .2rem; transition: color .2s; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card h2, .card h3 { font-size: 1.08rem; font-weight: 600; margin-top: .2rem; transition: color .2s; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .card-meta { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin-top: .45rem; color: var(--testo-2); font-size: .88rem; }
   .card-meta span { display: inline-flex; align-items: center; gap: .35rem; }
   .heart {
@@ -150,7 +157,7 @@
   @media (max-width: 1000px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 700px) {
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; }
-    .card h3 { font-size: 1rem; }
+    .card h2, .card h3 { font-size: 1rem; }
     .card-meta { font-size: .8rem; gap: .2rem .7rem; }
     .heart { width: 36px; height: 36px; top: 6px; right: 6px; }
   }
@@ -216,7 +223,14 @@
   .bars span { flex: 1; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .5); overflow: hidden; }
   .bars i { display: block; width: 0; height: 100%; background: var(--crema); }
   .bars span.on i { animation: avanza var(--dur) linear forwards; }
-  .hero.ferma .bars span.on i { animation-play-state: paused; }
+  .hero.ferma .bars span.on i, .hero.in-pausa .bars span.on i { animation-play-state: paused; }
+  .slider-pausa {
+    position: absolute; z-index: 4; top: 34px; left: max(12px, calc((100% - min(1140px, calc(100% - 150px))) / 2 - 22px));
+    width: 44px; height: 44px; border-radius: 50%; border: 0; cursor: pointer; display: grid; place-items: center;
+    background: rgba(255, 255, 255, .92); color: var(--raffadali); box-shadow: 0 4px 14px rgba(15, 51, 71, .25);
+  }
+  .slider-pausa .ico { width: 20px; height: 20px; stroke-width: 2.6; }
+  .slider-pausa[aria-pressed="true"] .ico { fill: currentColor; stroke-width: 1.5; }
   @keyframes avanza { to { width: 100%; } }
   @media (max-width: 760px) {
     .hero { padding-top: 0; }
@@ -225,13 +239,15 @@
     .tile { border-radius: 0; }
     .slide .tile:first-child { grid-row: auto; }
     .tile:first-child h2 { font-size: clamp(1.9rem, 8.6vw, 2.6rem); }
-    .tile-text { left: 20px; right: 20px; bottom: 40px; }
-    .bars { opacity: 1; }
+    .tile-text { left: 20px; right: 20px; bottom: 54px; }
+    .bars { opacity: 1; left: 70px; bottom: 20px; }
+    .slider-pausa { left: 14px; top: auto; bottom: 0; background: transparent; box-shadow: none; color: var(--bianco); }
     .slider-arrow { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .tile-img img, .tile-img .ph { transition: none; }
     .slide.is-active .tile-img img, .slide.is-active .tile-img .ph { transform: none; }
+    .slider-pausa { display: none; }
   }
 
   /* Blocco categorie */
@@ -241,7 +257,8 @@
   .cat-col h3 a { color: var(--ardesia); text-decoration: none; }
   .cat-col h3 .ico { width: 26px; height: 26px; color: var(--lisca); stroke-width: 1.7; }
   .cat-col ul { list-style: none; margin: .5rem 0 0; padding: 0; }
-  .cat-col li a { display: block; padding: .3rem 0; color: var(--ardesia); text-decoration: none; font-weight: 400; font-size: .95rem; }
+  .cat-col h3 a { display: inline-flex; align-items: center; min-height: 44px; }
+  .cat-col li a { display: flex; align-items: center; min-height: 44px; padding: .3rem 0; color: var(--ardesia); text-decoration: none; font-weight: 400; font-size: .95rem; }
   .cat-col li a:hover { color: var(--raffadali); }
   .cat-col li.tutti a { color: var(--raffadali); font-weight: 600; font-size: .78rem; letter-spacing: .07em; text-transform: uppercase; margin-top: .2rem; }
   @media (max-width: 760px) { .hero + .cat-block { margin-top: 0; } .cat-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -266,7 +283,8 @@
   .tips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
   .tip-card { display: flex; flex-direction: column; gap: .5rem; padding: 1.3rem; background: var(--bianco); border: 1px solid var(--linea); border-radius: var(--radius); text-decoration: none; color: inherit; }
   .tip-card:hover { border-color: var(--lisca); }
-  .tip-icon { font-size: 1.8rem; line-height: 1; }
+  .tip-icon { width: 46px; height: 46px; border-radius: 14px; background: var(--schiuma); color: var(--raffadali); display: grid; place-items: center; }
+  .tip-icon .ico { width: 26px; height: 26px; stroke-width: 1.7; }
   .tip-card strong { font-weight: 500; font-size: 1.05rem; }
   .tip-card span { color: var(--testo-2); font-size: .92rem; }
   @media (max-width: 1000px) { .tips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -283,7 +301,7 @@
   .shop dl div { display: grid; grid-template-columns: 2rem 8.5rem 1fr; gap: .6rem; align-items: start; padding: .95rem 0; border-top: 1px solid rgba(255, 250, 240, .15); }
   .shop dt { color: #A9C9D8; }
   .shop dd { margin: 0; font-weight: 400; }
-  .shop dd a { color: var(--crema); }
+  .shop dd a { color: var(--crema); display: inline-block; padding: .55rem 0; margin: -.55rem 0; }
   .shop .ico { width: 22px; height: 22px; color: #8CCBE6; margin-top: .1rem; }
   .orari { display: grid; gap: .15rem; margin-top: .45rem; }
   .orari > span { color: #C9D9E1; font-weight: 300; }
@@ -303,7 +321,7 @@
   /* ── Elenchi (categoria, ricerca, preferiti) ───────── */
   .list-head { padding: clamp(28px, 4vw, 48px) 0 1.6rem; }
   .crumbs { font-size: .9rem; color: var(--testo-2); }
-  .crumbs a { color: var(--testo-2); text-decoration: none; }
+  .crumbs a { color: var(--testo-2); text-decoration: none; display: inline-block; padding: .35rem 0; }
   .crumbs a:hover { color: var(--raffadali); text-decoration: underline; }
   .list-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -.02em; margin-top: .4rem; }
   .list-head p { color: var(--testo-2); margin-top: .4rem; }
@@ -316,7 +334,7 @@
   .recipe-title { margin-top: .5rem; font-size: clamp(2rem, 4.6vw, 3.2rem); letter-spacing: -.025em; line-height: 1.08; }
   .recipe-sub { color: var(--testo-2); font-size: 1.15rem; margin-top: .5rem; }
   .recipe-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.3rem 0 1.4rem; }
-  .recipe-actions .btn { min-height: 42px; padding: .5rem 1rem; font-size: .76rem; }
+  .recipe-actions .btn { min-height: 44px; padding: .5rem 1rem; font-size: .76rem; }
   @media (max-width: 520px) {
     .recipe-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
     .recipe-actions .btn { padding: .5rem .3rem; font-size: .7rem; letter-spacing: .05em; gap: .35rem; }
@@ -334,14 +352,14 @@
   .shop-note { margin-top: 1rem; padding: 1.1rem 1.3rem; border-radius: var(--radius); background: var(--schiuma); }
   .shop-note strong { display: block; font-weight: 500; }
   .shop-note p { color: var(--testo-2); font-size: .95rem; margin-top: .2rem; }
-  .shop-note a { display: inline-flex; align-items: center; gap: .4rem; margin-top: .6rem; font-weight: 500; text-decoration: none; }
+  .shop-note a { display: inline-flex; align-items: center; gap: .4rem; margin-top: .4rem; min-height: 44px; font-weight: 500; text-decoration: none; color: var(--raffadali-scuro); }
   @media (max-width: 860px) { .recipe-top { grid-template-columns: 1fr; } }
 
   .recipe-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: clamp(24px, 4vw, 56px); margin-top: clamp(28px, 4vw, 48px); align-items: start; }
   .box-title { font-size: 1.55rem; margin-bottom: 1rem; }
   .ingredients-box { background: var(--bianco); border: 1px solid var(--linea); border-radius: var(--radius); padding: 1.3rem 1.3rem .6rem; position: sticky; top: 64px; }
   .doses { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; color: var(--testo-2); }
-  .doses button { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--linea); background: var(--crema); cursor: pointer; font-size: 1.15rem; line-height: 1; color: var(--raffadali); }
+  .doses button { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--linea); background: var(--crema); cursor: pointer; font-size: 1.15rem; line-height: 1; color: var(--raffadali); }
   .doses button:hover { border-color: var(--lisca); }
   .doses output { font-weight: 600; color: var(--ardesia); min-width: 1.3em; text-align: center; }
   .ingredients { list-style: none; margin: 0; padding: 0; }
@@ -399,7 +417,7 @@
   footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.2rem; color: var(--testo-2); font-size: .9rem; }
   footer img { height: 48px; width: auto; }
   footer nav { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; }
-  footer nav a { color: var(--testo-2); text-decoration: none; }
+  footer nav a { color: var(--testo-2); text-decoration: none; display: inline-block; padding: .65rem 0; }
   footer nav a:hover { color: var(--raffadali); }
 
   /* ── App installabile ──────────────────────────────── */
@@ -443,7 +461,7 @@
   .btn { --onda: var(--abisso); --onda-testo: var(--bianco); }
   .btn-linea { --onda: var(--schiuma); --onda-testo: var(--raffadali); }
   .shop-intro .btn { --onda: var(--lisca); --onda-testo: var(--bianco); }
-  .pill-link { --onda: var(--raffadali); --onda-testo: var(--bianco); }
+  .pill-link { --onda: var(--raffadali); --onda-testo: var(--bianco); color: var(--raffadali-scuro); min-height: 44px; }
   .btn::before, .pill-link::before {
       content: ""; position: absolute; z-index: -1; left: -40px; top: 0; width: calc(100% + 80px); height: calc(100% + 14px);
       background: var(--onda); pointer-events: none;
@@ -519,6 +537,11 @@
   <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
   <symbol id="i-sinistra" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
   <symbol id="i-destra" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-padella" viewBox="0 0 24 24"><circle cx="10" cy="13" r="7"/><path d="M17 13h5"/><path d="M8 11.5c1-1.2 3-1.2 4 0"/></symbol>
+  <symbol id="i-fiocco" viewBox="0 0 24 24"><path d="M12 2v20M3.3 7l17.4 10M20.7 7L3.3 17"/><path d="M9 4l3 2 3-2M9 20l3-2 3 2"/></symbol>
+  <symbol id="i-libro" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/></symbol>
+  <symbol id="i-pausa" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10-6.5z"/></symbol>
   <symbol id="i-giu" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-conchiglia" viewBox="0 0 24 24"><path d="M12 20c-5 0-8-3-8-7a8 8 0 0 1 16 0c0 4-3 7-8 7z"/><path d="M12 20V6M8 19l2-12M16 19l-2-12M5 15l4-6M19 15l-4-6"/></symbol>
   <symbol id="i-pasta" viewBox="0 0 24 24"><path d="M3 12h18a9 9 0 0 1-18 0z"/><path d="M7 12c0-3 2-3 2-6M11 12c0-3 2-3 2-6M15 12c0-3 2-3 2-6"/></symbol>
@@ -539,9 +562,10 @@
   <symbol id="i-coltello" viewBox="0 0 24 24"><path d="M3 21l9-9M14 4l6 6-7 3-2-2z"/></symbol>
 </svg>
 
+<a class="salta" href="#contenuto" data-salta>Vai al contenuto</a>
 <header class="top">
   <div class="wrap">
-    <button class="menu-btn" type="button" id="menuBtn" aria-expanded="false" aria-controls="menuPanel"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg><span>Menu</span></button>
+    <button class="menu-btn" type="button" id="menuBtn" aria-label="Apri il menu" aria-expanded="false" aria-controls="menuPanel"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg><span aria-hidden="true">Menu</span></button>
     <a class="brand" href="#/" id="brand" aria-label="Sapore di Mare, pagina principale"><img class="brand-pesce" src="img/logo-pesce.png" alt="" width="391" height="160"/><img src="img/logo-testo.png" alt="Sapore di Mare" width="211" height="160"/></a>
     <button class="ric-btn" type="button" id="ricBtn" aria-controls="menuPanel">Ricette<svg class="ico" aria-hidden="true"><use href="#i-giu"/></svg></button>
     <form class="search" id="searchForm" role="search">
@@ -556,11 +580,13 @@
 <div class="menu-overlay" id="menuOverlay"></div>
 <nav class="cats" aria-label="Categorie"><ul id="catNav"></ul></nav>
 
-<main>
+<main id="contenuto">
   <div class="page" id="page-home">
+    <h1 class="sr-only">Sapore di Mare: le ricette di mare della Pescheria di Raffadali</h1>
     <section class="hero" id="hero" aria-roledescription="carosello" aria-label="Ricette in evidenza">
       <div class="slides" id="slides"></div>
       <div class="bars" id="slideBars" aria-hidden="true"></div>
+      <button class="slider-pausa" type="button" id="slidePausa" aria-label="Metti in pausa il carosello" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-pausa"/></svg></button>
       <button class="slider-arrow prev" type="button" id="slidePrev" aria-label="Indietro"></button>
       <button class="slider-arrow next" type="button" id="slideNext" aria-label="Avanti"></button>
     </section>
@@ -862,20 +888,20 @@ function picture(r, eager) {
   const ph = `<div class="ph"><span aria-hidden="true">${esc(r.emoji || '🐟')}</span></div>`;
   return photo ? `<img src="${esc(photo)}" alt="${esc(r.title)}" ${eager ? '' : 'loading="lazy"'} onerror="this.outerHTML=${esc(JSON.stringify(ph))}"/>` : ph;
 }
-function card(r) {
+function card(r, lvl = 3) {
   return `<article class="card">
     <a href="#/ricetta/${esc(r.id)}">
       <div class="pic">${picture(r)}</div>
       <div class="card-body">
         <span class="card-cat">${esc(r.cat)}</span>
-        <h3>${esc(r.title)}</h3>
+        <h${lvl}>${esc(r.title)}</h${lvl}>
         <p class="card-meta"><span>${icon('cappello')}${esc(r.diff)}</span><span>${icon('tempo')}${esc(r.time)}</span></p>
       </div>
     </a>
     <button class="heart" type="button" data-fav="${esc(r.id)}" aria-pressed="false" aria-label="Salva ${esc(r.title)} nei preferiti">${icon('cuore')}</button>
   </article>`;
 }
-const grid = list => list.length ? list.map(card).join('') : '';
+const grid = (list, lvl = 3) => list.length ? list.map(r => card(r, lvl)).join('') : '';
 
 // ══════════════════════════════════════════
 // HOME
@@ -983,7 +1009,21 @@ function initSlider(signal) {
   // Quando la barretta si riempie, passa alla ricetta successiva
   on($('slideBars'), 'animationend', () => goTo(active + 1));
   const pause = () => { clearTimeout(resume); hero.classList.add('ferma'); };
-  const play = (delay = 0) => { clearTimeout(resume); resume = setTimeout(() => hero.classList.remove('ferma'), delay); };
+  const tastiera = () => { const a = document.activeElement; return hero.contains(a) && a.matches(':focus-visible'); };
+  const play = (delay = 0) => { clearTimeout(resume); resume = setTimeout(() => { if (!tastiera()) hero.classList.remove('ferma'); }, delay); };
+  // Pausa decisa dalla persona: resta finché non preme di nuovo
+  const btnPausa = $('slidePausa');
+  const setPausa = on => {
+    hero.classList.toggle('in-pausa', on);
+    btnPausa.setAttribute('aria-pressed', on);
+    btnPausa.setAttribute('aria-label', on ? 'Riprendi il carosello' : 'Metti in pausa il carosello');
+    btnPausa.querySelector('use').setAttribute('href', on ? '#i-play' : '#i-pausa');
+  };
+  setPausa(hero.classList.contains('in-pausa'));
+  on(btnPausa, 'click', () => { setPausa(!hero.classList.contains('in-pausa')); play(); });
+  // Se con la tastiera si seleziona un elemento del carosello, il carosello si ferma
+  on(hero, 'focusin', e => { if (e.target.matches(':focus-visible')) pause(); });
+  on(hero, 'focusout', () => play(300));
   on(track, 'touchstart', pause, { passive: true });
   on(track, 'touchend', () => play(2500), { passive: true });
   on(hero, 'mouseenter', () => { if (!mqTel.matches) pause(); });
@@ -994,7 +1034,8 @@ function initSlider(signal) {
   track.scrollLeft = 0;
   active = -1; setActive(0);
 }
-const tipCard = g => `<a class="tip-card" href="#/guida/${esc(g.id)}"><span class="tip-icon" aria-hidden="true">${esc(g.icon || '📖')}</span><strong>${esc(g.title)}</strong><span>${esc(g.desc)}</span></a>`;
+const TIP_ICON = { '🐟': 'pesce', '🐠': 'pesce', '🔪': 'coltello', '🍳': 'padella', '❄️': 'fiocco', '❄': 'fiocco' };
+const tipCard = g => `<a class="tip-card" href="#/guida/${esc(g.id)}"><span class="tip-icon" aria-hidden="true">${icon(TIP_ICON[String(g.icon || '').trim()] || 'libro')}</span><strong>${esc(g.title)}</strong><span>${esc(g.desc)}</span></a>`;
 
 // ══════════════════════════════════════════
 // ELENCHI
@@ -1003,7 +1044,7 @@ function showList({ crumbs, title, sub, list, empty }) {
   $('listCrumbs').innerHTML = crumbs;
   $('listTitle').textContent = title;
   $('listSub').textContent = sub || '';
-  $('listBody').innerHTML = list.length ? `<div class="grid">${grid(list)}</div>` : `<div class="empty">${empty}</div>`;
+  $('listBody').innerHTML = list.length ? `<div class="grid">${grid(list, 2)}</div>` : `<div class="empty">${empty}</div>`;
 }
 function search(q) {
   const words = norm(q).split(/[^a-z0-9]+/).filter(w => w.length > 1);
@@ -1150,6 +1191,7 @@ function setMenu(open) {
   $('menuBtn').setAttribute('aria-expanded', open);
   $('menuBtn').querySelector('use').setAttribute('href', open ? '#i-chiudi' : '#i-menu');
   $('menuBtn').querySelector('span').textContent = open ? 'Chiudi' : 'Menu';
+  $('menuBtn').setAttribute('aria-label', open ? 'Chiudi il menu' : 'Apri il menu');
 }
 $('menuBtn').addEventListener('click', () => setMenu(!$('menuPanel').classList.contains('open')));
 $('menuOverlay').addEventListener('click', () => setMenu(false));
@@ -1179,45 +1221,73 @@ function show(page, active) {
   renderMenu(active);
   setMenu(false);
 }
+// Tornando indietro (tasto del telefono o del browser) la pagina riprende dal punto in cui eri
+const posizioni = {};
+let ultimoN = null, primaRotta = true, nav = 'nuova';
+addEventListener('scroll', () => { posizioni[location.hash || '#/'] = scrollY; }, { passive: true });
+function tipoNavigazione() {
+  const st = history.state;
+  if (st && typeof st.n === 'number') { const t = ultimoN !== null && st.n < ultimoN ? 'indietro' : 'storia'; ultimoN = st.n; return t; }
+  ultimoN = Date.now(); history.replaceState({ n: ultimoN }, ''); return 'nuova';
+}
+function vaiInCima() {
+  const y = posizioni[location.hash || '#/'];
+  if (nav !== 'nuova' && y != null) requestAnimationFrame(() => scrollTo(0, y));
+  else scrollTo(0, 0);
+}
+function titoloSelezionato() {
+  if (primaRotta) return;
+  const t = document.querySelector('.page.active h1');
+  if (t) { t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); }
+}
+const misuraTesta = () => document.documentElement.style.setProperty('--top-h', document.querySelector('.top').offsetHeight + 'px');
+new ResizeObserver(misuraTesta).observe(document.querySelector('.top'));
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-salta]')) return;
+  e.preventDefault();
+  const t = document.querySelector('.page.active h1'); if (t) { t.setAttribute('tabindex', '-1'); t.focus(); }
+});
 function route() {
+  nav = tipoNavigazione();
   const h = decodeURIComponent(location.hash || '#/');
   let m;
+  requestAnimationFrame(() => { titoloSelezionato(); primaRotta = false; });
   document.title = 'Sapore di Mare, le ricette di mare della Pescheria di Raffadali';
-  if ((m = h.match(/^#\/ricetta\/(.+)$/)) && renderRecipe(m[1])) { show('ricetta', 'cat:' + current.cat); return scrollTo(0, 0); }
+  if ((m = h.match(/^#\/ricetta\/(.+)$/)) && renderRecipe(m[1])) { show('ricetta', 'cat:' + current.cat); return vaiInCima(); }
   if (h === '#/ricette') {
     showList({ crumbs: '<a href="#/">Home</a> › Ricette', title: 'Tutte le ricette', sub: `${RECIPES.length} ricette di mare, dalla pasta ai secondi.`, list: RECIPES, empty: '' });
-    show('elenco', 'ricette'); return scrollTo(0, 0);
+    show('elenco', 'ricette'); return vaiInCima();
   }
   if ((m = h.match(/^#\/categoria\/(.+)$/))) {
     const c = m[1], list = RECIPES.filter(r => r.cat === c);
     showList({ crumbs: `<a href="#/">Home</a> › <a href="#/ricette">Ricette</a> › ${esc(c)}`, title: catTitle(c), sub: `${list.length} ${list.length === 1 ? 'ricetta' : 'ricette'}`, list, empty: 'Nessuna ricetta in questa categoria. <a href="#/ricette">Guarda tutte le ricette</a>' });
-    show('elenco', 'cat:' + c); return scrollTo(0, 0);
+    show('elenco', 'cat:' + c); return vaiInCima();
   }
   if ((m = h.match(/^#\/cerca\/(.*)$/))) {
     const q = m[1], list = search(q);
     $('q').value = q;
     showList({ crumbs: '<a href="#/">Home</a> › Ricerca', title: `Risultati per “${q}”`, sub: list.length ? `${list.length} ${list.length === 1 ? 'ricetta trovata' : 'ricette trovate'}` : '', list,
       empty: `Nessuna ricetta trovata per “${esc(q)}”. Prova con il nome di un pesce, per esempio polpo o gamberi, oppure <a href="#/ricette">guarda tutte le ricette</a>.` });
-    show('elenco', ''); return scrollTo(0, 0);
+    show('elenco', ''); return vaiInCima();
   }
   if (h === '#/preferiti') {
     const list = [...favorites].map(findRecipe).filter(Boolean);
     showList({ crumbs: '<a href="#/">Home</a> › Preferiti', title: 'I tuoi preferiti', sub: 'Restano salvati su questo dispositivo.', list,
       empty: 'Non hai ancora salvato ricette. Tocca il cuore su una ricetta per ritrovarla qui. <a href="#/ricette">Guarda le ricette</a>' });
-    show('elenco', 'preferiti'); updateFavUI(); return scrollTo(0, 0);
+    show('elenco', 'preferiti'); updateFavUI(); return vaiInCima();
   }
   if (h === '#/guide') {
     $('listCrumbs').innerHTML = '<a href="#/">Home</a> › Consigli del banco';
     $('listTitle').textContent = 'Consigli del banco';
     $('listSub').textContent = 'Come scegliere, pulire, cuocere e conservare il pesce.';
     $('listBody').innerHTML = `<div class="tips-list">${GUIDES.map(tipCard).join('')}</div>`;
-    show('elenco', 'guide'); return scrollTo(0, 0);
+    show('elenco', 'guide'); return vaiInCima();
   }
-  if ((m = h.match(/^#\/guida\/(.+)$/)) && renderGuide(m[1])) { show('guida', 'guide'); return scrollTo(0, 0); }
+  if ((m = h.match(/^#\/guida\/(.+)$/)) && renderGuide(m[1])) { show('guida', 'guide'); return vaiInCima(); }
   const wasHome = $('page-home').classList.contains('active');
   show('home', h === '#negozio' ? 'negozio' : 'home');
   if (h === '#negozio') requestAnimationFrame(() => $('negozio').scrollIntoView({ behavior: wasHome ? 'smooth' : 'auto' }));
-  else if (!wasHome) scrollTo(0, 0);
+  else if (!wasHome) vaiInCima();
 }
 window.addEventListener('hashchange', route);
 document.addEventListener('click', e => {
