@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>Etichetta Orata</title>
+<style>
+@page { size: 100mm 150mm; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100mm; height: 150mm; background: #fff; color: #000; font-family: "Inter", sans-serif; }
+.label { width: 100mm; height: 150mm; padding: 5mm; display: flex; flex-direction: column; border: 0; }
+.frame { flex: 1; border: 0.8mm solid #000; border-radius: 3mm; padding: 4mm; display: flex; flex-direction: column; }
+.name { font-family: "Inter Display", "Inter", sans-serif; font-weight: 900; font-size: 22mm; line-height: 1; text-align: center; letter-spacing: 0.5mm; }
+.latin { text-align: center; font-style: italic; font-weight: 600; font-size: 5.6mm; margin-top: 1.5mm; }
+.price { margin-top: 4mm; border-top: 0.6mm solid #000; border-bottom: 0.6mm solid #000; padding: 3mm 0; display: flex; align-items: baseline; justify-content: center; gap: 2mm; }
+.price .eur { font-weight: 800; font-size: 7mm; }
+.price .val { font-family: "Inter Display", "Inter", sans-serif; font-weight: 900; font-size: 21mm; line-height: 0.9; font-variant-numeric: tabular-nums; }
+.price .kg { font-weight: 800; font-size: 5mm; white-space: nowrap; }
+.info { margin-top: 4mm; display: grid; grid-template-columns: auto 1fr; column-gap: 3mm; row-gap: 2.2mm; font-size: 4.6mm; row-gap: 3.5mm; align-items: baseline; }
+.info dt { font-weight: 500; text-transform: uppercase; font-size: 2.9mm; letter-spacing: 0.25mm; }
+.info dd { font-weight: 800; }
+.foot { margin-top: auto; text-align: center; font-size: 3mm; font-weight: 600; border-top: 0.3mm solid #000; padding-top: 2mm; }
+</style></head>
+<body><div class="label"><div class="frame">
+  <div class="name">ORATA</div>
+  <div class="latin">(Sparus aurata)</div>
+  <div class="price"><span class="eur">€</span><span class="val">13,00</span><span class="kg">AL KG</span></div>
+  <dl class="info">
+    <dt>Metodo di produzione</dt><dd>ALLEVATO</dd>
+    <dt>Paese di allevamento</dt><dd>ITALIA</dd>
+    <dt>Stato</dt><dd>FRESCO</dd>
+    <dt>Conservazione</dt><dd>da 0 °C a +4 °C</dd>
+  </dl>
+  <div class="foot">Prodotto della pesca · Reg. (UE) 1379/2013</div>
+</div></div></body></html>
