@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+<title>Il Banco di Sapore di Mare</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Lato:wght@400;700;900&display=swap">
+<style>
+/* Layout: galleria bianca da negozio — tre "vetrine" (banco, gancio, acquario) e una scheda prodotto laterale */
+:root {
+  --bg: #f5f8f8;
+  --surface: #ffffff;
+  --ink: #10262d;
+  --muted: #5b7077;
+  --line: #dbe4e6;
+  --teal: #1e5c6e;
+  --gold: #b9861f;
+  --ice: #e6f0f2;
+  --rope: #a48963;
+  --btn: #163f4e;
+  --btn-fg: #ffffff;
+  --scrim: rgba(16, 38, 45, .38);
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body: 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1a1f; --surface: #12252c; --ink: #e8f1f2; --muted: #93a9af; --line: #23404a;
+    --teal: #74b8c9; --gold: #e2b04e; --ice: #16303a; --rope: #8d7556;
+    --btn: #e8f1f2; --btn-fg: #0c1a1f; --scrim: rgba(0, 0, 0, .55); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1a1f; --surface: #12252c; --ink: #e8f1f2; --muted: #93a9af; --line: #23404a;
+  --teal: #74b8c9; --gold: #e2b04e; --ice: #16303a; --rope: #8d7556;
+  --btn: #e8f1f2; --btn-fg: #0c1a1f; --scrim: rgba(0, 0, 0, .55); color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; overflow-x: hidden; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+.eyebrow { font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 900; color: var(--teal); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Banner + nav */
+.demo-banner { background: var(--btn); color: var(--btn-fg); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; text-align: center; padding-block: .5rem; }
+header.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; background: var(--surface); border-bottom: 1px solid var(--line); }
+.nav-in { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .8rem; }
+.logo { display: flex; flex-direction: column; line-height: 1; text-decoration: none; color: inherit; }
+.logo small { font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; font-weight: 900; color: var(--teal); margin-bottom: .25rem; }
+.logo b { font-family: var(--font-display); font-size: 1.35rem; color: var(--ink); }
+.logo b i { color: var(--gold); }
+.links { display: flex; gap: 1.6rem; font-size: .85rem; }
+.links a { color: var(--muted); text-decoration: none; }
+.links a:hover { color: var(--ink); }
+.cart-btn { display: inline-flex; align-items: center; gap: .5rem; background: none; border: 1px solid var(--line); border-radius: 999px; padding: .45rem .9rem; cursor: pointer; font-size: .85rem; font-weight: 700; }
+.cart-btn .count { background: var(--gold); color: #fff; border-radius: 999px; min-width: 1.4rem; height: 1.4rem; display: inline-grid; place-items: center; font-size: .72rem; padding-inline: .3rem; }
+.cart-btn.bump { animation: bump .45s ease; }
+@keyframes bump { 40% { transform: scale(1.12); } }
+@media (max-width: 760px) { .links { display: none; } }
+
+section.block { padding-block: 3.2rem; border-bottom: 1px solid var(--line); }
+.sec-head { display: flex; justify-content: space-between; align-items: end; gap: 1rem 2rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
+.sec-head h2 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-top: .35rem; }
+.sec-head p { color: var(--muted); max-width: 38ch; }
+
+/* 1 — Componi il piatto */
+.look { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 1.5rem; align-items: start; }
+.stage { position: relative; background: linear-gradient(180deg, var(--surface) 0%, var(--ice) 100%); border: 1px solid var(--line); border-radius: 4px; min-height: 300px; display: flex; align-items: center; justify-content: center; gap: 0; overflow: hidden; padding: 2rem 1rem 3.2rem; }
+.stage::after { content: ""; position: absolute; left: 6%; right: 6%; bottom: 2.2rem; height: 14px; border-radius: 50%; background: var(--line); filter: blur(6px); opacity: .7; }
+.dish { position: relative; z-index: 1; background: none; border: 0; padding: .5rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: .6rem; flex: 1 1 0; min-width: 0; transition: filter .45s ease, opacity .45s ease, transform .45s ease; }
+.dish svg { width: 100%; max-width: 250px; height: auto; display: block; transform: rotate(var(--tilt, 0deg)); }
+.dish .lbl { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.stage.focusing .dish { filter: blur(5px) saturate(.6); opacity: .35; transform: scale(.94); }
+.stage.focusing .dish.on { filter: none; opacity: 1; transform: scale(1.06); }
+.stage.focusing .dish.on .lbl { color: var(--ink); }
+.stage-hint { position: absolute; left: 1rem; bottom: .8rem; font-size: .75rem; color: var(--muted); z-index: 1; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; }
+.panel h3 { font-size: 1.35rem; }
+.panel .why { color: var(--muted); font-size: .85rem; }
+.rows { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: .7rem; align-items: center; padding-block: .65rem; border-bottom: 1px solid var(--line); }
+.row .thumb { width: 54px; height: 40px; display: grid; place-items: center; }
+.row .thumb svg { width: 100%; height: 100%; }
+.row .nm { font-weight: 700; font-size: .9rem; }
+.row .qt { font-size: .78rem; color: var(--muted); }
+.plus { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 1.1rem; line-height: 1; display: grid; place-items: center; transition: background .2s, color .2s; }
+.plus:hover { background: var(--btn); color: var(--btn-fg); }
+.plus.done { background: var(--teal); color: #fff; border-color: var(--teal); }
+.pantry { font-size: .8rem; color: var(--muted); }
+.pantry b { color: var(--ink); font-weight: 700; }
+.primary { background: var(--btn); color: var(--btn-fg); border: 0; border-radius: 999px; padding: .8rem 1.2rem; font-weight: 700; cursor: pointer; width: 100%; transition: opacity .2s, transform .1s; }
+.primary:hover { opacity: .88; }
+.primary:active { transform: scale(.98); }
+.primary:disabled { opacity: .45; cursor: default; }
+.link-btn { background: none; border: 0; padding: 0; font-size: .82rem; text-decoration: underline; text-underline-offset: 3px; color: var(--muted); cursor: pointer; }
+
+@media (max-width: 900px) {
+  .look { grid-template-columns: minmax(0, 1fr); }
+  .stage { justify-content: flex-start; overflow-x: auto; scroll-snap-type: x mandatory; }
+  .dish { flex: 0 0 42%; scroll-snap-align: center; }
+}
+@media (max-width: 520px) { .dish { flex-basis: 64%; } }
+
+/* 2 — Al gancio */
+.rack { position: relative; overflow-x: auto; padding-bottom: 1rem; scrollbar-width: thin; }
+.rack-in { position: relative; display: flex; gap: 1.4rem; padding: 1.2rem 2rem 0; width: max-content; }
+.rack-in::before { content: ""; position: absolute; left: 0; right: 0; top: 1.2rem; height: 3px; border-radius: 3px; background: var(--rope); box-shadow: 0 2px 3px rgba(0,0,0,.12); }
+.hang { position: relative; width: 104px; background: none; border: 0; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; transform-origin: 50% 0; animation: sway 5s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.hang:hover { animation-play-state: paused; }
+.hang .hook { width: 18px; height: 34px; margin-top: -4px; }
+.hang .tag { position: absolute; top: 18px; right: 2px; background: var(--surface); border: 1px solid var(--line); font-size: .68rem; font-weight: 900; padding: .1rem .35rem; border-radius: 2px; transform: rotate(6deg); }
+.hang .fish { width: 84px; height: 210px; margin-top: -6px; transition: transform .3s ease; }
+.hang:hover .fish { transform: translateY(4px) scale(1.04); }
+.hang .cap { margin-top: .5rem; font-size: .78rem; font-weight: 700; }
+.hang .sub { font-size: .7rem; color: var(--muted); }
+.hang.out .fish { opacity: 0; }
+@keyframes sway { 0%, 100% { transform: rotate(-1.4deg); } 50% { transform: rotate(1.4deg); } }
+.rack-note { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: .78rem; color: var(--muted); margin-top: .6rem; }
+
+/* 3 — Acquario */
+.tank { position: relative; height: 460px; background: radial-gradient(ellipse at 50% 40%, var(--surface) 0%, var(--ice) 100%); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.float { position: absolute; left: var(--x); top: var(--y); width: var(--w); background: none; border: 0; padding: 0; cursor: pointer; animation: bob var(--t, 6s) ease-in-out infinite; animation-delay: var(--d, 0s); }
+.float svg { width: 100%; height: auto; display: block; transform: rotate(var(--r, 0deg)); transition: transform .35s ease; filter: drop-shadow(0 18px 14px rgba(16, 38, 45, .16)); }
+.float:hover svg { transform: rotate(0deg) scale(1.08); }
+.float .lbl { position: absolute; left: 50%; bottom: -1.4rem; transform: translateX(-50%); white-space: nowrap; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); opacity: 0; transition: opacity .25s; }
+.float:hover .lbl, .float:focus-visible .lbl { opacity: 1; }
+.float.out svg { opacity: 0; }
+@keyframes bob { 0%, 100% { transform: translateY(-8px); } 50% { transform: translateY(10px); } }
+.tank-word { position: absolute; left: 50%; bottom: -1.2rem; transform: translateX(-50%); font-family: var(--font-display); font-size: clamp(3rem, 12vw, 8rem); font-weight: 700; color: var(--ink); opacity: .06; white-space: nowrap; pointer-events: none; }
+@media (max-width: 640px) { .tank { height: 520px; } }
+
+footer { padding-block: 2.4rem 3rem; color: var(--muted); font-size: .82rem; }
+footer .wrap { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+footer b { font-family: var(--font-display); color: var(--ink); font-size: 1rem; }
+
+/* Scheda prodotto */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 80; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.scrim.open { opacity: 1; pointer-events: auto; }
+.sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(860px, 100%); background: var(--surface); z-index: 90; transform: translateX(102%); transition: transform .45s cubic-bezier(.2, .8, .2, 1); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.sheet.open { transform: none; }
+.sheet-close { position: absolute; top: calc(env(safe-area-inset-top, 0px) + .8rem); right: calc(env(safe-area-inset-right, 0px) + .8rem); background: none; border: 0; cursor: pointer; font-size: .8rem; display: flex; align-items: center; gap: .4rem; z-index: 2; color: var(--muted); }
+.sheet-close span { font-size: 1.3rem; line-height: 1; color: var(--ink); }
+.sheet-art { display: grid; place-items: center; background: linear-gradient(180deg, var(--surface), var(--ice)); padding: 2rem; min-height: 0; }
+.sheet-art .art { width: 100%; max-width: 380px; aspect-ratio: 1 / 1; display: grid; place-items: center; }
+.sheet-art .art svg { width: 100%; height: 100%; }
+.sheet-info { padding: 3.4rem 1.6rem 1.6rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; }
+.sheet-info h3 { font-size: 2rem; line-height: 1.1; }
+.latin { font-style: italic; color: var(--muted); font-size: .85rem; }
+.price { font-size: 1.3rem; font-weight: 900; }
+.price small { font-size: .8rem; font-weight: 400; color: var(--muted); }
+.meta { display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; font-size: .82rem; }
+.meta dt { color: var(--muted); }
+.meta dd { margin: 0; font-weight: 700; }
+.opt-lbl { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 900; color: var(--muted); margin-bottom: .45rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: .4rem .85rem; font-size: .82rem; cursor: pointer; transition: background .2s, color .2s, border-color .2s; }
+.chip[aria-pressed="true"] { background: var(--btn); color: var(--btn-fg); border-color: var(--btn); }
+.est { font-size: .82rem; color: var(--muted); }
+.tip { font-size: .85rem; border-left: 2px solid var(--gold); padding-left: .8rem; color: var(--muted); }
+.tip b { color: var(--ink); }
+.primary.added { background: var(--teal); color: #fff; }
+@media (max-width: 720px) {
+  .sheet { grid-template-columns: minmax(0, 1fr); grid-template-rows: 38vh minmax(0, 1fr); }
+  .sheet-art { padding: 1.4rem; }
+  .sheet-art .art { max-width: 260px; height: 100%; aspect-ratio: auto; }
+  .sheet-info { padding-top: 1.2rem; }
+}
+.flyer { position: fixed; z-index: 95; pointer-events: none; transform-origin: 0 0; }
+.flyer svg { width: 100%; height: 100%; display: block; }
+
+/* Prenotazione */
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100%); background: var(--surface); z-index: 90; transform: translateX(102%); transition: transform .4s cubic-bezier(.2, .8, .2, 1); display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top, 0px) + 1.2rem) calc(env(safe-area-inset-right, 0px) + 1.2rem) calc(env(safe-area-inset-bottom, 0px) + 1.2rem) 1.2rem; gap: 1rem; }
+.drawer.open { transform: none; }
+.drawer-head { display: flex; justify-content: space-between; align-items: baseline; }
+.drawer-head h3 { font-size: 1.5rem; }
+.lines { flex: 1; overflow-y: auto; border-top: 1px solid var(--line); }
+.line { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: .7rem; align-items: center; padding-block: .7rem; border-bottom: 1px solid var(--line); }
+.line .thumb { width: 52px; height: 40px; }
+.line .thumb svg { width: 100%; height: 100%; }
+.line .nm { font-weight: 700; font-size: .9rem; }
+.line .qt { font-size: .76rem; color: var(--muted); }
+.line .pr { text-align: right; font-weight: 700; font-size: .9rem; }
+.line .rm { display: block; margin-left: auto; margin-top: .15rem; font-size: .72rem; }
+.empty { color: var(--muted); font-size: .9rem; padding-block: 2rem; text-align: center; }
+.total { display: flex; justify-content: space-between; font-weight: 900; font-size: 1.05rem; }
+.total small { display: block; font-weight: 400; font-size: .72rem; color: var(--muted); }
+form.pick { display: grid; gap: .6rem; }
+form.pick label { font-size: .75rem; font-weight: 700; color: var(--muted); display: grid; gap: .25rem; }
+form.pick input, form.pick select { font: inherit; font-size: .9rem; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: .55rem .7rem; }
+.confirm { background: var(--ice); border-radius: 4px; padding: .8rem; font-size: .85rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hang, .float { animation: none; }
+  .sheet, .drawer, .dish, .scrim { transition: none; }
+}
+</style>
+
+<div class="demo-banner">Demo · prodotti e prezzi di esempio</div>
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="logo" href="#banco"><small>Pescheria · Raffadali</small><b>Sapore <i>di</i> Mare</b></a>
+    <nav class="links" aria-label="Sezioni">
+      <a href="#banco">Componi il piatto</a>
+      <a href="#gancio">Al gancio</a>
+      <a href="#crudi">Crudi e molluschi</a>
+    </nav>
+    <button class="cart-btn" id="cartBtn" type="button">Prenotazione <span class="count num" id="cartCount">0</span></button>
+  </div>
+</header>
+
+<main>
+  <section class="block" id="banco">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="eyebrow">Il banco di oggi</div><h2>Componi il piatto.</h2></div>
+        <p>Passa sopra un piatto, o toccalo dal telefono: a destra trovi cosa prendere al banco e quanto.</p>
+      </div>
+      <div class="look">
+        <div class="stage focusing" id="stage">
+          <span class="stage-hint">5 ricette della settimana</span>
+        </div>
+        <aside class="panel" id="lookPanel" aria-live="polite"></aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="gancio">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="eyebrow" id="todayLbl">Pescato del giorno</div><h2>Al gancio.</h2></div>
+        <p>Il pescato intero, appeso come al mercato. Tocca un pesce per sceglierne peso e pulizia.</p>
+      </div>
+      <div class="rack" id="rack" tabindex="0" aria-label="Pesci appesi, scorri in orizzontale"><div class="rack-in" id="rackIn"></div></div>
+      <div class="rack-note"><span>Scorri per vedere tutto il banco →</span><span>Prezzi al kg, peso finale alla bilancia</span></div>
+    </div>
+  </section>
+
+  <section class="block" id="crudi">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><div class="eyebrow">Crudi e molluschi</div><h2>Dal vivaio.</h2></div>
+        <p>Gamberi di Mazara, ricci e frutti di mare. Prendine uno.</p>
+      </div>
+      <div class="tank" id="tank"><div class="tank-word">Crudo</div></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><b>Pescheria Sapore di Mare</b><br>Raffadali (AG)</div>
+    <div>Questa è una demo: nessun ordine viene inviato.</div>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="pName" hidden>
+  <button class="sheet-close" id="sheetClose" type="button">Chiudi <span aria-hidden="true">×</span></button>
+  <div class="sheet-art"><div class="art" id="pArt"></div></div>
+  <div class="sheet-info">
+    <div>
+      <div class="eyebrow" id="pCat"></div>
+      <h3 id="pName"></h3>
+      <div class="latin" id="pLatin"></div>
+    </div>
+    <div class="price num" id="pPrice"></div>
+    <dl class="meta" id="pMeta"></dl>
+    <div><div class="opt-lbl" id="qtyLbl">Quantità</div><div class="chips" id="pQty"></div></div>
+    <div id="prepWrap"><div class="opt-lbl">Pulizia</div><div class="chips" id="pPrep"></div></div>
+    <div class="est num" id="pEst"></div>
+    <button class="primary" id="pAdd" type="button">Aggiungi alla prenotazione</button>
+    <button class="link-btn" id="pView" type="button" hidden>Vedi prenotazione →</button>
+    <p class="tip" id="pTip"></p>
+  </div>
+</div>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" hidden>
+  <div class="drawer-head"><h3 id="drawerTitle">Prenotazione</h3><button class="link-btn" id="drawerClose" type="button">Chiudi</button></div>
+  <div class="lines" id="lines"></div>
+  <div class="total num"><div>Totale stimato<small>Il peso esatto si conferma alla bilancia</small></div><div id="total">€ 0,00</div></div>
+  <form class="pick" id="pickForm">
+    <label for="fName">Nome<input id="fName" required placeholder="Es. Giuseppe" autocomplete="name"></label>
+    <label for="fTime">Ritiro in negozio<select id="fTime"></select></label>
+    <button class="primary" id="fSubmit" type="submit">Prenota il ritiro</button>
+  </form>
+  <div class="confirm" id="confirm" hidden></div>
+</div>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let uid = 0;
+
+  /* ---------- Illustrazioni ---------- */
+  function rnd(seed) { let s = seed; return () => (s = (s * 9301 + 49297) % 233280) / 233280; }
+
+  function fishSVG(L, hang) {
+    const id = 'f' + (++uid), H = L.H, c = 40;
+    const body = `M8 ${c} C 18 ${c - H * .95}, 70 ${c - H * 1.18}, 150 ${c - H * .32} L 157 ${c} L 150 ${c + H * .32} C 70 ${c + H * 1.08}, 20 ${c + H * .85}, 8 ${c} Z`;
+    let deco = '';
+    if (L.stripes) for (let i = 0; i < 9; i++) { const x = 52 + i * 11; deco += `<path d="M${x} ${c - H * 1.1} q4 ${H * .4} -2 ${H * .75}" stroke="${L.stripes}" stroke-width="2.2" fill="none" opacity=".85"/>`; }
+    if (L.spots) { const r = rnd(H * 31 + 7); for (let i = 0; i < 16; i++) deco += `<circle cx="${40 + r() * 105}" cy="${c - H * .75 + r() * H * 1.3}" r="${1 + r() * 1.8}" fill="${L.spots}" opacity=".75"/>`; }
+    if (L.line) deco += `<path d="M30 ${c - 1} C 70 ${c - 4}, 120 ${c - 3}, 152 ${c}" stroke="${L.line}" stroke-width="3" fill="none" opacity=".9"/>`;
+    if (L.band) deco += `<path d="M20 ${c - H * .62} q6 4 2 9" stroke="${L.band}" stroke-width="3.2" fill="none" stroke-linecap="round"/>`;
+    const g = `
+      <defs>
+        <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="${L.body}"/><stop offset=".55" stop-color="${L.body}"/><stop offset="1" stop-color="${L.belly}"/>
+        </linearGradient>
+        <linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#fff" stop-opacity=".0"/><stop offset=".45" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </linearGradient>
+        <clipPath id="${id}c"><path d="${body}"/></clipPath>
+      </defs>
+      <path d="M150 ${c} L193 ${c - H * .95} Q182 ${c} 193 ${c + H * .95} Z" fill="${L.fin}"/>
+      <path d="M58 ${c - H * 1.02} Q86 ${c - H * 1.75} 118 ${c - H * .78} Z" fill="${L.fin}"/>
+      <path d="M72 ${c + H * .95} Q92 ${c + H * 1.45} 112 ${c + H * .7} Z" fill="${L.fin}" opacity=".9"/>
+      <path d="${body}" fill="url(#${id}b)"/>
+      <g clip-path="url(#${id}c)">${deco}<rect x="0" y="${c - H * .55}" width="160" height="${H * .5}" fill="url(#${id}s)"/></g>
+      <path d="M42 ${c - H * .62} Q50 ${c} 42 ${c + H * .62}" stroke="rgba(0,0,0,.25)" stroke-width="1.4" fill="none"/>
+      <path d="M48 ${c + 2} Q60 ${c + 6} 56 ${c + 12} Z" fill="${L.fin}" opacity=".85"/>
+      <circle cx="24" cy="${c - H * .28}" r="${Math.max(3.2, H * .22)}" fill="#f4f1e8"/>
+      <circle cx="24" cy="${c - H * .28}" r="${Math.max(1.8, H * .13)}" fill="#151515"/>
+      <path d="M8 ${c} q6 2 12 1" stroke="rgba(0,0,0,.35)" stroke-width="1.2" fill="none"/>`;
+    if (hang) return `<svg viewBox="58 -62 84 204" aria-hidden="true"><g transform="rotate(-90 100 40)">${g}</g></svg>`;
+    return `<svg viewBox="0 0 200 80" aria-hidden="true">${g}</svg>`;
+  }
+
+  function shrimpSVG(col, claws) {
+    const id = 'g' + (++uid);
+    const cx = 96, cy = 66, R = 40;
+    let segs = '', legs = '';
+    const n = 7;
+    for (let i = n - 1; i >= 0; i--) {
+      const a = (-35 + i * 32) * Math.PI / 180;
+      const x = cx + R * Math.cos(a), y = cy + R * Math.sin(a);
+      const rx = 17 - i * 1.4, ry = 13 - i * 1.1, rot = (-35 + i * 32) + 90;
+      segs += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${rx}" ry="${ry}" transform="rotate(${rot.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)})" fill="url(#${id})" stroke="rgba(255,255,255,.35)" stroke-width="1"/>`;
+      if (i > 0 && i < 6) { const ix = cx + (R - 16) * Math.cos(a), iy = cy + (R - 16) * Math.sin(a); legs += `<line x1="${ix.toFixed(1)}" y1="${iy.toFixed(1)}" x2="${(ix - 9 * Math.cos(a)).toFixed(1)}" y2="${(iy - 9 * Math.sin(a)).toFixed(1)}" stroke="${col[1]}" stroke-width="1.6" stroke-linecap="round"/>`; }
+    }
+    const end = (-35 + n * 32) * Math.PI / 180;
+    const tx = cx + R * Math.cos(end), ty = cy + R * Math.sin(end);
+    const head = { x: cx + R * Math.cos(-60 * Math.PI / 180) + 4, y: cy + R * Math.sin(-60 * Math.PI / 180) - 2 };
+    const clawPaths = claws ? `<path d="M${head.x - 10} ${head.y + 8} C 60 30, 40 30, 22 40" stroke="${col[0]}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M22 40 l-12 -6 M22 40 l-12 4" stroke="${col[0]}" stroke-width="4" stroke-linecap="round"/>` : '';
+    return `<svg viewBox="0 0 200 130" aria-hidden="true">
+      <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${col[0]}"/><stop offset="1" stop-color="${col[1]}"/></linearGradient></defs>
+      <path d="M${head.x} ${head.y} C 150 -10, 190 10, 196 34" stroke="${col[1]}" stroke-width="1.3" fill="none"/>
+      <path d="M${head.x} ${head.y} C 140 0, 175 30, 188 58" stroke="${col[1]}" stroke-width="1.1" fill="none"/>
+      ${clawPaths}
+      ${legs}
+      <path d="M${tx - 4} ${ty} l-22 -14 l4 16 l-6 14 Z" fill="${col[1]}" opacity=".9"/>
+      ${segs}
+      <ellipse cx="${head.x}" cy="${head.y + 6}" rx="22" ry="15" transform="rotate(-25 ${head.x} ${head.y + 6})" fill="url(#${id})"/>
+      <path d="M${head.x + 14} ${head.y - 2} l22 -10" stroke="${col[0]}" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="${head.x + 10}" cy="${head.y + 1}" r="3" fill="#1a1010"/>
+    </svg>`;
+  }
+
+  function musselSVG() {
+    const id = 'm' + (++uid);
+    let lines = '';
+    for (let i = 1; i <= 5; i++) lines += `<path d="M${45 + i * 4} ${60} C ${62 + i * 3} ${28 + i * 5}, ${140 - i * 6} ${24 + i * 5}, ${168 - i * 6} ${46 + i * 2}" stroke="rgba(255,255,255,.13)" stroke-width="1.4" fill="none"/>`;
+    return `<svg viewBox="0 0 200 120" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3f5378"/><stop offset=".5" stop-color="#1c2434"/><stop offset="1" stop-color="#10141d"/></linearGradient></defs>
+      <path d="M38 62 C 58 18, 150 12, 176 44 C 188 60, 176 82, 150 92 C 110 104, 52 96, 38 62 Z" fill="url(#${id})"/>${lines}
+      <path d="M38 62 C 80 70, 130 74, 176 50" stroke="rgba(255,255,255,.18)" stroke-width="1.5" fill="none"/></svg>`;
+  }
+
+  function clamSVG() {
+    const id = 'v' + (++uid);
+    let arcs = '', rays = '';
+    for (let i = 1; i <= 6; i++) { const k = i / 7; arcs += `<path d="M${100 - 72 * k} ${30 + 70 * k} Q100 ${30 + 86 * k} ${100 + 72 * k} ${30 + 70 * k}" stroke="rgba(90,60,30,.25)" stroke-width="1.3" fill="none"/>`; }
+    for (let i = -4; i <= 4; i++) rays += `<line x1="100" y1="26" x2="${100 + i * 17}" y2="102" stroke="rgba(90,60,30,.12)" stroke-width="1"/>`;
+    return `<svg viewBox="0 0 200 120" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9dcc3"/><stop offset="1" stop-color="#b99f7a"/></linearGradient><clipPath id="${id}c"><path d="M100 20 C 132 20, 176 54, 172 82 C 168 100, 134 104, 100 104 C 66 104, 32 100, 28 82 C 24 54, 68 20, 100 20 Z"/></clipPath></defs>
+      <path d="M100 20 C 132 20, 176 54, 172 82 C 168 100, 134 104, 100 104 C 66 104, 32 100, 28 82 C 24 54, 68 20, 100 20 Z" fill="url(#${id})"/>
+      <g clip-path="url(#${id}c)">${rays}${arcs}</g><ellipse cx="100" cy="27" rx="10" ry="6" fill="#a88c66"/></svg>`;
+  }
+
+  function oysterSVG() {
+    const id = 'o' + (++uid);
+    let ruff = '';
+    for (let i = 0; i < 7; i++) ruff += `<path d="M${46 + i * 3} ${68 - i * 2} C ${70 + i * 4} ${34 + i * 4}, ${128 - i * 3} ${30 + i * 4}, ${160 - i * 5} ${56 + i}" stroke="rgba(60,60,55,.22)" stroke-width="${2.4 - i * .2}" fill="none"/>`;
+    return `<svg viewBox="0 0 200 120" aria-hidden="true"><defs><radialGradient id="${id}" cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#d9d6cc"/><stop offset=".7" stop-color="#9c998e"/><stop offset="1" stop-color="#6f6c63"/></radialGradient></defs>
+      <path d="M40 70 C 26 42, 78 16, 130 24 C 176 30, 186 70, 162 90 C 132 112, 62 106, 40 70 Z" fill="url(#${id})"/>${ruff}
+      <path d="M64 74 C 84 60, 126 58, 146 72 C 132 90, 82 92, 64 74 Z" fill="#ece7d9" opacity=".75"/></svg>`;
+  }
+
+  function urchinSVG() {
+    const id = 'r' + (++uid);
+    let sp = '';
+    const r = rnd(42);
+    for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2 + r() * .08, l = 50 + r() * 12; sp += `<line x1="${(100 + 28 * Math.cos(a)).toFixed(1)}" y1="${(62 + 28 * Math.sin(a)).toFixed(1)}" x2="${(100 + l * Math.cos(a)).toFixed(1)}" y2="${(62 + l * Math.sin(a)).toFixed(1)}" stroke="${i % 3 ? '#2b1532' : '#4a2a55'}" stroke-width="2" stroke-linecap="round"/>`; }
+    return `<svg viewBox="0 0 200 125" aria-hidden="true"><defs><radialGradient id="${id}" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#6b3f78"/><stop offset="1" stop-color="#1e0f24"/></radialGradient></defs>
+      ${sp}<circle cx="100" cy="62" r="36" fill="url(#${id})"/><circle cx="100" cy="62" r="8" fill="#e08a3c" opacity=".9"/></svg>`;
+  }
+
+  /* ---------- Catalogo (esempi) ---------- */
+  const W = [{ l: '300 g', q: .3 }, { l: '500 g', q: .5 }, { l: '1 kg', q: 1 }, { l: '1,5 kg', q: 1.5 }];
+  const PZ = [{ l: '6 pz', q: 6 }, { l: '12 pz', q: 12 }, { l: '24 pz', q: 24 }];
+  const PREP_FISH = ['Intero', 'Eviscerato e squamato', 'Sfilettato'];
+  const PREP_SHELL = ['Così com’è', 'Già spurgato'];
+  const P = {
+    spigola:  { cat: 'Pesce intero', name: 'Spigola', latin: 'Dicentrarchus labrax', price: 22, unit: 'kg', zone: 'Canale di Sicilia', size: '500–800 g', tip: '<b>Al forno o all’acqua pazza.</b> Carne bianca e delicata, poche spine.', look: { body: '#7d8c95', belly: '#eef2f3', fin: '#69777f', H: 15 } },
+    orata:    { cat: 'Pesce intero', name: 'Orata', latin: 'Sparus aurata', price: 19, unit: 'kg', zone: 'Golfo di Sciacca', size: '400–700 g', tip: '<b>Al sale o alla griglia.</b> Riconoscila dalla fascia dorata tra gli occhi.', look: { body: '#8a979c', belly: '#f0f2ee', fin: '#76828a', H: 20, band: '#d9a93a' } },
+    sgombro:  { cat: 'Pesce azzurro', name: 'Sgombro', latin: 'Scomber scombrus', price: 9, unit: 'kg', zone: 'Porto Empedocle', size: '250–400 g', tip: '<b>Alla griglia con limone e origano.</b> Ricco di omega-3, va mangiato freschissimo.', look: { body: '#2f6f73', belly: '#e9eee8', fin: '#3d5d63', H: 12, stripes: '#16353a' } },
+    triglia:  { cat: 'Pesce intero', name: 'Triglia di scoglio', latin: 'Mullus surmuletus', price: 18, unit: 'kg', zone: 'Costa agrigentina', size: '80–150 g', tip: '<b>Fritta o al cartoccio.</b> Più è rossa, più è fresca.', look: { body: '#d0605a', belly: '#f4dbcf', fin: '#c97c66', H: 13 } },
+    sarda:    { cat: 'Pesce azzurro', name: 'Sarde', latin: 'Sardina pilchardus', price: 7, unit: 'kg', zone: 'Sciacca', size: '30–60 g', tip: '<b>A beccafico o per la pasta con le sarde.</b> Te le apriamo a libro su richiesta.', look: { body: '#4b6f8a', belly: '#f0f3f5', fin: '#5b7385', H: 9, spots: '#24425a' } },
+    ricciola: { cat: 'Pesce intero', name: 'Ricciola', latin: 'Seriola dumerili', price: 24, unit: 'kg', zone: 'Lampedusa', size: '1,5–3 kg', tip: '<b>Al forno con patate, o cruda in carpaccio.</b> Si vende anche a tranci.', look: { body: '#8195a0', belly: '#eff1eb', fin: '#c9a640', H: 14, line: '#d6b44a' } },
+    pagello:  { cat: 'Pesce intero', name: 'Pagello', latin: 'Pagellus erythrinus', price: 16, unit: 'kg', zone: 'Canale di Sicilia', size: '200–400 g', tip: '<b>In padella con pomodorini.</b> Gusto simile all’orata, prezzo più leggero.', look: { body: '#d99a8e', belly: '#f6e7df', fin: '#cf8878', H: 19 } },
+    cernia:   { cat: 'Pesce intero', name: 'Cernia', latin: 'Epinephelus marginatus', price: 32, unit: 'kg', zone: 'Pantelleria', size: '1–4 kg', tip: '<b>In umido o per il sugo.</b> La testa fa un brodo eccellente.', look: { body: '#7a5a44', belly: '#c9a98a', fin: '#5e4433', H: 19, spots: '#e3d2bd' } },
+    dentice:  { cat: 'Pesce intero', name: 'Dentice', latin: 'Dentex dentex', price: 28, unit: 'kg', zone: 'Favignana', size: '1–2 kg', tip: '<b>Al forno intero.</b> Ha carne soda, ottimo anche per grandi tavolate.', look: { body: '#b98aa0', belly: '#f2e3e6', fin: '#a77a8a', H: 18, spots: '#5d86b8' } },
+    gambero:  { cat: 'Crostacei', name: 'Gambero rosso di Mazara', latin: 'Aristaeomorpha foliacea', price: 65, unit: 'kg', zone: 'Mazara del Vallo', size: '12–18 pz/kg', tip: '<b>Crudo con olio e limone.</b> Le teste servono per il fondo della pasta.', draw: () => shrimpSVG(['#e2453a', '#9e1f22']) },
+    scampo:   { cat: 'Crostacei', name: 'Scampi', latin: 'Nephrops norvegicus', price: 45, unit: 'kg', zone: 'Canale di Sicilia', size: '15–20 pz/kg', tip: '<b>Alla griglia o crudi.</b> Il colore rosa pallido è normale.', draw: () => shrimpSVG(['#f0a993', '#cc6f5c'], true) },
+    cozze:    { cat: 'Molluschi', name: 'Cozze', latin: 'Mytilus galloprovincialis', price: 6, unit: 'kg', zone: 'Allevamento di Ganzirri', size: 'Pulite a mano', tip: '<b>Impepata o allo scoglio.</b> Scarta quelle aperte prima della cottura.', prep: PREP_SHELL, draw: musselSVG },
+    vongole:  { cat: 'Molluschi', name: 'Vongole veraci', latin: 'Ruditapes decussatus', price: 14, unit: 'kg', zone: 'Laguna di Marsala', size: 'Calibro medio', tip: '<b>Per gli spaghetti.</b> Le spurghiamo noi in acqua di mare.', prep: PREP_SHELL, draw: clamSVG },
+    ostriche: { cat: 'Molluschi', name: 'Ostriche', latin: 'Crassostrea gigas', price: 2.8, unit: 'pz', zone: 'Allevamento siciliano', size: 'n. 3', tip: '<b>Al naturale.</b> Te le apriamo al banco se le ritiri per cena.', prep: ['Chiuse', 'Aperte al momento del ritiro'], draw: oysterSVG },
+    ricci:    { cat: 'Echinodermi', name: 'Ricci di mare', latin: 'Paracentrotus lividus', price: 1.5, unit: 'pz', zone: 'Costa agrigentina', size: 'Stagione: ottobre–aprile', tip: '<b>Per la pasta coi ricci.</b> 6 ricci bastano per una porzione.', prep: ['Interi', 'Aperti al momento del ritiro'], draw: urchinSVG }
+  };
+  const art = id => P[id].draw ? P[id].draw() : fishSVG(P[id].look, false);
+  const eur = n => '€ ' + n.toFixed(2).replace('.', ',');
+  const priceLbl = p => (p.price % 1 ? p.price.toFixed(2).replace('.', ',') : p.price) + ' €/' + p.unit;
+
+  const RECIPES = [
+    { hero: 'spigola', tilt: -4, name: 'Spigola all’acqua pazza', why: 'Il piatto della domenica: pronto in 30 minuti.', items: [['spigola', 2, 0]], pantry: 'pomodorini, aglio, prezzemolo, vino bianco' },
+    { hero: 'gambero', tilt: 3, name: 'Linguine al gambero rosso', why: 'La ricetta del nostro sito, per 4 persone.', items: [['gambero', 1, null], ['ostriche', 0, 0]], pantry: 'linguine, pomodorini, aglio, scorza di limone' },
+    { hero: 'sarda', tilt: -2, name: 'Sarde a beccafico', why: 'Classico palermitano, con le sarde aperte a libro.', items: [['sarda', 2, 2]], pantry: 'pangrattato, uvetta, pinoli, alloro, arancia' },
+    { hero: 'cozze', tilt: 5, name: 'Spaghetti allo scoglio', why: 'Tre prodotti dal vivaio per un piatto pieno di mare.', items: [['cozze', 1, 1], ['vongole', 0, 1], ['gambero', 0, null]], pantry: 'spaghetti, pomodorini, aglio, prezzemolo' },
+    { hero: 'ricciola', tilt: -3, name: 'Ricciola al forno con patate', why: 'Una ricciola intera sfama sei persone.', items: [['ricciola', 3, 1]], pantry: 'patate, olive, capperi, origano' }
+  ];
+
+  /* ---------- Prenotazione ---------- */
+  const cart = [];
+  function lineCost(it) { const p = P[it.id], opts = p.unit === 'kg' ? W : PZ; return p.price * opts[it.q].q; }
+  function addToCart(id, q, prep) {
+    const p = P[id], prepName = prep == null ? (p.prep || PREP_FISH)[0] : (p.prep || PREP_FISH)[prep];
+    const ex = cart.find(c => c.id === id && c.q === q && c.prep === prepName);
+    if (ex) ex.n++; else cart.push({ id, q, prep: prepName, n: 1 });
+    renderCart();
+    const b = document.getElementById('cartBtn');
+    b.classList.remove('bump'); void b.offsetWidth; b.classList.add('bump');
+  }
+  function renderCart() {
+    const count = cart.reduce((a, c) => a + c.n, 0);
+    document.getElementById('cartCount').textContent = count;
+    const box = document.getElementById('lines');
+    if (!cart.length) { box.innerHTML = '<p class="empty">Ancora niente. Scegli qualcosa dal banco.</p>'; }
+    else box.innerHTML = cart.map((c, i) => {
+      const p = P[c.id], opts = p.unit === 'kg' ? W : PZ;
+      return `<div class="line"><div class="thumb">${art(c.id)}</div>
+        <div><div class="nm">${p.name}</div><div class="qt">${c.n > 1 ? c.n + ' × ' : ''}${opts[c.q].l} · ${c.prep}</div></div>
+        <div><div class="pr num">${eur(lineCost(c) * c.n)}</div><button class="link-btn rm" data-rm="${i}" type="button">Togli</button></div></div>`;
+    }).join('');
+    document.getElementById('total').textContent = eur(cart.reduce((a, c) => a + lineCost(c) * c.n, 0));
+    document.getElementById('fSubmit').disabled = !cart.length;
+  }
+  document.getElementById('lines').addEventListener('click', e => {
+    const i = e.target.dataset.rm; if (i == null) return;
+    cart.splice(+i, 1); renderCart();
+  });
+
+  /* ---------- 1. Componi il piatto ---------- */
+  const stage = document.getElementById('stage'), panel = document.getElementById('lookPanel');
+  RECIPES.forEach((r, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'dish'; b.style.setProperty('--tilt', r.tilt + 'deg');
+    b.setAttribute('aria-label', r.name);
+    b.innerHTML = art(r.hero) + `<span class="lbl">${P[r.hero].name.split(' ')[0]}</span>`;
+    b.addEventListener('mouseenter', () => pick(i));
+    b.addEventListener('focus', () => pick(i));
+    b.addEventListener('click', () => pick(i));
+    stage.appendChild(b);
+  });
+  let cur = -1;
+  function pick(i) {
+    if (i === cur) return; cur = i;
+    [...stage.querySelectorAll('.dish')].forEach((d, k) => d.classList.toggle('on', k === i));
+    const r = RECIPES[i];
+    panel.innerHTML = `<div><div class="eyebrow">Per questo piatto</div><h3 style="margin-top:.3rem">${r.name}</h3><p class="why" style="margin-top:.3rem">${r.why}</p></div>
+      <div class="rows">${r.items.map(([id, q, prep], k) => {
+        const p = P[id], o = (p.unit === 'kg' ? W : PZ)[q];
+        return `<div class="row"><div class="thumb">${art(id)}</div><div><div class="nm">${p.name}</div><div class="qt num">${o.l} · ${eur(p.price * o.q)}</div></div>
+          <button class="plus" type="button" data-k="${k}" aria-label="Aggiungi ${p.name}">+</button></div>`;
+      }).join('')}</div>
+      <p class="pantry"><b>Dalla dispensa:</b> ${r.pantry}</p>
+      <button class="primary" type="button" id="addAll">Aggiungi tutto</button>`;
+    panel.querySelectorAll('.plus').forEach(btn => btn.addEventListener('click', () => {
+      const [id, q, prep] = r.items[+btn.dataset.k]; addToCart(id, q, prep);
+      btn.classList.add('done'); btn.textContent = '✓';
+    }));
+    panel.querySelector('#addAll').addEventListener('click', e => {
+      r.items.forEach(([id, q, prep]) => addToCart(id, q, prep));
+      panel.querySelectorAll('.plus').forEach(b => { b.classList.add('done'); b.textContent = '✓'; });
+      e.target.textContent = 'Aggiunto alla prenotazione';
+    });
+  }
+  pick(0);
+
+  /* ---------- 2. Al gancio ---------- */
+  const today = new Date().toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  document.getElementById('todayLbl').textContent = 'Pescato del giorno · ' + today;
+  const rackIds = ['spigola', 'orata', 'sgombro', 'triglia', 'sarda', 'ricciola', 'pagello', 'cernia', 'dentice', 'orata', 'sgombro', 'spigola'];
+  const rackIn = document.getElementById('rackIn');
+  rackIds.forEach((id, i) => {
+    const p = P[id], b = document.createElement('button');
+    b.type = 'button'; b.className = 'hang'; b.style.setProperty('--d', (-i * .7) + 's');
+    b.setAttribute('aria-label', `${p.name}, ${priceLbl(p)}`);
+    b.innerHTML = `<svg class="hook" viewBox="0 0 18 34" aria-hidden="true"><path d="M9 0 V20 a6 6 0 1 1 -6 -6" stroke="#8b9499" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>
+      <span class="tag num">${priceLbl(p)}</span><div class="fish">${fishSVG(p.look, true)}</div>
+      <span class="cap">${p.name}</span><span class="sub">${p.size}</span>`;
+    b.addEventListener('click', () => openSheet(id, b, b.querySelector('.fish svg')));
+    rackIn.appendChild(b);
+  });
+
+  /* ---------- 3. Acquario ---------- */
+  const tank = document.getElementById('tank');
+  const narrow = matchMedia('(max-width: 640px)').matches;
+  const FL = narrow
+    ? [['gambero', 6, 6, 44, -18], ['ricci', 54, 4, 38, 0], ['cozze', 8, 38, 40, 14], ['vongole', 54, 36, 36, -10], ['ostriche', 10, 66, 40, 8], ['scampo', 52, 66, 44, 12]]
+    : [['gambero', 8, 10, 20, -18], ['ricci', 36, 4, 14, 0], ['cozze', 58, 14, 15, 18], ['scampo', 76, 36, 20, 14], ['vongole', 22, 56, 13, -12], ['ostriche', 48, 52, 16, 8], ['gambero', 70, 70, 13, 30], ['cozze', 4, 72, 11, -30]];
+  FL.forEach(([id, x, y, w, r], i) => {
+    const p = P[id], b = document.createElement('button');
+    b.type = 'button'; b.className = 'float';
+    b.style.cssText = `--x:${x}%;--y:${y}%;--w:${w}%;--r:${r}deg;--d:${-i * 1.3}s;--t:${5 + (i % 3)}s`;
+    b.setAttribute('aria-label', `${p.name}, ${priceLbl(p)}`);
+    b.innerHTML = art(id) + `<span class="lbl">${p.name}</span>`;
+    b.addEventListener('click', () => openSheet(id, b, b.querySelector('svg')));
+    tank.appendChild(b);
+  });
+
+  /* ---------- Scheda prodotto con volo ---------- */
+  const sheet = document.getElementById('sheet'), scrim = document.getElementById('scrim'), drawer = document.getElementById('drawer');
+  let sel = null, srcBtn = null, lastFocus = null;
+  function chips(box, labels, active, onPick) {
+    box.innerHTML = labels.map((l, i) => `<button class="chip" type="button" aria-pressed="${i === active}" data-i="${i}">${l}</button>`).join('');
+    box.onclick = e => { const b = e.target.closest('.chip'); if (!b) return; box.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b)); onPick(+b.dataset.i); };
+  }
+  function updateEst() {
+    const p = P[sel.id], o = (p.unit === 'kg' ? W : PZ)[sel.q];
+    document.getElementById('pEst').textContent = `Stima: ${o.l} → ${eur(p.price * o.q)}`;
+    const add = document.getElementById('pAdd'); add.classList.remove('added'); add.textContent = 'Aggiungi alla prenotazione';
+  }
+  function openSheet(id, btn, svgEl) {
+    const p = P[id];
+    lastFocus = document.activeElement;
+    sel = { id, q: p.unit === 'kg' ? 1 : 0, prep: 0 };
+    document.getElementById('pCat').textContent = p.cat;
+    document.getElementById('pName').textContent = p.name;
+    document.getElementById('pLatin').textContent = p.latin;
+    document.getElementById('pPrice').innerHTML = `${eur(p.price)} <small>al ${p.unit === 'kg' ? 'kg' : 'pezzo'}</small>`;
+    document.getElementById('pMeta').innerHTML = `<dt>Provenienza</dt><dd>${p.zone}</dd><dt>${p.unit === 'kg' && !p.draw ? 'Pezzatura' : 'Calibro'}</dt><dd>${p.size}</dd>`;
+    document.getElementById('pTip').innerHTML = p.tip;
+    document.getElementById('qtyLbl').textContent = p.unit === 'kg' ? 'Peso' : 'Pezzi';
+    chips(document.getElementById('pQty'), (p.unit === 'kg' ? W : PZ).map(o => o.l), sel.q, i => { sel.q = i; updateEst(); });
+    const preps = p.prep || (p.draw ? null : PREP_FISH);
+    document.getElementById('prepWrap').hidden = !preps;
+    if (preps) chips(document.getElementById('pPrep'), preps, 0, i => { sel.prep = i; updateEst(); });
+    document.getElementById('pView').hidden = true;
+    updateEst();
+    const artBox = document.getElementById('pArt');
+    artBox.innerHTML = art(id);
+    const big = artBox.querySelector('svg');
+
+    sheet.hidden = false; void sheet.offsetWidth;
+    sheet.classList.add('open'); scrim.classList.add('open');
+    document.getElementById('sheetClose').focus({ preventScroll: true });
+
+    if (reduce || !svgEl) return;
+    // il prodotto "si sgancia" e vola nella scheda
+    srcBtn = btn; btn.classList.add('out');
+    const from = svgEl.getBoundingClientRect();
+    big.style.visibility = 'hidden';
+    const fly = document.createElement('div'); fly.className = 'flyer';
+    fly.innerHTML = btn.classList.contains('hang') ? fishSVG(p.look, true) : art(id);
+    Object.assign(fly.style, { left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px' });
+    document.body.appendChild(fly);
+    setTimeout(() => {
+      const to = big.getBoundingClientRect();
+      const hang = btn.classList.contains('hang');
+      // il pesce appeso si raddrizza in volo: ruota di 90° fino all'orizzontale
+      const tw = to.width, th = hang ? tw * 80 / 200 : to.height;
+      const ty = to.top + (to.height - th) / 2;
+      const anim = fly.animate([
+        { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${(to.left - from.left) * .5}px, ${(ty - from.top) * .5 - 60}px) rotate(${hang ? 0 : -8}deg)`, opacity: 1, offset: .5 },
+        { transform: `translate(${to.left - from.left}px, ${ty - from.top}px)`, opacity: 1 }
+      ], { duration: 650, easing: 'cubic-bezier(.3,.7,.2,1)' });
+      if (hang) {
+        fly.animate([{ width: from.width + 'px', height: from.height + 'px' }, { width: tw + 'px', height: th + 'px' }], { duration: 650, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' });
+        setTimeout(() => { fly.innerHTML = fishSVG(p.look, false); }, 330);
+      } else {
+        fly.animate([{ width: from.width + 'px', height: from.height + 'px' }, { width: to.width + 'px', height: to.height + 'px' }], { duration: 650, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' });
+      }
+      anim.onfinish = () => { big.style.visibility = ''; fly.remove(); };
+    }, 120);
+  }
+  function closeAll() {
+    sheet.classList.remove('open'); drawer.classList.remove('open'); scrim.classList.remove('open');
+    if (srcBtn) { const b = srcBtn; setTimeout(() => b.classList.remove('out'), reduce ? 0 : 250); srcBtn = null; }
+    setTimeout(() => { if (!sheet.classList.contains('open')) sheet.hidden = true; if (!drawer.classList.contains('open')) drawer.hidden = true; }, reduce ? 0 : 450);
+    if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+  }
+  document.getElementById('sheetClose').addEventListener('click', closeAll);
+  scrim.addEventListener('click', closeAll);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+  document.getElementById('pAdd').addEventListener('click', e => {
+    const p = P[sel.id];
+    addToCart(sel.id, sel.q, (p.prep || (p.draw ? null : PREP_FISH)) ? sel.prep : null);
+    e.currentTarget.classList.add('added'); e.currentTarget.textContent = 'Aggiunto ✓';
+    document.getElementById('pView').hidden = false;
+  });
+  function openDrawer() {
+    lastFocus = document.activeElement;
+    sheet.classList.remove('open'); setTimeout(() => { if (!sheet.classList.contains('open')) sheet.hidden = true; }, 450);
+    if (srcBtn) { srcBtn.classList.remove('out'); srcBtn = null; }
+    drawer.hidden = false; void drawer.offsetWidth;
+    drawer.classList.add('open'); scrim.classList.add('open');
+    document.getElementById('drawerClose').focus({ preventScroll: true });
+  }
+  document.getElementById('pView').addEventListener('click', openDrawer);
+  document.getElementById('cartBtn').addEventListener('click', openDrawer);
+  document.getElementById('drawerClose').addEventListener('click', closeAll);
+
+  const times = ['Oggi 17:00–18:00', 'Oggi 18:00–19:30', 'Domani 8:00–10:00', 'Domani 10:00–12:00', 'Domani 17:00–19:30'];
+  document.getElementById('fTime').innerHTML = times.map(t => `<option>${t}</option>`).join('');
+  document.getElementById('pickForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const c = document.getElementById('confirm');
+    c.hidden = false;
+    c.innerHTML = `<b>Grazie, ${document.getElementById('fName').value.replace(/[<>&]/g, '')}.</b> Ritiro: ${document.getElementById('fTime').value}, totale stimato ${document.getElementById('total').textContent}.<br>In questa demo la prenotazione non viene inviata.`;
+  });
+  renderCart();
+})();
+</script>
+
+</body>
+</html>
