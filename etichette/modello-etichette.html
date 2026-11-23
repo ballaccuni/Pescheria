@@ -230,8 +230,14 @@ button:hover { filter: brightness(.95); }
     </div>
 
     <div class="field">
+      <label for="lotto">Lotto</label>
+      <input id="lotto" placeholder="Scrivi il numero di lotto della fattura">
+      <small>Se lo lasci vuoto, sull'etichetta resta "LOTTO" con uno spazio per scriverlo a penna.</small>
+    </div>
+
+    <div class="field">
       <label for="extra">Nota aggiuntiva (facoltativa)</label>
-      <input id="extra" placeholder="es. Lotto 1234 · Pulito · Prodotto decongelato, non ricongelare">
+      <input id="extra" placeholder="es. Pulito · Prodotto decongelato, non ricongelare">
     </div>
 
     <div class="buttons">
@@ -278,7 +284,7 @@ const PESCI = [
   ["Vongola (Lupino)","Chamelea gallina"],["Ostrica concava","Crassostrea gigas"],["Cannolicchio","Ensis siliqua"]
 ];
 const $ = id => document.getElementById(id);
-const FIELDS = ["nome","latino","prezzo","unita","metodo","paese","zona","attrezzo","stato","conserv","extra"];
+const FIELDS = ["nome","latino","prezzo","unita","metodo","paese","zona","attrezzo","stato","conserv","lotto","extra"];
 
 // elenco pesci
 const sel = $("preset");
@@ -315,6 +321,8 @@ function labelHTML(d){
   }
   rows.push(["Stato", d.stato]);
   if (d.conserv) rows.push(["Conservazione", d.conserv]);
+  const lotto = d.lotto || "______________";
+  rows.push(["Lotto", lotto]);
   const small = isSmall();
   let info;
   if (small) {
@@ -324,6 +332,7 @@ function labelHTML(d){
     else if (d.metodo === "mare") { lines.push(`Pescato · ${d.zona}`); lines.push(d.attrezzo); }
     else { lines.push(`Pescato in acque dolci · ${d.paese}`); lines.push(d.attrezzo); }
     lines.push(d.conserv ? `${d.stato} · ${d.conserv}` : d.stato);
+    lines.push(`Lotto: ${lotto}`);
     info = lines.map(l => `<dd>${esc(l).toUpperCase()}</dd>`).join("");
   } else {
     info = rows.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v).toUpperCase()}</dd>`).join("");
