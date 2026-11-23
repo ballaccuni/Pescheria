@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Etichette Pescheria</title>
 <style>
-@page { size: 100mm 150mm; margin: 0; }
 * { box-sizing: border-box; }
 :root {
   --bg: #eef2f4; --panel: #fff; --ink: #14212b; --muted: #5b6b77; --line: #cfd8de; --accent: #0d5c7a;
@@ -42,21 +41,46 @@ button:hover { filter: brightness(.95); }
 .empty { color: var(--muted); font-size: 13px; }
 .hint { font-size: 12px; color: var(--muted); max-width: 380px; text-align: center; }
 
-/* ---------- ETICHETTA 100x150 mm ---------- */
-.sheet { width: 100mm; height: 150mm; background: #fff; color: #000; padding: 4mm; display: flex; overflow: hidden; }
-.frame { flex: 1; border: 0.8mm solid #000; border-radius: 3mm; padding: 4mm; display: flex; flex-direction: column; min-width: 0; }
+/* ---------- ETICHETTA (misura scelta dall'utente) ---------- */
+/* tutte le misure sono moltiplicate per --s, così l'etichetta si adatta a qualsiasi carta */
+.sheet { --s: 1; width: calc(var(--w) * 1mm); height: calc(var(--h) * 1mm); background: #fff; color: #000; display: flex; overflow: hidden; }
+.frame { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: solid #000; }
 .l-name { font-family: var(--label-font); font-weight: 900; line-height: 1; text-align: center; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
-.l-latin { text-align: center; font-family: var(--text-font); font-style: italic; font-weight: bold; font-size: 5.4mm; margin-top: 1.5mm; }
-.l-price { margin-top: 3.5mm; border-top: 0.6mm solid #000; border-bottom: 0.6mm solid #000; padding: 2.5mm 0; display: flex; align-items: baseline; justify-content: center; gap: 2mm; white-space: nowrap; }
+.l-latin { text-align: center; font-family: var(--text-font); font-style: italic; font-weight: bold; }
+.l-price { border-top: solid #000; border-bottom: solid #000; display: flex; align-items: baseline; justify-content: center; white-space: nowrap; }
 .fitme { display: inline-block; }
-.l-price .pin { display: inline-flex; align-items: baseline; gap: 2mm; }
-.l-price .eur { font-family: var(--label-font); font-weight: 900; font-size: 7mm; }
-.l-price .val { font-family: var(--label-font); font-weight: 900; line-height: .95; }
-.l-price .kg { font-family: var(--label-font); font-weight: 900; font-size: 4.6mm; }
-.l-info { margin: 3.5mm 0 0; display: grid; grid-template-columns: auto 1fr; column-gap: 3mm; row-gap: 2.6mm; align-items: baseline; font-family: var(--text-font); }
-.l-info dt { font-size: 2.8mm; text-transform: uppercase; letter-spacing: .2mm; }
-.l-info dd { margin: 0; font-weight: bold; font-size: 4.2mm; overflow-wrap: anywhere; }
-.l-foot { margin-top: auto; text-align: center; font-family: var(--text-font); font-size: 2.8mm; font-weight: bold; border-top: 0.3mm solid #000; padding-top: 2mm; }
+.l-price .pin { display: inline-flex; align-items: baseline; }
+.l-price .eur, .l-price .kg, .l-price .val { font-family: var(--label-font); font-weight: 900; }
+.l-price .val { line-height: .95; }
+.l-info { margin: 0; font-family: var(--text-font); }
+.l-info dd { margin: 0; font-weight: bold; overflow-wrap: anywhere; }
+.l-foot { margin-top: auto; text-align: center; font-family: var(--text-font); font-weight: bold; border-top: solid #000; }
+
+/* formato grande (es. 100x150) */
+.sheet.big { padding: calc(var(--s) * 4mm); }
+.big .frame { border-width: calc(var(--s) * .8mm); border-radius: calc(var(--s) * 3mm); padding: calc(var(--s) * 4mm); }
+.big .l-latin { font-size: calc(var(--s) * 5.4mm); margin-top: calc(var(--s) * 1.5mm); }
+.big .l-price { margin-top: calc(var(--s) * 3.5mm); border-width: calc(var(--s) * .6mm) 0; padding: calc(var(--s) * 2.5mm) 0; }
+.big .l-price .pin { gap: calc(var(--s) * 2mm); }
+.big .l-price .eur { font-size: calc(var(--s) * 7mm); }
+.big .l-price .kg { font-size: calc(var(--s) * 4.6mm); }
+.big .l-info { margin-top: calc(var(--s) * 3.5mm); display: grid; grid-template-columns: auto 1fr; column-gap: calc(var(--s) * 3mm); row-gap: calc(var(--s) * 2.6mm); align-items: baseline; }
+.big .l-info dt { font-size: calc(var(--s) * 2.8mm); text-transform: uppercase; letter-spacing: calc(var(--s) * .2mm); }
+.big .l-info dd { font-size: calc(var(--s) * 4.2mm); }
+.big .l-foot { font-size: calc(var(--s) * 2.8mm); border-top-width: calc(var(--s) * .3mm); padding-top: calc(var(--s) * 2mm); }
+
+/* formato piccolo (es. 40x40): testo compatto su righe */
+.sheet.small { padding: calc(var(--s) * 1mm); }
+.small .frame { border-width: calc(var(--s) * .35mm); border-radius: calc(var(--s) * 1.2mm); padding: calc(var(--s) * 1.2mm); }
+.small .l-latin { font-size: calc(var(--s) * 2.2mm); margin-top: calc(var(--s) * .4mm); }
+.small .l-price { margin-top: calc(var(--s) * .8mm); border-width: calc(var(--s) * .3mm) 0; padding: calc(var(--s) * .6mm) 0; }
+.small .l-price .pin { gap: calc(var(--s) * .8mm); }
+.small .l-price .eur { font-size: calc(var(--s) * 2.8mm); }
+.small .l-price .kg { font-size: calc(var(--s) * 2mm); }
+.small .l-info { margin-top: calc(var(--s) * .8mm); text-align: center; line-height: 1.15; }
+.small .l-info dt { display: none; }
+.small .l-info dd { font-size: calc(var(--s) * 1.9mm); }
+.small .l-foot { border: 0; font-size: calc(var(--s) * 1.7mm); }
 
 #printArea { display: none; }
 @media print {
@@ -64,18 +88,42 @@ button:hover { filter: brightness(.95); }
   header, main { display: none !important; }
   #printArea { display: block; }
   #printArea .sheet { page-break-after: always; break-after: page; }
+  #printArea .zoom { transform: none !important; }
   #printArea .sheet:last-child { page-break-after: auto; break-after: auto; }
 }
 </style>
 </head>
 <body>
 <header>
-  <h1>Etichette Pescheria · 100×150 mm</h1>
+  <h1>Etichette Pescheria</h1>
   <p>Compila a sinistra, controlla l'anteprima, poi premi Stampa.</p>
 </header>
 
 <main>
   <section class="panel">
+    <h2>Formato carta</h2>
+    <div class="row">
+      <div class="field">
+        <label for="formato">Misura etichetta</label>
+        <select id="formato">
+          <option value="100x150">100 × 150 mm</option>
+          <option value="40x40">40 × 40 mm</option>
+          <option value="50x30">50 × 30 mm</option>
+          <option value="60x40">60 × 40 mm</option>
+          <option value="100x100">100 × 100 mm</option>
+          <option value="custom">Altra misura…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Larghezza × altezza (mm)</label>
+        <div class="row" style="gap:6px">
+          <input id="larg" inputmode="decimal" value="100" aria-label="Larghezza in mm">
+          <input id="alt" inputmode="decimal" value="150" aria-label="Altezza in mm">
+        </div>
+      </div>
+    </div>
+    <small style="color:var(--muted);font-size:12px;display:block;margin:-4px 0 14px">Scegli la misura o scrivi i millimetri della tua carta. Viene ricordata su questo computer.</small>
+
     <h2>Dati del prodotto</h2>
 
     <div class="field">
@@ -204,10 +252,11 @@ button:hover { filter: brightness(.95); }
 
   <section class="preview-wrap">
     <div id="preview"></div>
-    <p class="hint">Stampa: formato carta 100×150 mm, margini "Nessuno", scala 100%. La lista resta salvata su questo computer anche se chiudi la pagina.</p>
+    <p class="hint">Stampa: nella finestra di stampa scegli lo stesso formato carta impostato qui (<b id="hintSize">100×150 mm</b>), margini "Nessuno", scala 100%. La lista resta salvata su questo computer anche se chiudi la pagina.</p>
   </section>
 </main>
 
+<style id="pageStyle">@page { size: 100mm 150mm; margin: 0; }</style>
 <div id="printArea"></div>
 
 <script>
@@ -266,35 +315,76 @@ function labelHTML(d){
   }
   rows.push(["Stato", d.stato]);
   if (d.conserv) rows.push(["Conservazione", d.conserv]);
-  const info = rows.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v).toUpperCase()}</dd>`).join("");
-  return `<div class="sheet"><div class="frame">
+  const small = isSmall();
+  let info;
+  if (small) {
+    // righe compatte per etichette piccole
+    const lines = [];
+    if (d.metodo === "allevato") lines.push(`Allevato in ${d.paese}`);
+    else if (d.metodo === "mare") { lines.push(`Pescato · ${d.zona}`); lines.push(d.attrezzo); }
+    else { lines.push(`Pescato in acque dolci · ${d.paese}`); lines.push(d.attrezzo); }
+    lines.push(d.conserv ? `${d.stato} · ${d.conserv}` : d.stato);
+    info = lines.map(l => `<dd>${esc(l).toUpperCase()}</dd>`).join("");
+  } else {
+    info = rows.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(v).toUpperCase()}</dd>`).join("");
+  }
+  const foot = small ? (d.extra ? esc(d.extra) : "") : `${d.extra ? esc(d.extra) + "<br>" : ""}Prodotto della pesca · Reg. (UE) 1379/2013`;
+  return `<div class="sheet ${small ? "small" : "big"}" style="--w:${paper.w};--h:${paper.h}"><div class="frame">
     <div class="l-name"><span class="fitme">${esc(d.nome)}</span></div>
     <div class="l-latin">(${esc(d.latino)})</div>
     <div class="l-price"><span class="fitme pin"><span class="eur">€</span><span class="val">${esc(formatPrezzo(d.prezzo))}</span><span class="kg">${esc(d.unita)}</span></span></div>
     <dl class="l-info">${info}</dl>
-    <div class="l-foot">${d.extra ? esc(d.extra) + "<br>" : ""}Prodotto della pesca · Reg. (UE) 1379/2013</div>
+    ${foot ? `<div class="l-foot">${foot}</div>` : ""}
   </div></div>`;
 }
 
-// adatta le scritte grandi alla larghezza dell'etichetta
-function fit(container){
-  container.querySelectorAll(".sheet").forEach(sheet => {
-    const name = sheet.querySelector(".l-name"), nIn = name.querySelector(".fitme");
-    let size = 22; name.style.fontSize = size + "mm";
+// formato carta
+let paper = { w: 100, h: 150 };
+function isSmall(){ return paper.w < 70 || paper.h < 90; }
+function num(v){ const n = parseFloat(String(v).replace(",", ".")); return isNaN(n) ? 0 : n; }
+function setPaper(){
+  const f = $("formato").value;
+  if (f !== "custom") { const [w,h] = f.split("x"); $("larg").value = w; $("alt").value = h; }
+  paper = { w: Math.min(Math.max(num($("larg").value), 20), 300) || 100, h: Math.min(Math.max(num($("alt").value), 20), 300) || 150 };
+  $("pageStyle").textContent = `@page { size: ${paper.w}mm ${paper.h}mm; margin: 0; }`;
+  $("hintSize").textContent = `${paper.w}×${paper.h} mm`;
+  try { localStorage.setItem("etichette-formato", JSON.stringify({ f, w: paper.w, h: paper.h })); } catch(e) {}
+}
+["larg","alt"].forEach(id => $(id).addEventListener("input", () => { $("formato").value = "custom"; setPaper(); render(); }));
+$("formato").addEventListener("change", () => { setPaper(); render(); });
+try {
+  const saved = JSON.parse(localStorage.getItem("etichette-formato") || "null");
+  if (saved) { $("formato").value = saved.f; $("larg").value = saved.w; $("alt").value = saved.h; }
+} catch(e) {}
+
+// adatta scritte e dimensioni alla carta scelta
+function fitSheet(sheet){
+  const small = sheet.classList.contains("small");
+  const N = small ? { max: 7, min1: 4.5, two: 5, min2: 2.5 } : { max: 22, min1: 13, two: 16, min2: 7 };
+  const P = small ? { max: 8, min: 3.5 } : { max: 21, min: 10 };
+  const frame = sheet.querySelector(".frame");
+  const name = sheet.querySelector(".l-name"), nIn = name.querySelector(".fitme");
+  const price = sheet.querySelector(".l-price"), pIn = price.querySelector(".pin"), val = price.querySelector(".val");
+  let s = small ? Math.min(paper.w, paper.h) / 40 : Math.min(paper.w / 100, paper.h / 150);
+  for (let i = 0; i < 40; i++) {
+    sheet.style.setProperty("--s", s);
+    let size = N.max * s; name.style.fontSize = size + "mm";
     name.style.whiteSpace = ""; nIn.style.display = "";
-    while (nIn.offsetWidth > name.clientWidth && size > 13) { size -= 0.5; name.style.fontSize = size + "mm"; }
+    while (nIn.offsetWidth > name.clientWidth && size > N.min1 * s) { size -= 0.25; name.style.fontSize = size + "mm"; }
     if (nIn.offsetWidth > name.clientWidth) {
       // nome lungo: va su due righe
       name.style.whiteSpace = "normal"; nIn.style.display = "block";
-      size = 16; name.style.fontSize = size + "mm";
+      size = N.two * s; name.style.fontSize = size + "mm";
       const twoLines = () => nIn.offsetHeight <= parseFloat(getComputedStyle(name).fontSize) * 2.1 && nIn.scrollWidth <= name.clientWidth;
-      while (!twoLines() && size > 7) { size -= 0.5; name.style.fontSize = size + "mm"; }
+      while (!twoLines() && size > N.min2 * s) { size -= 0.25; name.style.fontSize = size + "mm"; }
     }
-    const price = sheet.querySelector(".l-price"), pIn = price.querySelector(".pin"), val = price.querySelector(".val");
-    size = 21; val.style.fontSize = size + "mm";
-    while (pIn.offsetWidth > price.clientWidth && size > 10) { size -= 0.5; val.style.fontSize = size + "mm"; }
-  });
+    size = P.max * s; val.style.fontSize = size + "mm";
+    while (pIn.offsetWidth > price.clientWidth && size > P.min * s) { size -= 0.25; val.style.fontSize = size + "mm"; }
+    if (frame.scrollHeight <= frame.clientHeight + 1 || s < 0.3) break;
+    s *= 0.95; // non ci sta in altezza: rimpicciolisci tutto
+  }
 }
+function fit(container){ container.querySelectorAll(".sheet").forEach(fitSheet); }
 
 function toggleFields(){
   const m = $("metodo").value;
@@ -307,7 +397,9 @@ function toggleFields(){
 function render(){
   toggleFields();
   const p = $("preview");
-  p.innerHTML = labelHTML(read());
+  const z = Math.min(3, 380 / (paper.w * 3.78), 560 / (paper.h * 3.78));
+  p.style.width = (paper.w * 3.78 * z) + "px"; p.style.height = (paper.h * 3.78 * z) + "px";
+  p.innerHTML = `<div class="zoom" style="transform:scale(${z});transform-origin:0 0;width:max-content">${labelHTML(read())}</div>`;
   fit(p);
 }
 FIELDS.forEach(f => { $(f).addEventListener("input", render); $(f).addEventListener("change", render); });
@@ -341,7 +433,7 @@ $("btnPrint").onclick = () => printLabels([read()]);
 $("btnPrintAll").onclick = () => { if (queue.length) printLabels(queue); };
 $("btnClear").onclick = () => { queue = []; saveQueue(); renderQueue(); };
 
-render(); renderQueue();
+setPaper(); render(); renderQueue();
 </script>
 </body>
 </html>
