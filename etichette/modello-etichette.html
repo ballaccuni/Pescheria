@@ -39,6 +39,7 @@ button:hover { filter: brightness(.95); }
 .queue li span { min-width: 0; overflow-wrap: anywhere; }
 .queue li button { padding: 4px 10px; font-size: 13px; }
 .empty { color: var(--muted); font-size: 13px; }
+.status { font-size: 13px; color: var(--accent); font-weight: bold; min-height: 1em; margin: 8px 0 0; }
 .hint { font-size: 12px; color: var(--muted); max-width: 380px; text-align: center; }
 
 /* ---------- ETICHETTA (misura scelta dall'utente) ---------- */
@@ -241,16 +242,20 @@ button:hover { filter: brightness(.95); }
     </div>
 
     <div class="buttons">
-      <button class="primary" id="btnPrint">Stampa questa etichetta</button>
+      <button class="primary" id="btnPdf">Scarica PDF su misura</button>
+      <button id="btnPng">Scarica immagine</button>
+      <button id="btnPrint">Stampa</button>
       <button id="btnAdd">Aggiungi alla lista</button>
     </div>
+    <p class="status" id="status" role="status"></p>
 
     <div class="queue">
       <h2>Lista da stampare</h2>
       <ul id="queueList"></ul>
       <p class="empty" id="queueEmpty">Nessuna etichetta in lista. Usa "Aggiungi alla lista" per stamparne tante insieme.</p>
       <div class="buttons">
-        <button class="primary" id="btnPrintAll">Stampa tutta la lista</button>
+        <button class="primary" id="btnPdfAll">Scarica PDF della lista</button>
+        <button id="btnPrintAll">Stampa tutta la lista</button>
         <button class="danger" id="btnClear">Svuota lista</button>
       </div>
     </div>
@@ -437,6 +442,100 @@ function printLabels(list){
   area.style.display = "block"; fit(area); area.style.display = "";
   window.print();
 }
+// ---------- PDF e immagine su misura (senza passare dalla stampa) ----------
+const DPI = 300;
+const LABEL_CSS = document.querySelector("style").textContent;
+function prepareSheets(list){
+  const area = $("printArea");
+  area.innerHTML = list.map(labelHTML).join("");
+  area.style.cssText = "display:block;position:fixed;left:-10000px;top:0";
+  fit(area);
+  return [...area.querySelectorAll(".sheet")];
+}
+function cleanupSheets(){ const a = $("printArea"); a.innerHTML = ""; a.style.cssText = ""; }
+async function sheetToCanvas(sheet){
+  const cssW = sheet.offsetWidth, cssH = sheet.offsetHeight;
+  const pxW = Math.round(paper.w / 25.4 * DPI), pxH = Math.round(paper.h / 25.4 * DPI);
+  const html = new XMLSerializer().serializeToString(sheet);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${pxW}" height="${pxH}" viewBox="0 0 ${cssW} ${cssH}">` +
+    `<foreignObject x="0" y="0" width="${cssW}" height="${cssH}"><div xmlns="http://www.w3.org/1999/xhtml">` +
+    `<style><![CDATA[${LABEL_CSS}]]></style>${html}</div></foreignObject></svg>`;
+  const img = new Image();
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  await img.decode();
+  const c = document.createElement("canvas"); c.width = pxW; c.height = pxH;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, pxW, pxH);
+  ctx.drawImage(img, 0, 0, pxW, pxH);
+  return c;
+}
+// PDF minimo: una pagina per etichetta, grande esattamente come la carta
+function buildPDF(jpegs, wmm, hmm){
+  const W = (wmm * 72 / 25.4).toFixed(2), H = (hmm * 72 / 25.4).toFixed(2);
+  const enc = new TextEncoder(), parts = [], offsets = [];
+  let len = 0;
+  const push = x => { const b = typeof x === "string" ? enc.encode(x) : x; parts.push(b); len += b.length; };
+  const obj = (n, body, stream) => {
+    offsets[n] = len;
+    push(`${n} 0 obj\n${body}\n`);
+    if (stream) { push("stream\n"); push(stream); push("\nendstream\n"); }
+    push("endobj\n");
+  };
+  push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  const n = jpegs.length, kids = [];
+  for (let i = 0; i < n; i++) kids.push(`${3 + i * 3} 0 R`);
+  obj(1, "<< /Type /Catalog /Pages 2 0 R >>");
+  obj(2, `<< /Type /Pages /Kids [${kids.join(" ")}] /Count ${n} >>`);
+  jpegs.forEach((j, i) => {
+    const pg = 3 + i * 3, ct = pg + 1, im = pg + 2;
+    const content = enc.encode(`q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`);
+    obj(pg, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${ct} 0 R >>`);
+    obj(ct, `<< /Length ${content.length} >>`, content);
+    obj(im, `<< /Type /XObject /Subtype /Image /Width ${j.w} /Height ${j.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${j.bytes.length} >>`, j.bytes);
+  });
+  const total = 3 + n * 3, xref = len;
+  let x = `xref\n0 ${total}\n0000000000 65535 f \n`;
+  for (let i = 1; i < total; i++) x += String(offsets[i]).padStart(10, "0") + " 00000 n \n";
+  push(x + `trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(parts, { type: "application/pdf" });
+}
+function canvasJPEG(c){
+  const b64 = c.toDataURL("image/jpeg", 0.95).split(",")[1], bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { bytes, w: c.width, h: c.height };
+}
+function download(blob, name){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+function fileName(base){
+  return `${String(base).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "etichetta"}-${paper.w}x${paper.h}`;
+}
+function say(msg){ $("status").textContent = msg; }
+async function exportPDF(list, base){
+  say("Preparo il PDF…");
+  try {
+    const sheets = prepareSheets(list), jpegs = [];
+    for (const sh of sheets) jpegs.push(canvasJPEG(await sheetToCanvas(sh)));
+    download(buildPDF(jpegs, paper.w, paper.h), fileName(base) + ".pdf");
+    say(`PDF scaricato: ${list.length} etichett${list.length === 1 ? "a" : "e"} da ${paper.w}×${paper.h} mm.`);
+  } catch (e) { say("Non sono riuscito a creare il PDF. Usa Chrome o Edge aggiornati."); console.error(e); }
+  finally { cleanupSheets(); }
+}
+$("btnPdf").onclick = () => { const d = read(); exportPDF([d], d.nome); };
+$("btnPdfAll").onclick = () => { if (queue.length) exportPDF(queue, "lista-etichette"); else say("La lista è vuota."); };
+$("btnPng").onclick = async () => {
+  say("Preparo l'immagine…");
+  try {
+    const d = read(), [sh] = prepareSheets([d]), c = await sheetToCanvas(sh);
+    c.toBlob(b => { download(b, fileName(d.nome) + ".png"); say(`Immagine scaricata: ${paper.w}×${paper.h} mm a ${DPI} dpi.`); }, "image/png");
+  } catch (e) { say("Non sono riuscito a creare l'immagine. Usa Chrome o Edge aggiornati."); console.error(e); }
+  finally { cleanupSheets(); }
+};
+
 $("btnAdd").onclick = () => { queue.push(read()); saveQueue(); renderQueue(); };
 $("btnPrint").onclick = () => printLabels([read()]);
 $("btnPrintAll").onclick = () => { if (queue.length) printLabels(queue); };
